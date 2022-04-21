@@ -6,31 +6,28 @@ The configuration is a text file in JSON format that contains with the following
 
     [
     {
-        "name0":{
-            "eventType":"type0",
-            "pvs":[
-                "pv0",
-                "pv1"
-            ]
-        }
+        "name": "name0",
+        "eventType": "type0",
+        "pvs": [
+            "pv0",
+            "pv1"
+        ]
     },
     {
-        "name1":{
-            "eventType":"type0",
-            "pvs":[
-                "pv1",
-                "pv2"
-            ]
-        }
+        "name": "name1",
+        "eventType": "type0",
+        "pvs": [
+            "pv1",
+            "pv2"
+        ]
     },
     {
-        "name2":{
-            "eventType":"type1",
-            "pvs":[
-                "pv1",
-                "pv2"
-            ]
-        }
+        "name": "name2",
+        "eventType": "type1",
+        "pvs": [
+            "pv1",
+            "pv2"
+        ]
     }
     ]
 
