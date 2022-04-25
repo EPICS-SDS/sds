@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter
 
 from ...events import SDSEvent
@@ -16,3 +17,15 @@ def read_events():
 def read_event(event_id: str):
     event = SDSEvent.get(event_id)
     return event.toJSON()
+
+
+@router.get("/{event_id}/trigger")
+async def get_event_monitor(event_id: str):
+    event = SDSEvent.get(event_id)
+    results = await event.trigger()
+    data = {pv: {
+        "timestamp": datetime.fromtimestamp(value.timestamp),
+        "pulseid": value.raw["dataTimeStamp"]["userTag"],
+        "value": value.tolist()
+    } for pv, value in results}
+    return data
