@@ -8,7 +8,7 @@ app = FastAPI()
 
 
 def load_events():
-    with open("config.json") as config_file:
+    with open("../config.json") as config_file:
         for event in json.load(config_file):
             SDSEvent.from_dict(event)
 

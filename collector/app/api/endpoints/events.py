@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter
 
-from ...events import SDSEvent
+from app.events import SDSEvent
 
 
 router = APIRouter()
