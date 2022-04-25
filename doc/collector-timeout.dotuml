@@ -1,0 +1,8 @@
+StateDiagram[frame=true label="Timeout loop"] {
+ state waitTimeout as "loop" 
+ state sendData as "send file\nto storage"
+ state meta2 as "send metadata\nto db"
+ waitTimeout -> waitTimeout "wait for time out"
+ waitTimeout -> sendData "timeout"
+ sendData -> meta2
+}
