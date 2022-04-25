@@ -1,0 +1,32 @@
+[
+{
+    "name": "eventA",
+    "type": "dod",
+    "pvs": [
+        "Test:double0",
+        "Test:double1",
+        "Test:double2",
+        "Test:string0"
+    ]
+},
+{
+    "name": "eventB",
+    "type": "dod",
+    "pvs": [
+        "Test:double0",
+        "Test:double3",
+        "Test:double4",
+        "Test:string1"
+    ]
+},
+{
+    "name": "eventC",
+    "type": "postmortem",
+    "pvs": [
+        "Test:double5",
+        "Test:double6",
+        "Test:double7",
+        "Test:string1"
+    ]
+}
+]
