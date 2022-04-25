@@ -2,6 +2,7 @@ import json
 from fastapi import FastAPI
 
 from .events import SDSEvent
+from .api.api import api_router
 
 app = FastAPI()
 
@@ -15,3 +16,5 @@ def load_events():
 @app.on_event("startup")
 async def startup_event():
     load_events()
+
+app.include_router(api_router, prefix="/api")
