@@ -62,7 +62,7 @@ class NTNDArrayWithEvent(NTNDArray):
     def wrap(self, value):
         if type(value) is dict:
             wrapped_value = super().wrap(value['value'])
-            wrapped_value['uniqueId'] = value['pulse_id']
+            wrapped_value['timeStamp.userTag'] = value['pulse_id']
             wrapped_value['timing'] = [{'eventName': value['event_name'],
                            'eventType': value['event_type'],}]
         else:
