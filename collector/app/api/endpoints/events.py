@@ -1,5 +1,4 @@
-from datetime import datetime
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.events import SDSEvent
 
@@ -16,4 +15,6 @@ def read_events():
 @router.get("/{event_id}")
 def read_event(event_id: str):
     event = SDSEvent.get(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
     return event.toJSON()
