@@ -1,15 +1,49 @@
 from typing import List
+from threading import Timer
+
+from .logger import logger
 
 
 class SDSEvent:
     events = set()
 
     def __init__(self, name: str, pvs: List[str]) -> None:
+        self.__class__.events.add(self)
         self.name = name
         self.pvs = set(pvs)
+        self.values = None
+        self.pulse_id = None
+        self.timer = None
 
     def update(self, pulse_id, pv, value):
-        pass
+        # If the PV does not belong to this event, ignore it.
+        if pv not in self.pvs:
+            return
+        # Start a timer to call a function to write values after a given time
+        # if not all PVs have been received.
+        if self.timer is None or not self.timer.is_alive():
+            self.pulse_id = pulse_id
+            self.values = {}
+
+            self.timer = Timer(2, self.timeout)
+            self.timer.start()
+        # Ignore any subsequent pulses until the first is finished.
+        if self.pulse_id != pulse_id:
+            logger.info("Event '%s' (%d) received conflicting pulse ID %d",
+                        self.name, self.pulse_id, pulse_id)
+        else:
+            self.values[pv] = value
+            if set(self.values.keys()) == self.pvs:
+                self.write()
+
+    def timeout(self):
+        logger.debug("Event '%s' (%d) timed out with %d/%d pvs",
+                     self.name, self.pulse_id, len(self.values), len(self.pvs))
+        self.write()
+
+    def write(self):
+        self.timer.cancel()
+        logger.debug("Event '%s' (%d) writing", self.name, self.pulse_id)
 
     def toJSON(self):
         return {
