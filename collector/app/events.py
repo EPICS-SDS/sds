@@ -15,7 +15,7 @@ class SDSEvent:
         self.pulse_id = None
         self.timer = None
 
-    def update(self, pulse_id, pv, value):
+    def update(self, pv, pulse_id, value):
         # If the PV does not belong to this event, ignore it.
         if pv not in self.pvs:
             return
