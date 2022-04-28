@@ -13,13 +13,15 @@ def load_events():
     with open("../config.json") as config_file:
         for event in json.load(config_file):
             SDSEvent.from_dict(event)
-            logger.debug("Event '%s' loaded", event)
+            logger.debug("Event '%s' loaded", event["name"])
 
 
 @app.on_event("startup")
 async def startup_event():
+    logger.info("Loading events...",)
     load_events()
 
+    logger.info("Starting event monitor...",)
     pem = PVEventMonitor()
     pem.start()
 
