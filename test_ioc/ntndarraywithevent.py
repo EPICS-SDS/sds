@@ -53,21 +53,15 @@ class NTNDArrayWithEvent(NTNDArray):
                 ('sourceType', 'i'),
                 ('source', 's'),
             ])),
-            ('timing', ('aS', 'timing_t', [
-                ('eventName', 's'),
-                ('eventType', 'i'),
-            ])),
-        ], id='epics:nt/NTNDArrayWithEvent:1.0')
+        ], id='epics:nt/NTNDArray:1.0')
 
     def wrap(self, value):
         if type(value) is dict:
             wrapped_value = super().wrap(value['value'])
             wrapped_value['timeStamp.userTag'] = value['pulse_id']
-            wrapped_value['timing'] = [{'eventName': value['event_name'],
-                           'eventType': value['event_type'],}]
+            wrapped_value['attribute'] = [{'name': 'eventName', 'value': value['event_name'], 'timestamp': wrapped_value['timeStamp']},
+                        {'name': 'eventType', 'value': value['event_type'], 'timestamp': wrapped_value['timeStamp']}]
         else:
             wrapped_value = super().wrap(value)
-            wrapped_value['uniqueId'] = 0
-            wrapped_value['timing'] = [{'eventName': 'None',
-                           'eventType': 0,}]
+            wrapped_value['timeStamp.userTag'] = 0
         return wrapped_value
