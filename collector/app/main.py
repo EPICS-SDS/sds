@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from .logger import logger
 from .events import SDSEvent
 from .api.api import api_router
+from .pv_event_monitor import PVEventMonitor
 
 app = FastAPI()
 
@@ -18,5 +19,8 @@ def load_events():
 @app.on_event("startup")
 async def startup_event():
     load_events()
+
+    pem = PVEventMonitor()
+    pem.start()
 
 app.include_router(api_router, prefix="/api")

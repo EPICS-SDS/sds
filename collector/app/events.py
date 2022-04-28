@@ -1,7 +1,4 @@
-import asyncio
-from datetime import datetime
 from typing import List
-from p4p.client.asyncio import Context
 
 
 class SDSEvent:
@@ -10,7 +7,9 @@ class SDSEvent:
     def __init__(self, name: str, pvs: List[str]) -> None:
         self.name = name
         self.pvs = set(pvs)
-        self.__class__.events.add(self)
+
+    def update(self, pulse_id, pv, value):
+        pass
 
     def toJSON(self):
         return {
@@ -27,6 +26,13 @@ class SDSEvent:
     @classmethod
     def get_multi(cls) -> List[object]:
         return list(cls.events)
+
+    @classmethod
+    def get_all_pvs(cls):
+        pvs = set()
+        for event in cls.get_multi():
+            pvs |= event.pvs
+        return pvs
 
     @classmethod
     def from_dict(cls, dict):
