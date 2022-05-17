@@ -11,7 +11,9 @@ The configuration is a text file in JSON format that contains with the following
         "pvs": [
             "pv0",
             "pv1"
-        ]
+        ],
+        "reductionFactor": 14,
+        "reductionTime": 3600
     },
     {
         "name": "name1",
@@ -32,6 +34,8 @@ The configuration is a text file in JSON format that contains with the following
     ]
 
 As can be seen in the example above, the configuration defines sets of PVs associated with a timing event. The same timing event can be used to store different PVs, and the same PVs can be monitored for different events.
+
+The reduction parameters are optional. If they are not defined, the data is stored forever. If they are defined, the data is reduced by the amount defined by `reductionFactor` after the an amount of time from the acquisition defined by `reductionTime` in seconds. The `reductionFactor` is an integer N that defines that only every N-th acquisition is kept forever in the SDS storage.
 
 The collector behaves according to the following flow chart:
 
