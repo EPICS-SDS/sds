@@ -34,16 +34,20 @@ class SDSEvent:
         else:
             self.values[pv] = value
             if set(self.values.keys()) == self.pvs:
-                self.write()
+                self.finish()
 
     def timeout(self):
         logger.debug("Event '%s' (%d) timed out with %d/%d pvs",
                      self.name, self.pulse_id, len(self.values), len(self.pvs))
+        self.finish()
+
+    def finish(self):
+        self.timer.cancel()
+        logger.debug("Event '%s' (%d) writing", self.name, self.pulse_id)
         self.write()
 
     def write(self):
-        self.timer.cancel()
-        logger.debug("Event '%s' (%d) writing", self.name, self.pulse_id)
+        pass
 
     def toJSON(self):
         return {
