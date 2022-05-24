@@ -2,7 +2,7 @@ from typing import List
 from threading import Timer
 from pathlib import Path
 from datetime import datetime
-from nexusformat.nexus import NXroot, NXentry, NXdata
+from nexusformat.nexus import NXentry, NXdata
 
 from .logger import logger
 from .config import settings
