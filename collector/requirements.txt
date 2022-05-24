@@ -1,3 +1,4 @@
-fastapi==0.75.2
+fastapi==0.78.0
+nexusformat==0.7.5
 p4p==4.0.0
-uvicorn==0.17.6
+pydantic==1.9.0

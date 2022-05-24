@@ -1,7 +1,11 @@
 from typing import List
 from threading import Timer
+from pathlib import Path
+from datetime import datetime
+from nexusformat.nexus import NXroot, NXentry, NXdata
 
 from .logger import logger
+from .config import settings
 
 
 class SDSEvent:
@@ -43,11 +47,32 @@ class SDSEvent:
 
     def finish(self):
         self.timer.cancel()
-        logger.debug("Event '%s' (%d) writing", self.name, self.pulse_id)
+        logger.debug("Event '%s' (%d) done", self.name, self.pulse_id)
         self.write()
 
     def write(self):
-        pass
+        date = datetime.utcnow()
+        # Create file
+        entry = NXentry(
+            dataset_name=self.name,
+            event_name=self.name,
+            event_type=self.type)
+        data = NXdata(
+            pulse_id=self.pulse_id)
+        for pv, value in self.values.items():
+            data[pv] = value
+        entry[f"event_pulseID_{self.pulse_id}"] = data
+        # Create file path
+        directory = Path(settings.output_dir) / \
+            date.strftime("%Y") / date.strftime("%Y-%m-%d")
+        file_name = self.name + "_" + date.strftime("%Y%m%d_%H%M%S") + ".h5"
+        path = directory / file_name
+        # Ensure directory exists
+        path.parent.mkdir(parents=True, exist_ok=True)
+        logger.debug("Event '%s' (%d) writing to '%s'",
+                     self.name, self.pulse_id, path)
+        # Write file
+        entry.save(path)
 
     def toJSON(self):
         return {
