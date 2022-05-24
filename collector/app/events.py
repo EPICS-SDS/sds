@@ -29,7 +29,7 @@ class SDSEvent:
             self.pulse_id = pulse_id
             self.values = {}
 
-            self.timer = Timer(2, self.timeout)
+            self.timer = Timer(settings.monitor_timeout, self.timeout)
             self.timer.start()
         # Ignore any subsequent pulses until the first is finished.
         if self.pulse_id != pulse_id:

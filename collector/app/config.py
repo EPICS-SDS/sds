@@ -1,8 +1,9 @@
-from pydantic import BaseSettings
+from pydantic import BaseSettings, DirectoryPath
 
 
 class Settings(BaseSettings):
-    output_dir: str
+    output_dir: DirectoryPath
+    monitor_timeout: int = 2
 
 
 settings = Settings()
