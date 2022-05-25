@@ -22,18 +22,18 @@ class PVEventMonitor:
         async def cb(value):
             if isinstance(value, Exception):
                 logger.warning("PV %s error: %s", pv, value)
-            elif 'eventName' in value.attrib:
+            elif "eventName" in value.attrib:
                 pulse_id = value.raw["timeStamp.userTag"]
-                event_name = value.attrib['eventName']
+                event_name = value.attrib["eventName"]
                 logger.debug("PV %s received event '%s' (%d)",
                              pv, event_name, pulse_id)
-                self.event_handler(event_name, pv, pulse_id, value)
+                self.event_handler(event_name, pulse_id, pv, value)
         return cb
 
     # Finds the event and updates it with the value
-    def event_handler(self, name, pv, pulse_id, value):
+    def event_handler(self, name, pulse_id, pv, value):
         event = SDSEvent.get(name)
         if event is None:
             logger.info("Event %s unknown", name)
         else:
-            event.update(pv, pulse_id, value)
+            event.update(pulse_id, pv, value)
