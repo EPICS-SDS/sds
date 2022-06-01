@@ -3,17 +3,17 @@ FROM continuumio/miniconda3:latest
 RUN groupadd -r -g 1000 csi \
   && useradd --no-log-init -r -g csi -u 1000 csi
 
-COPY storage/environment.yml /app/environment.yml
+COPY retriever/environment.yml /app/environment.yml
 
 RUN conda update -n base conda \
   && conda config --system --set channel_alias https://artifactory.esss.lu.se/artifactory/api/conda \
   && conda config --system --set use_only_tar_bz2 true \
-  && conda env create -n sds_storage -f /app/environment.yml \
+  && conda env create -n sds_retriever -f /app/environment.yml \
   && conda clean -ay
 
 RUN conda install curl
 
-COPY --chown=csi:csi storage /app/
+COPY --chown=csi:csi retriever /app/
 COPY --chown=csi:csi common /app/common
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
@@ -21,8 +21,6 @@ WORKDIR /app
 
 USER csi
 
-ENV PATH=/opt/conda/envs/sds_storage/bin:$PATH
+ENV PATH=/opt/conda/envs/sds_retriever/bin:$PATH
 
-CMD uvicorn storage:app --host 0.0.0.0 --port ${STORAGE_PORT:-"8000"}
-
-# CMD ["uvicorn", "storage:app", "--reload", "--host", "0.0.0.0", "--port", "${PORT}"]
+CMD uvicorn retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
