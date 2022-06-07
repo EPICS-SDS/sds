@@ -9,10 +9,10 @@ from elasticsearch import Elasticsearch
 CO_INDEX = "collectors"
 DS_INDEX = "datasets"
 EX_INDEX = "expiring_by"
-logger = logging.getLogger("storage")
+logger = logging.getLogger("indexer")
 
 
-class StorageClient(object):
+class IndexerClient(object):
     def __init__(self):
         # Create the client instance
         self.client = Elasticsearch(

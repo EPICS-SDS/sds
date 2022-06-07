@@ -8,7 +8,7 @@ COPY environment.yml /app/environment.yml
 RUN conda update -n base conda \
   && conda config --system --set channel_alias https://artifactory.esss.lu.se/artifactory/api/conda \
   && conda config --system --set use_only_tar_bz2 true \
-  && conda env create -n sds_storage -f /app/environment.yml \
+  && conda env create -n sds_indexer -f /app/environment.yml \
   && conda clean -ay
 
 RUN conda install curl
@@ -20,6 +20,6 @@ WORKDIR /app
 
 USER csi
 
-ENV PATH=/opt/conda/envs/sds_storage/bin:$PATH
+ENV PATH=/opt/conda/envs/sds_indexer/bin:$PATH
 
-CMD ["uvicorn", "storage:app", "--reload", "--host", "0.0.0.0"]
+CMD ["uvicorn", "indexer:app", "--reload", "--host", "0.0.0.0"]

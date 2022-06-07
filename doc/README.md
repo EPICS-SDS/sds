@@ -7,7 +7,7 @@ The following diagram shows the different components of the SDS:
 
 - IOCs: the timing system will generate events that will trigger an update of some PVs in the IOCs. These PVs should contain as metadata the event type that trigger the update, the pulse ID, and the timestamp. All this information will be transferred using PV Access. No support for CA is foreseen.
 
-- Collector: it monitors a set of PVs and generates NeXus files for every event. There could be more than one collector instances running at the same time, each of them configured to archive different events of subsets of PVs of the same event. For IOCs generating large amounts of data, another service could be run on the IOC that generates NeXus compliant files and communicates with the storage service.
+- Collector: it monitors a set of PVs and generates NeXus files for every event. There could be more than one collector instances running at the same time, each of them configured to archive different events of subsets of PVs of the same event. For IOCs generating large amounts of data, another service could be run on the IOC that generates NeXus compliant files and communicates with the indexer service.
 
 - DB: it stores metadata for each event received so that the data retriever can search for the files.
 

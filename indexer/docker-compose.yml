@@ -1,7 +1,7 @@
 version: '3'
 services:
-  sds_storage:
-    image: sds_storage
+  sds_indexer:
+    image: sds_indexer
     ports:
       - "8000:8000"
     depends_on:
