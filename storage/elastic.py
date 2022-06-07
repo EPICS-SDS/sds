@@ -6,10 +6,11 @@ import time
 from elasticsearch import Elasticsearch
 
 # ES indexes
-DS_INDEX = 'datasets'
-EV_INDEX = 'events'
-EX_INDEX = 'expiring_by'
+CO_INDEX = "collectors"
+DS_INDEX = "datasets"
+EX_INDEX = "expiring_by"
 logger = logging.getLogger("storage")
+
 
 class StorageClient(object):
     def __init__(self):
@@ -24,51 +25,60 @@ class StorageClient(object):
         trials = 0
         while not self.client.ping():
             if trials > timeout:
-                logger.error('Could not connect to the ElasticSearch server!')
+                logger.error("Could not connect to the ElasticSearch server!")
                 sys.exit(1)
-            
+
             trials += 1
             time.sleep(1)
 
     def check_indices(self):
         # Initialize indices
         indices = self.client.indices
-        for index in [DS_INDEX, EV_INDEX, EX_INDEX]:
-            if indices.exists(index=index)==False:
+        for index in [CO_INDEX, DS_INDEX, EX_INDEX]:
+            if not indices.exists(index=index):
                 indices.create(index=index)
 
-    def search_dataset_id(self, ds_name, ev_name, ev_type, pv_list):
-        response = self.client.search(index=DS_INDEX, q='name: {0} AND event: {1} AND eventType: {2}'.format(ds_name, ev_name, ev_type))
+    def search_collector_id(self, collector_name, method_name, method_type, pv_list):
+        response = self.client.search(index=CO_INDEX, q=(
+            f"name: {collector_name} AND "
+            f"event: {method_name} AND eventType: {method_type}"
+        ))
 
-        if response['hits']['total']['value'] == 0:
+        if response["hits"]["total"]["value"] == 0:
             return None
-        
+
         ds_id = None
-        for hit in response['hits']['hits']:
-            if len(pv_list) == len(hit['_source']['listOfPvs']):
-                ds_id = hit['_id']
-                for pv in hit['_source']['listOfPvs']:
+        for hit in response["hits"]["hits"]:
+            if len(pv_list) == len(hit["_source"]["listOfPvs"]):
+                ds_id = hit["_id"]
+                for pv in hit["_source"]["listOfPvs"]:
                     if pv_list.count(pv) != 1:
                         ds_id = None
                         break
-        
+
         return ds_id
 
-    async def get_dataset_id(self, ds_name, ev_name, ev_type, pv_list):
+    async def get_collector_id(self, collector_name, method_name, method_type, pv_list):
         async with self.lock:
             # First search in case it already exists...
-            ds_id = self.search_dataset_id(ds_name, ev_name, ev_type, pv_list)
+            ds_id = self.get_collector_id(
+                collector_name, method_name, method_type, pv_list)
             if ds_id is not None:
                 return ds_id
-            
-            # If it doesn't, then create it
-            response = self.client.index(index=DS_INDEX, document={'name': ds_name, 'event': ev_name, 'eventType': ev_type, 'listOfPvs': pv_list})
-            return response['_id']
 
-    def add_event(self, ds_id, ev_timestamp, tg_pulse_id, path):
-        response = self.client.index(index=EV_INDEX, document={'datasetId': ds_id,'timestamp': ev_timestamp, 'tgPulseId': tg_pulse_id, 'path': path})
-       
-        return response['_id']
+            # If it doesn"t, then create it
+            document = {"name": collector_name, "event": method_name,
+                        "eventType": method_type, "listOfPvs": pv_list}
+            response = self.client.index(index=CO_INDEX, document=document)
+            return response["_id"]
 
-    def add_expire_by(self, ev_id, expire_by):
-        self.client.index(index=EX_INDEX, document={'eventId': ev_id, 'expireBy': expire_by})
+    def add_dataset(self, collector_id, ev_timestamp, tg_pulse_id, path):
+        document = {"collectorId": collector_id, "timestamp": ev_timestamp,
+                    "tgPulseId": tg_pulse_id, "path": path}
+        response = self.client.index(index=DS_INDEX, document=document)
+
+        return response["_id"]
+
+    def add_expire_by(self, dataset_id, expire_by):
+        document = {"datasetId": dataset_id, "expireBy": expire_by}
+        self.client.index(index=EX_INDEX, document=document)
