@@ -61,7 +61,7 @@ class IndexerClient(object):
     async def get_collector_id(self, collector_name, method_name, method_type, pv_list):
         async with self.lock:
             # First search in case it already exists...
-            ds_id = self.get_collector_id(
+            ds_id = self.search_collector_id(
                 collector_name, method_name, method_type, pv_list)
             if ds_id is not None:
                 return ds_id
