@@ -19,16 +19,16 @@ async def startup_event():
     es.wait_for_connection(RETRY_CONNECTION)
     es.create_mising_indices()
 
-@app.post("/get_ds")
-async def get_ds(ds_name: str, ev_name: str, ev_type: int, pv_list: List[str] = Query(...)):
+@app.post("/get_collector")
+async def get_collector(collector_name: str, event_name: str, event_type: int, pv_list: List[str] = Query(...)):
     '''
-    Get the ID for a dataset that matches all the parameters.
-    If no dataset is found, a new one is created.
+    Get the ID for a collector that matches all the parameters.
+    If no collector is found, a new one is created.
 
     Arguments:
-    - **ds_name** (str, required): name of the dataset
-    - **ev_name** (str, required): name of the event
-    - **ev_type** (int, required): event type
+    - **collector_name** (str, required): name of the collector
+    - **event_name** (str, required): name of the event
+    - **event_type** (int, required): event type
     - **pv_list** (List[str], required): list of PVs in the dataset. It accept comma-separated list.
     
     Returns the dataset ID.
@@ -37,29 +37,29 @@ async def get_ds(ds_name: str, ev_name: str, ev_type: int, pv_list: List[str] = 
     if len(pv_list)==1 and pv_list[0].count(','):
         pv_list = pv_list[0].split(',')
 
-    ds_id = await es.get_dataset_id(ds_name, ev_name, ev_type, pv_list)
+    collector_id = await es.get_collector_id(collector_name, event_name, event_type, pv_list)
     
-    return {'id': ds_id}
+    return {'id': collector_id}
 
-@app.post("/add_event")
-async def add_event(ds_id: str, ev_timestamp: int, tg_pulse_id: int, path: str, expire_in: Optional[int] = 0):
+@app.post("/add_dataset")
+async def add_dataset(collector_id: str, event_timestamp: int, tg_pulse_id: int, path: str, expire_in: Optional[int] = 0):
     '''
-    Add an event to the elasticsearch index.
+    Add an dataset to the elasticsearch index.
 
     Arguments:
-    - **ds_id** (str, required): dataset ID obtained using the /get_id POST operation
-    - **ev_timestamp** (int, required): event timestamp in UTC
+    - **collector_id** (str, required): collector ID obtained using the /get_id POST operation
+    - **event_timestamp** (int, required): event timestamp in UTC
     - **tg_pulse_id** (int, required): pulse ID at the time of the trigger
     - **path** (str, required): path of the file containing the data
     - **expire_in** (str, optional): a time in seconds after which the data will be deleted 
     '''
-    ev_id = es.add_event(ds_id, ev_timestamp, tg_pulse_id, path)
+    dataset_id = es.add_dataset(collector_id, event_timestamp, tg_pulse_id, path)
 
     if expire_in > 0:
         expire_by = time.time_ns() + expire_in * int(1e9)
-        es.add_expire_by(ev_id, expire_by)
+        es.add_expire_by(dataset_id, expire_by)
     
-    return {'id': ev_id}
+    return {'id': dataset_id}
 
 if __name__ == "__main__":
     import uvicorn

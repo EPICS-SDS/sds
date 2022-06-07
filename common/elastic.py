@@ -8,12 +8,13 @@ import time
 from elasticsearch import Elasticsearch
 
 # ES indexes
+CO_INDEX = "collectors"
 DS_INDEX = "datasets"
-EV_INDEX = "events"
 EX_INDEX = "expiring_by"
 
+
 ES_QUERY_SIZE = 1000
-logger = logging.getLogger("storage")
+logger = logging.getLogger("indexer")
 
 
 class IndicesNotAvailableException(Exception):
@@ -60,14 +61,14 @@ class ElasticClient(object):
     def check_indices(self):
         # Initialize indices
         indices = self.client.indices
-        for index in [DS_INDEX, EV_INDEX, EX_INDEX]:
+        for index in [CO_INDEX, DS_INDEX, EX_INDEX]:
             if indices.exists(index=index) == False:
                 raise IndicesNotAvailableException()
 
     def create_mising_indices(self):
         # Initialize indices
         indices = self.client.indices
-        for index in [DS_INDEX, EV_INDEX, EX_INDEX]:
+        for index in [CO_INDEX, DS_INDEX, EX_INDEX]:
             if indices.exists(index=index) == False:
                 indices.create(index=index)
 
@@ -76,7 +77,7 @@ class ElasticClient(object):
         Make as many queries as neccessary on elasticsearch to retrieve all the hits 
         """
         response = self.client.search(
-            index=EV_INDEX, q=query, size=ES_QUERY_SIZE, sort=sort
+            index=DS_INDEX, q=query, size=ES_QUERY_SIZE, sort=sort
         )
 
         n_total = response["hits"]["total"]["value"]
@@ -92,7 +93,7 @@ class ElasticClient(object):
         # If more than ES_QUERY_SIZE hits received, continue to retrieve more pages.
         while n_received < n_total:
             response = self.client.search(
-                index=EV_INDEX,
+                index=DS_INDEX,
                 q=query,
                 size=ES_QUERY_SIZE,
                 sort=sort,
@@ -105,38 +106,39 @@ class ElasticClient(object):
 
         return results
 
-    async def get_dataset_id(self, ds_name, ev_name, ev_type, pv_list):
+    async def get_collector_id(self, collector_name, event_name, event_type, pv_list):
         """
-        Get the ID for a dataset that matches all the parameters.
+        Get the ID for a collector that matches all the parameters.
         If no dataset is found, a new one is created.
         """
         async with self.lock:
             # First search in case it already exists...
-            ds_id = self.search_dataset_id(ds_name, ev_name, ev_type, pv_list)
+            ds_id = self.search_collector_id(collector_name, event_name, event_type, pv_list)
             if ds_id is not None:
                 return ds_id
 
             # If it doesn't, then create it
             response = self.client.index(
-                index=DS_INDEX,
+                index=CO_INDEX,
                 document={
-                    "name": ds_name,
-                    "event": ev_name,
-                    "eventType": ev_type,
+                    "name": collector_name,
+                    "event": event_name,
+                    "eventType": event_type,
                     "listOfPvs": pv_list,
                     "created": time.time(),
                 },
             )
             return response["_id"]
 
-    def add_event(self, ds_id, ev_timestamp, tg_pulse_id, path):
+    def add_dataset(self, collector_id, ev_timestamp, tg_pulse_id, path):
         """
-        Add a new event to the event index. There is no check for the dataset id, so 
+        Add a new dataset to the collector index. There is no check for the collector id,
+        so it should be obtained using the get_collector_id or search_collector_id methods.
         """
         response = self.client.index(
-            index=EV_INDEX,
+            index=DS_INDEX,
             document={
-                "datasetId": ds_id,
+                "collectorId": collector_id,
                 "timestamp": ev_timestamp,
                 "tgPulseId": tg_pulse_id,
                 "path": path,
@@ -145,17 +147,17 @@ class ElasticClient(object):
 
         return response["_id"]
 
-    def add_expire_by(self, ev_id, expire_by):
+    def add_expire_by(self, dataset_id, expire_by):
         self.client.index(
-            index=EX_INDEX, document={"eventId": ev_id, "expireBy": expire_by}
+            index=EX_INDEX, document={"datasetId": dataset_id, "expireBy": expire_by}
         )
 
-    def search_dataset_id(self, ds_name, ev_name, ev_type, pv_list):
+    def search_collector_id(self, ds_name, event_name, event_type, pv_list):
         response = self.client.search(
-            index=DS_INDEX,
+            index=CO_INDEX,
             size=ES_QUERY_SIZE,
             q="name: {0} AND event: {1} AND eventType: {2}".format(
-                ds_name, ev_name, ev_type
+                ds_name, event_name, event_type
             ),
         )
 
@@ -178,29 +180,29 @@ class ElasticClient(object):
 
         return ds_id
 
-    def search_datasets(self, dataset_ids, ds_name, ev_name, ev_type, pv_list):
+    def search_collectors(self, collector_ids, collector_name, event_name, event_type, pv_list):
         """
-        Search for datasets that contain **at least** the PVs given as a parameter.
-        The dataset can contain more PVs than the ones defined, it does not need to be a perfect match.
+        Search for collectors that contain **at least** the PVs given as a parameter.
+        The collector can contain more PVs than the ones defined, it does not need to be a perfect match.
         All the parameters except the id can contain wildcards, including PV names.
         """
-        if dataset_ids is None:
-            dataset_ids = "*"
-        if ds_name is None:
-            ds_name = "*"
-        if ev_name is None:
-            ev_name = "*"
-        if ev_type is None:
-            ev_type = "*"
+        if collector_ids is None:
+            collector_ids = "*"
+        if collector_name is None:
+            collector_name = "*"
+        if event_name is None:
+            event_name = "*"
+        if event_type is None:
+            event_type = "*"
 
-        if len(dataset_ids) > 1:
-            dataset_ids = "(" + " OR ".join(dataset_ids) + ")"
+        if len(collector_ids) > 1:
+            collector_ids = "(" + " OR ".join(collector_ids) + ")"
 
         response = self.client.search(
-            index=DS_INDEX,
+            index=CO_INDEX,
             size=ES_QUERY_SIZE,
             q="_id: {0} AND name: {1} AND event: {2} AND eventType: {3}".format(
-                dataset_ids, ds_name, ev_name, ev_type
+                collector_ids, collector_name, event_name, event_type
             ),
         )
 
@@ -212,7 +214,7 @@ class ElasticClient(object):
         if n_total > ES_QUERY_SIZE:
             raise TooManyHitsException()
 
-        dataset_list = []
+        collector_list = []
         for hit in response["hits"]["hits"]:
             # Check if the hit contains all PVs in the list
             missing = False
@@ -223,23 +225,23 @@ class ElasticClient(object):
                         missing = True
 
             if not missing:
-                dataset = hit["_source"]
-                dataset["id"] = hit["_id"]
-                dataset_list.append(dataset)
+                collector = hit["_source"]
+                collector["id"] = hit["_id"]
+                collector_list.append(collector)
 
-        return dataset_list
+        return collector_list
 
-    def search_events(
-        self, dataset_ids, start, end, tg_pulse_id_start, tg_pulse_id_end
+    def search_datasets(
+        self, collector_ids, start, end, tg_pulse_id_start, tg_pulse_id_end
     ):
-        if dataset_ids is None:
-            dataset_ids = "*"
-        elif len(dataset_ids) > 1:
-            dataset_ids = "(" + " OR ".join(dataset_ids) + ")"
+        if collector_ids is None:
+            collector_ids = "*"
+        elif len(collector_ids) > 1:
+            collector_ids = "(" + " OR ".join(collector_ids) + ")"
         else:
-            dataset_ids = dataset_ids[0]
+            collector_ids = collector_ids[0]
 
-        query = "datasetId: {0}".format(dataset_ids)
+        query = "collectorId: {0}".format(collector_ids)
 
         if start is not None:
             query += " AND timestamp:>=" + str(start)
@@ -254,9 +256,9 @@ class ElasticClient(object):
 
         return self.query_paginated(query, sort)
 
-    def get_file_events(self, filepath):
+    def get_file(self, filepath):
         response = self.client.search(
-            index=EV_INDEX, size=ES_QUERY_SIZE, q="path: " + filepath
+            index=DS_INDEX, size=ES_QUERY_SIZE, q="path: " + filepath
         )
 
         if response["hits"]["total"]["value"] == 0:
@@ -265,8 +267,8 @@ class ElasticClient(object):
         if response["hits"]["total"]["value"] > ES_QUERY_SIZE:
             raise TooManyHitsException()
 
-        event_list = []
+        datasets_list = []
         for hit in response["hits"]["hits"]:
-            event_list.append(hit["_source"])
+            datasets_list.append(hit["_source"])
 
-        return event_list
+        return datasets_list

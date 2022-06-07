@@ -1,12 +1,12 @@
 version: '3'
 services:
-  sds_storage:
-    image: sds_storage
+  sds_indexer:
+    image: sds_indexer
     ports:
       - "8000:8000"
     environment:
         ELASTIC_URL: "http://elasticsearch:9200"
-        STORAGE_PORT: "8000"
+        INDEXER_PORT: "8000"
     depends_on:
       - elasticsearch
   

@@ -1,4 +1,4 @@
-name: sds_storage
+name: sds_indexer
 channels:
   - defaults
 dependencies:

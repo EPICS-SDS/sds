@@ -15,6 +15,7 @@ RUN conda install curl
 
 COPY --chown=csi:csi retriever /app/
 COPY --chown=csi:csi common /app/common
+
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
 WORKDIR /app

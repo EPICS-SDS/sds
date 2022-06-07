@@ -1,4 +1,4 @@
-# Storage and DB
+# Storage and Indexer service
 The data will be stored in files and indexed by a database to allow for complex searches based on triggering event, time, or PVs.
 
 ## Storage
@@ -34,7 +34,7 @@ The data will be organized according to the following directory structure:
   - day (YYYY-mm-dd)
     - files
 
-## DB
+## Indexer service
 Part of the files metadata is also stored in a database for faster searches, based on elasticsearch.
 Elasticsearch will keep 3 indexes, one for the dataset structure that will be repeated over many events, another index for the events, and the third one is to keep track of short term data storage.
 
@@ -59,7 +59,7 @@ Finally the third index will contain the following information:
 - expire by (UNIX timestamp in UTC)
 
 ## API
-The API of the storage service will have one entrypoint for adding a new dataset definition and one to add data:
+The API of the indexer service will have one entrypoint for adding a new dataset definition and one to add data:
 
 - `/get_ds` POST operation that returns the ID of the dataset that matches the parameters. If the dataset does not exist, it creates it. Parameters:
   - `ds_name` (required): a string with the name given to the dataset. It should be the one defined in the collector configuration file as `name`. It does not need to be unique.
