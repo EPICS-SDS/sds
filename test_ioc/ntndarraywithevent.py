@@ -60,7 +60,7 @@ class NTNDArrayWithEvent(NTNDArray):
             wrapped_value = super().wrap(value['value'])
             wrapped_value['timeStamp.userTag'] = value['pulse_id']
             wrapped_value['attribute'] = [{'name': 'eventName', 'value': value['event_name'], 'timestamp': wrapped_value['timeStamp']},
-                        {'name': 'eventType', 'value': value['event_type'], 'timestamp': wrapped_value['timeStamp']}]
+                        {'name': 'eventCode', 'value': value['event_code'], 'timestamp': wrapped_value['timeStamp']}]
         else:
             wrapped_value = super().wrap(value)
             wrapped_value['timeStamp.userTag'] = 0
