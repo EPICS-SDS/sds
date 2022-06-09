@@ -106,14 +106,14 @@ class ElasticClient(object):
 
         return results
 
-    async def get_collector_id(self, collector_name, event_name, event_type, pv_list):
+    async def get_collector_id(self, collector_name, event_name, event_code, pv_list):
         """
         Get the ID for a collector that matches all the parameters.
         If no dataset is found, a new one is created.
         """
         async with self.lock:
             # First search in case it already exists...
-            ds_id = self.search_collector_id(collector_name, event_name, event_type, pv_list)
+            ds_id = self.search_collector_id(collector_name, event_name, event_code, pv_list)
             if ds_id is not None:
                 return ds_id
 
@@ -123,14 +123,14 @@ class ElasticClient(object):
                 document={
                     "name": collector_name,
                     "event": event_name,
-                    "eventType": event_type,
+                    "eventCode": event_code,
                     "listOfPvs": pv_list,
                     "created": time.time(),
                 },
             )
             return response["_id"]
 
-    def add_dataset(self, collector_id, ev_timestamp, tg_pulse_id, path):
+    def add_dataset(self, collector_id, ev_timestamp, trigger_pulse_id, path):
         """
         Add a new dataset to the collector index. There is no check for the collector id,
         so it should be obtained using the get_collector_id or search_collector_id methods.
@@ -140,7 +140,7 @@ class ElasticClient(object):
             document={
                 "collectorId": collector_id,
                 "timestamp": ev_timestamp,
-                "tgPulseId": tg_pulse_id,
+                "tgPulseId": trigger_pulse_id,
                 "path": path,
             },
         )
@@ -152,12 +152,12 @@ class ElasticClient(object):
             index=EX_INDEX, document={"datasetId": dataset_id, "expireBy": expire_by}
         )
 
-    def search_collector_id(self, ds_name, event_name, event_type, pv_list):
+    def search_collector_id(self, ds_name, event_name, event_code, pv_list):
         response = self.client.search(
             index=CO_INDEX,
             size=ES_QUERY_SIZE,
-            q="name: {0} AND event: {1} AND eventType: {2}".format(
-                ds_name, event_name, event_type
+            q="name: {0} AND event: {1} AND eventCode: {2}".format(
+                ds_name, event_name, event_code
             ),
         )
 
@@ -180,7 +180,7 @@ class ElasticClient(object):
 
         return ds_id
 
-    def search_collectors(self, collector_ids, collector_name, event_name, event_type, pv_list):
+    def search_collectors(self, collector_ids, collector_name, event_name, event_code, pv_list):
         """
         Search for collectors that contain **at least** the PVs given as a parameter.
         The collector can contain more PVs than the ones defined, it does not need to be a perfect match.
@@ -192,8 +192,8 @@ class ElasticClient(object):
             collector_name = "*"
         if event_name is None:
             event_name = "*"
-        if event_type is None:
-            event_type = "*"
+        if event_code is None:
+            event_code = "*"
 
         if len(collector_ids) > 1:
             collector_ids = "(" + " OR ".join(collector_ids) + ")"
@@ -201,8 +201,8 @@ class ElasticClient(object):
         response = self.client.search(
             index=CO_INDEX,
             size=ES_QUERY_SIZE,
-            q="_id: {0} AND name: {1} AND event: {2} AND eventType: {3}".format(
-                collector_ids, collector_name, event_name, event_type
+            q="_id: {0} AND name: {1} AND event: {2} AND eventCode: {3}".format(
+                collector_ids, collector_name, event_name, event_code
             ),
         )
 
@@ -232,7 +232,7 @@ class ElasticClient(object):
         return collector_list
 
     def search_datasets(
-        self, collector_ids, start, end, tg_pulse_id_start, tg_pulse_id_end
+        self, collector_ids, start, end, trigger_pulse_id_start, trigger_pulse_id_end
     ):
         if collector_ids is None:
             collector_ids = "*"
@@ -247,10 +247,10 @@ class ElasticClient(object):
             query += " AND timestamp:>=" + str(start)
         if end is not None:
             query += " AND timestamp:<=" + str(end)
-        if tg_pulse_id_start is not None:
-            query += " AND tgPulseId:>=" + str(tg_pulse_id_start)
-        if tg_pulse_id_end is not None:
-            query += " AND tgPulseId:<=" + str(tg_pulse_id_end)
+        if trigger_pulse_id_start is not None:
+            query += " AND tgPulseId:>=" + str(trigger_pulse_id_start)
+        if trigger_pulse_id_end is not None:
+            query += " AND tgPulseId:<=" + str(trigger_pulse_id_end)
 
         sort = {"timestamp": {"order": "desc"}}
 
