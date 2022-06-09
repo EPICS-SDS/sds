@@ -37,7 +37,7 @@ async def search_collectors(
     collector_ids: Optional[List[str]] = Query(None),
     collector_name: str = None,
     event_name: str = None,
-    event_type: int = None,
+    event_code: int = None,
     pv_list: List[str] = Query(None),
 ):
     """
@@ -49,7 +49,7 @@ async def search_collectors(
     - **collector_ids** (List[str], optional): list of collector IDs to consider for the search
     - **collector** (str, optional): name of the collector
     - **event_name** (str, optional): name of the event
-    - **event_type** (int, optional): event type
+    - **event_code** (int, optional): event code
     - **pv_list** (List[str], optional): list of PVs that should be included in the dataset
 
     Returns: a list of dataset descriptions
@@ -60,7 +60,7 @@ async def search_collectors(
     if pv_list is not None and len(pv_list) == 1 and pv_list[0].count(","):
         pv_list = pv_list[0].split(",")
 
-    collector_list = es.search_collectors(collector_ids, collector_name, event_name, event_type, pv_list)
+    collector_list = es.search_collectors(collector_ids, collector_name, event_name, event_code, pv_list)
 
     return {"collectors": collector_list}
 
@@ -70,21 +70,21 @@ async def search_datasets(
     collector_ids: Optional[List[str]] = Query(None),
     start: Optional[int] = None,
     end: Optional[int] = None,
-    tg_pulse_id_start: Optional[int] = None,
-    tg_pulse_id_end: Optional[int] = None,
+    trigger_pulse_id_start: Optional[int] = None,
+    trigger_pulse_id_end: Optional[int] = None,
 ):
     """
     Search for datasets in the index.
     - **collector_ids** (List[str], optional): list of collector IDs to consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **tg_pulse_id_start** (int, optional): 
-    - **tg_pulse_id_end** (int, optional):
+    - **trigger_pulse_id_start** (int, optional): 
+    - **trigger_pulse_id_end** (int, optional):
 
     To search for a set of PVs, first one needs to search for collectors containing those PVs and then search by collector IDs.
     """
     datasets = es.search_datasets(
-        collector_ids, start, end, tg_pulse_id_start, tg_pulse_id_end
+        collector_ids, start, end, trigger_pulse_id_start, trigger_pulse_id_end
     )
 
     return datasets
@@ -107,7 +107,7 @@ def get_file(file_path: str):
 class Dataset(BaseModel):
     collectorId: str
     timestamp: int
-    tgPulseId: int
+    trigger_pulse_id: int
     path: str
 
 
@@ -140,7 +140,7 @@ def get_datasets(datasets: List[Dataset]):
                 pulses_per_collector[collector]["filename"] = (
                     dataset.path[:-19] + ".h5"
                 )  # removing timestamp
-                pulses_per_collector[collector]["pulses"].append(str(dataset.tgPulseId))
+                pulses_per_collector[collector]["pulses"].append(str(dataset.trigger_pulse_id))
                 pulses_per_collector[collector]["paths"].append(str(dataset.path))
 
     # Create a zip file in memory to collect the data before transferring it

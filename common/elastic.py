@@ -106,7 +106,8 @@ class ElasticClient(object):
 
         return results
 
-    async def get_collector_id(self, collector_name, event_name, event_code, pv_list):
+    async def get_collector_id(self, collector_name, event_name, event_code,
+                               pv_list):
         """
         Get the ID for a collector that matches all the parameters.
         If no dataset is found, a new one is created.
@@ -140,7 +141,7 @@ class ElasticClient(object):
             document={
                 "collectorId": collector_id,
                 "timestamp": ev_timestamp,
-                "tgPulseId": trigger_pulse_id,
+                "triggerPulseId": trigger_pulse_id,
                 "path": path,
             },
         )
@@ -180,7 +181,8 @@ class ElasticClient(object):
 
         return ds_id
 
-    def search_collectors(self, collector_ids, collector_name, event_name, event_code, pv_list):
+    def search_collectors(self, collector_ids, collector_name, event_name,
+                          event_code, pv_list):
         """
         Search for collectors that contain **at least** the PVs given as a parameter.
         The collector can contain more PVs than the ones defined, it does not need to be a perfect match.
@@ -231,9 +233,8 @@ class ElasticClient(object):
 
         return collector_list
 
-    def search_datasets(
-        self, collector_ids, start, end, trigger_pulse_id_start, trigger_pulse_id_end
-    ):
+    def search_datasets(self, collector_ids, start, end,
+                        trigger_pulse_id_start, trigger_pulse_id_end):
         if collector_ids is None:
             collector_ids = "*"
         elif len(collector_ids) > 1:
@@ -248,9 +249,9 @@ class ElasticClient(object):
         if end is not None:
             query += " AND timestamp:<=" + str(end)
         if trigger_pulse_id_start is not None:
-            query += " AND tgPulseId:>=" + str(trigger_pulse_id_start)
+            query += " AND triggerPulseId:>=" + str(trigger_pulse_id_start)
         if trigger_pulse_id_end is not None:
-            query += " AND tgPulseId:<=" + str(trigger_pulse_id_end)
+            query += " AND triggerPulseId:<=" + str(trigger_pulse_id_end)
 
         sort = {"timestamp": {"order": "desc"}}
 
