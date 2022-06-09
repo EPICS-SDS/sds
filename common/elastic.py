@@ -65,7 +65,7 @@ class ElasticClient(object):
             if indices.exists(index=index) == False:
                 raise IndicesNotAvailableException()
 
-    def create_mising_indices(self):
+    def create_missing_indices(self):
         # Initialize indices
         indices = self.client.indices
         for index in [CO_INDEX, DS_INDEX, EX_INDEX]:
@@ -74,7 +74,7 @@ class ElasticClient(object):
 
     def query_paginated(self, query, sort):
         """
-        Make as many queries as neccessary on elasticsearch to retrieve all the hits 
+        Make as many queries as necessary on elasticsearch to retrieve all the hits
         """
         response = self.client.search(
             index=DS_INDEX, q=query, size=ES_QUERY_SIZE, sort=sort

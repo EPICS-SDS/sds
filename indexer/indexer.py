@@ -17,7 +17,7 @@ es = ElasticClient()
 @app.on_event("startup")
 async def startup_event():
     es.wait_for_connection(RETRY_CONNECTION)
-    es.create_mising_indices()
+    es.create_missing_indices()
 
 @app.post("/get_collector")
 async def get_collector(collector_name: str, event_name: str, event_type: int, pv_list: List[str] = Query(...)):
