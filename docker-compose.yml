@@ -8,10 +8,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-        ELASTIC_URL: "http://elasticsearch:9200"
+      ELASTIC_URL: "http://elasticsearch:9200"
     depends_on:
       - elasticsearch
-  
+
   sds_retriever:
     image: sds_retriever
     build:
@@ -20,8 +20,8 @@ services:
     ports:
       - "8001:8000"
     environment:
-        ELASTIC_URL: "http://elasticsearch:9200"
-        DATA_STORAGE: "/data"
+      ELASTIC_URL: "http://elasticsearch:9200"
+      DATA_STORAGE: "/data"
     volumes:
       - type: bind
         source: ./test_ioc/storage_test/data
@@ -36,6 +36,11 @@ services:
       dockerfile: ./collector/Dockerfile
     ports:
       - "8002:8000"
+    environment:
+      INDEXER_URL: "http://sds_indexer:8000"
+      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
+    volumes:
+      - ./collectors.json:/app/config/collectors.json
     depends_on:
       - sds_indexer
 

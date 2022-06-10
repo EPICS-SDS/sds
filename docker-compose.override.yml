@@ -6,7 +6,7 @@ services:
       - ./indexer:/app/indexer
       - ./common:/app/common
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
-  
+
   sds_retriever:
     image: sds_retriever:development
     volumes:
@@ -16,7 +16,10 @@ services:
 
   sds_collector:
     image: sds_collector:development
+    environment:
+      OUTPUT_DIR: "/data"
     volumes:
       - ./collector:/app/collector
       - ./common:/app/common
+      - ./output:/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
