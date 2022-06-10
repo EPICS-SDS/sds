@@ -1,4 +1,0 @@
-fastapi==0.78.0
-nexusformat==0.7.5
-p4p==4.0.0
-pydantic==1.9.0
