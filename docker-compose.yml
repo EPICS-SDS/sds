@@ -23,6 +23,13 @@ services:
     depends_on:
       - elasticsearch
 
+  sds_collector:
+    image: sds_collector
+    ports:
+      - "8002:8000"
+    depends_on:
+      - sds_indexer
+
   elasticsearch:
     image: "docker.elastic.co/elasticsearch/elasticsearch:8.2.0"
     container_name: elasticsearch
