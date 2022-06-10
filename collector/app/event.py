@@ -7,7 +7,7 @@ from p4p import Value
 def get_attribute(value: Value, name: str):
     def fn(item): return item.name == name
     iter = filter(fn, value.raw["attribute"])
-    return next(iter)
+    return next(iter, None)
 
 
 class Event(BaseModel):
@@ -30,14 +30,16 @@ class Event(BaseModel):
         )
         # eventName
         attribute = get_attribute(value, "eventName")
-        values.update(
-            name=attribute["value"],
-            trigger_pulse_id=attribute.timestamp.userTag,
-        )
+        if attribute is not None:
+            values.update(
+                name=attribute["value"],
+                trigger_pulse_id=attribute.timestamp.userTag,
+            )
         # eventCode
         attribute = get_attribute(value, "eventCode")
-        values.update(
-            code=attribute.value,
-            trigger_pulse_id=attribute.timestamp.userTag,
-        )
+        if attribute is not None:
+            values.update(
+                code=attribute.value,
+                trigger_pulse_id=attribute.timestamp.userTag,
+            )
         return values

@@ -1,5 +1,6 @@
 from typing import List
 from p4p.client.asyncio import Context
+from pydantic import ValidationError
 
 from app.logger import logger
 from app.collector import Collector
@@ -28,9 +29,13 @@ class CollectorManager:
     def pv_handler(self, pv: str):
         async def cb(value):
             if isinstance(value, Exception):
-                logger.warning("PV %s error: %s", pv, value)
+                logger.warning(f"PV {pv} error: {value}")
                 return
-            event = Event(pv_name=pv, value=value)
+            try:
+                event = Event(pv_name=pv, value=value)
+            except ValidationError:
+                logger.warning(f"PV {pv} validation error")
+                return
             logger.debug(f"PV {pv} received event "
                          f"'{event.name}' ({event.pulse_id})")
             self.event_handler(event)
