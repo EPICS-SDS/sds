@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 
-from .logger import logger
-from .api.api import api_router
-from .collector_manager import CollectorManager
-from .collector import load_collectors
+from app.logger import logger
+from app.api.api import api_router
+from app.collector_manager import CollectorManager
+from app.collector import load_collectors
 
 app = FastAPI()
 
