@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:latest
+FROM continuumio/miniconda3:4.7.12
 
 RUN groupadd -r -g 1000 csi \
   && useradd --no-log-init -r -g csi -u 1000 csi
@@ -11,14 +11,12 @@ RUN conda update -n base conda \
   && conda env create -n sds_indexer -f /app/environment.yml \
   && conda clean -ay
 
-RUN conda install curl
-
-COPY --chown=csi:csi indexer /app/
+COPY --chown=csi:csi indexer /app/indexer
 COPY --chown=csi:csi common /app/common
 
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
-WORKDIR /app
+WORKDIR /app/indexer
 
 USER csi
 

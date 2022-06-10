@@ -6,17 +6,15 @@ services:
       - "8000:8000"
     environment:
         ELASTIC_URL: "http://elasticsearch:9200"
-        INDEXER_PORT: "8000"
     depends_on:
       - elasticsearch
   
   sds_retriever:
     image: sds_retriever
     ports:
-      - "8001:8001"
+      - "8001:8000"
     environment:
         ELASTIC_URL: "http://elasticsearch:9200"
-        RETRIEVER_PORT: "8001"
         DATA_STORAGE: "/data"
     volumes:
       - type: bind
