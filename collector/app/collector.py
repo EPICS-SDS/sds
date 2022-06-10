@@ -23,6 +23,20 @@ class Collector(BaseModel):
         # arbitrary_types_allowed = True
         underscore_attrs_are_private = True
 
+    def register(self):
+        url = f"{settings.indexer_url}/get_collector"
+        params = {
+            "collector_name": self.name,
+            "event_name": self.event_name,
+            "event_code": self.event_code,
+            "pv_list": list(self.pvs),
+        }
+        response = requests.post(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        self.id = data["id"]
+        logger.debug(f"Collector '{self.name}' registered as '{self.id}'")
+
     def update(self, event: Event):
         # If the PV does not belong to this event, ignore it.
         if event.pv_name not in self.pvs:
@@ -59,5 +73,10 @@ def load_collectors():
     path = settings.collector_definitions
     for collector in parse_file_as(List[Collector], path):
         logger.debug(f"Collector '{collector.name}' loaded")
-        collectors.append(collector)
+        try:
+            collector.register()
+            collectors.append(collector)
+        except Exception as e:
+            logger.warning(e)
+            logger.warning(f"Collector '{collector.name}' failed to register")
     return collectors
