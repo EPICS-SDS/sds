@@ -2,9 +2,6 @@ version: '3'
 services:
   sds_indexer:
     image: sds_indexer:development
-    build:
-      context: .
-      dockerfile: ./indexer/Dockerfile
     volumes:
       - ./indexer:/app/indexer
       - ./common:/app/common
@@ -12,9 +9,6 @@ services:
   
   sds_retriever:
     image: sds_retriever:development
-    build:
-      context: .
-      dockerfile: ./retriever/Dockerfile
     volumes:
       - ./retriever:/app/retriever
       - ./common:/app/common
@@ -22,9 +16,6 @@ services:
 
   sds_collector:
     image: sds_collector:development
-    build:
-      context: .
-      dockerfile: ./collector/Dockerfile
     volumes:
       - ./collector:/app/collector
       - ./common:/app/common

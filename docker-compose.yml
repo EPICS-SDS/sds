@@ -2,6 +2,9 @@ version: '3'
 services:
   sds_indexer:
     image: sds_indexer
+    build:
+      context: .
+      dockerfile: ./indexer/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -11,6 +14,9 @@ services:
   
   sds_retriever:
     image: sds_retriever
+    build:
+      context: .
+      dockerfile: ./retriever/Dockerfile
     ports:
       - "8001:8000"
     environment:
@@ -25,6 +31,9 @@ services:
 
   sds_collector:
     image: sds_collector
+    build:
+      context: .
+      dockerfile: ./collector/Dockerfile
     ports:
       - "8002:8000"
     depends_on:
