@@ -11,8 +11,8 @@ RUN conda update -n base conda \
   && conda env create -n sds_retriever -f /app/environment.yml \
   && conda clean -ay
 
-COPY --chown=csi:csi retriever /app/retriever
 COPY --chown=csi:csi common /app/common
+COPY --chown=csi:csi retriever /app/retriever
 
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
@@ -21,5 +21,6 @@ WORKDIR /app/retriever
 USER csi
 
 ENV PATH=/opt/conda/envs/sds_retriever/bin:$PATH
+ENV PYTHONPATH=/app/common:$PYTHONPATH
 
 CMD uvicorn retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
