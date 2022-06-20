@@ -1,5 +1,6 @@
 from typing import Any, List, Optional
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from fastapi import FastAPI, APIRouter, HTTPException, Query
@@ -9,6 +10,13 @@ from common import crud, schemas
 from common.db.connection import wait_for_connection
 from config import settings
 
+
+logger = logging.getLogger()
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.setLevel(settings.log_level)
 
 app = FastAPI(title="SDS Retriever")
 
