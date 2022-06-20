@@ -3,7 +3,7 @@
         "name": "test",
         "event_name": "data-on-demand",
         "event_code": 1,
-        "pv_list": [
+        "pvs": [
             "SDS:TEST:PV_10_0",
             "SDS:TEST:PV_10_1",
             "SDS:TEST:PV_10_2",
@@ -15,7 +15,7 @@
         "name": "eventB",
         "event_name": "data-on-demand",
         "event_code": 1,
-        "pv_list": [
+        "pvs": [
             "SDS:TEST:PV_10_1",
             "SDS:TEST:PV_10_2",
             "SDS:TEST:PV_10_3",
@@ -26,7 +26,7 @@
         "name": "eventC",
         "event_name": "data-on-demand",
         "event_code": 1,
-        "pv_list": [
+        "pvs": [
             "SDS:TEST:PV_10_2",
             "SDS:TEST:PV_10_3",
             "SDS:TEST:PV_10_4",
