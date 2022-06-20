@@ -9,6 +9,9 @@ services:
       - "8000:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
+      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
+    volumes:
+      - ./collectors.json:/app/config/collectors.json
     depends_on:
       - elasticsearch
 
@@ -21,7 +24,7 @@ services:
       - "8001:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
-      DATA_STORAGE: "/data"
+      STORAGE_PATH: "/data"
     volumes:
       - type: bind
         source: ./test_ioc/storage_test/data
@@ -38,7 +41,6 @@ services:
       - "8002:8000"
     environment:
       INDEXER_URL: "http://sds_indexer:8000"
-      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
     volumes:
       - ./collectors.json:/app/config/collectors.json
     depends_on:
@@ -47,6 +49,8 @@ services:
   elasticsearch:
     image: "docker.elastic.co/elasticsearch/elasticsearch:8.2.0"
     container_name: elasticsearch
+    ports:
+      - "9200:9200"
     expose:
       - "9200"
     environment:
