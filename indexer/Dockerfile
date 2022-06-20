@@ -11,8 +11,8 @@ RUN conda update -n base conda \
   && conda env create -n sds_indexer -f /app/environment.yml \
   && conda clean -ay
 
-COPY --chown=csi:csi indexer /app/indexer
 COPY --chown=csi:csi common /app/common
+COPY --chown=csi:csi indexer /app/indexer
 
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
@@ -21,5 +21,6 @@ WORKDIR /app/indexer
 USER csi
 
 ENV PATH=/opt/conda/envs/sds_indexer/bin:$PATH
+ENV PYTHONPATH=/app/common:$PYTHONPATH
 
 CMD uvicorn indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
