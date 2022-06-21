@@ -1,10 +1,11 @@
 from typing import Optional
 
 import logging
-from fastapi import FastAPI, APIRouter, HTTPException, status
+from fastapi import FastAPI, APIRouter, Response, status
 
 from common import crud, schemas
 from common.db.connection import wait_for_connection
+from common.db.utils import dict_to_filters
 from config import settings
 from init_db import init_db
 
@@ -37,14 +38,15 @@ collectors_router = APIRouter()
 )
 async def create_collector(
     *,
-    collector_in: schemas.CollectorCreate
+    response: Response,
+    collector_in: schemas.CollectorCreate,
 ):
-    collectors = await crud.collector.get_multi(filters=collector_in.dict())
+    filters = dict_to_filters(collector_in.dict(exclude={"created"}))
+    collectors = await crud.collector.get_multi(filters=filters)
+    # HTTP 200 if the collector already exists
     if len(collectors) > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Collector with these properties already exists.",
-        )
+        response.status_code = status.HTTP_200_OK
+        return collectors[0]
     collector = await crud.collector.create(obj_in=collector_in)
     return collector
 
