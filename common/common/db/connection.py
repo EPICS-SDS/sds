@@ -1,8 +1,8 @@
 import sys
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from functools import wraps
-from time import time
 from elasticsearch import AsyncElasticsearch
 
 from common.config import settings
@@ -27,7 +27,7 @@ async def wait_for_connection(timeout: int = settings.retry_connection):
                 sys.exit(1)
 
             trials += 1
-            time.sleep(1)
+            await asyncio.sleep(1)
 
 
 def with_connection(func):
