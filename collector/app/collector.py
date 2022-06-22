@@ -1,82 +1,73 @@
-from typing import List, Optional, Set
+import asyncio
+from datetime import datetime
+from typing import Optional, Set
 
 from threading import Timer
-from pydantic import BaseModel, Field, parse_file_as
-import requests
+import aiohttp
+from pydantic import BaseModel
 
-from app.logger import logger
 from app.config import settings
 from app.dataset import Dataset
 from app.event import Event
 
 
-class Collector(BaseModel):
-    id: Optional[str]
+class CollectorSchema(BaseModel):
     name: str
-    pvs: Set[str] = Field(alias="pv_list")
     event_name: str
     event_code: int
+    pvs: Set[str]
+
+
+class Collector(CollectorSchema):
+    id: str
     _dataset: Optional[Dataset] = None
     _timer: Optional[Timer] = None
+    _task = None
+    _background_tasks = set()
 
     class Config:
-        # arbitrary_types_allowed = True
         underscore_attrs_are_private = True
-
-    def register(self):
-        url = f"{settings.indexer_url}/get_collector"
-        params = {
-            "collector_name": self.name,
-            "event_name": self.event_name,
-            "event_code": self.event_code,
-            "pv_list": list(self.pvs),
-        }
-        response = requests.post(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        self.id = data["id"]
-        logger.debug(f"Collector '{self.name}' registered as '{self.id}'")
 
     def update(self, event: Event):
         # If the PV does not belong to this event, ignore it.
         if event.pv_name not in self.pvs:
             return
-        # Start a timer to call a function to write values after a given time
-        # if not all PVs have been received.
-        if self._dataset is None:
-            self._dataset = Dataset(name=self.name)
+        if self._task is None or self._task.done():
+            queue = asyncio.Queue()
+            dataset = Dataset(
+                collector_id=self.id,
+                name=self.name,
+                trigger_date=datetime.utcnow(),
+                trigger_pulse_id=event.trigger_pulse_id,
+            )
+            self._task = asyncio.create_task(self._collector(queue, dataset))
+        queue.put_nowait(event)
 
-            self._timer = Timer(settings.collector_timeout, self.timeout)
-            self._timer.start()
+    async def _collector(self, queue, dataset):
+        async def consumer(queue, dataset):
+            while True:
+                event = await queue.get()
+                print(f"Collector '{self.name}' received {repr(event)}")
+                dataset.update(event)
+                if self.is_dataset_complete(dataset):
+                    return dataset
+        coro = consumer(queue, dataset)
+        timeout = settings.collector_timeout
+        try:
+            await asyncio.wait_for(coro, timeout=timeout)
+            print(f"Collector '{self.name}' done")
+        except asyncio.TimeoutError:
+            print(f"Collector '{self.name}' timed out")
 
-        self._dataset.update(event)
-        if self.is_dataset_complete(self._dataset):
-            self.finish()
+        # Run write and upload in a separate task so you don't end up with a
+        # gap where wait_for is finished but the _collector task is not done.
+        # Any events enqueued in that gap would never get processed.
+        async def final(dataset):
+            await dataset.upload()
+            await dataset.write()
+        task = asyncio.create_task(final(dataset))
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     def is_dataset_complete(self, dataset: Dataset):
         return all(map(lambda d: set(d) == self.pvs, dataset.entry))
-
-    def timeout(self):
-        logger.debug(f"Collector '{self.name}' timed out")
-        self.finish()
-
-    def finish(self):
-        self._timer.cancel()
-        logger.debug(f"Collector '{self.name}' done")
-        self._dataset.write()
-        self._dataset = None
-
-
-def load_collectors():
-    logger.debug("Loading collector definitions...")
-    collectors = []
-    path = settings.collector_definitions
-    for collector in parse_file_as(List[Collector], path):
-        logger.debug(f"Collector '{collector.name}' loaded")
-        try:
-            collector.register()
-            collectors.append(collector)
-        except Exception as e:
-            logger.warning(e)
-            logger.warning(f"Collector '{collector.name}' failed to register")
-    return collectors

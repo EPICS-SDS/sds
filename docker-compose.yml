@@ -32,12 +32,12 @@ services:
   sds_collector:
     image: sds_collector
     build:
-      context: .
-      dockerfile: ./collector/Dockerfile
+      context: ./collector
     ports:
       - "8002:8000"
     environment:
       INDEXER_URL: "http://sds_indexer:8000"
+      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
     volumes:
       - ./collectors.json:/app/config/collectors.json
     depends_on:

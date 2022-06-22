@@ -20,6 +20,5 @@ services:
       OUTPUT_DIR: "/data"
     volumes:
       - ./collector:/app/collector
-      - ./common:/app/common
       - ./output:/data
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: python -m app.main --reload

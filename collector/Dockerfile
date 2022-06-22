@@ -3,7 +3,7 @@ FROM continuumio/miniconda3:4.7.12
 RUN groupadd -r -g 1000 csi \
   && useradd --no-log-init -r -g csi -u 1000 csi
 
-COPY collector/environment.yml /app/environment.yml
+COPY environment.yml /app/environment.yml
 
 RUN conda update -n base conda \
   && conda config --system --set channel_alias https://artifactory.esss.lu.se/artifactory/api/conda \
@@ -11,8 +11,7 @@ RUN conda update -n base conda \
   && conda env create -n sds_collector -f /app/environment.yml \
   && conda clean -ay
 
-COPY --chown=csi:csi collector /app/collector
-COPY --chown=csi:csi common /app/common
+COPY --chown=csi:csi . /app/collector
 
 # Make sure the /app directory is owned by csi
 RUN chown -R csi:csi /app
@@ -22,4 +21,4 @@ USER csi
 
 ENV PATH=/opt/conda/envs/sds_collector/bin:$PATH
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-"8000"}
+CMD python app/main.py
