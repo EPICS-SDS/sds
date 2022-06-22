@@ -19,7 +19,7 @@ def item_to_filters(key: str, value: Any) -> Generator[Dict, None, None]:
     yield {
         "script": {
             "script": {
-                "inline": "doc[params.field_key].length == params.list_length",
+                "source": "doc[params.field_key].length == params.list_length",
                 "lang": "painless",
                 "params": {
                     "field_key": key,
