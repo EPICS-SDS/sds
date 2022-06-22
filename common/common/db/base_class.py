@@ -92,6 +92,7 @@ class Base(BaseModel):
     @classmethod
     async def mget(
         cls,
+        *,
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
     ) -> List[Base]:

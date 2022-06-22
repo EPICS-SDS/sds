@@ -1,4 +1,4 @@
-from typing import Any, Generic, List, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 
@@ -22,9 +22,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
     async def get_multi(
         self,
         *,
-        filters: Optional[List[dict]] = None,
+        filters: Optional[List[Dict]] = None,
     ) -> List[ModelType]:
-        return await self.model.mget(filters)
+        return await self.model.mget(filters=filters)
 
     async def create(
         self,
