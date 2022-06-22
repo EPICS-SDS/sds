@@ -1,8 +1,8 @@
-from typing import Any, Dict, Generator, List, Sequence
+from typing import Any, Dict, Generator, Iterable, List
 
 
-def item_to_filters(key: str, value: Any) -> Generator[Dict]:
-    if not isinstance(value, Sequence):
+def item_to_filters(key: str, value: Any) -> Generator[Dict, None, None]:
+    if isinstance(value, str) or not isinstance(value, Iterable):
         yield {"match": {key: value}}
         return
     terms = list(value)
