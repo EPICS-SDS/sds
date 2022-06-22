@@ -90,11 +90,14 @@ class Base(BaseModel):
                 return None
 
     @classmethod
-    async def mget(cls, filters: Optional[List[dict]] = None,
-                   query: Optional[dict] = None) -> List[Base]:
+    async def mget(
+        cls,
+        filters: Optional[List[dict]] = None,
+        query: Optional[dict] = None,
+    ) -> List[Base]:
         if not query and filters:
             query = {"bool": {"must": list(filters)}}
-        async with get_connection() as es:                
+        async with get_connection() as es:
             try:
                 response = await es.search(
                     index=cls.get_index(),
