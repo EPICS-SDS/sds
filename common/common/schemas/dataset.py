@@ -1,14 +1,24 @@
-from typing import Optional
+from typing import Any, Optional
 
 from datetime import datetime
 from pydantic import BaseModel, Field
-from pathlib import Path
+from pathlib import PurePosixPath
+
+from pydantic.validators import _VALIDATORS
+
+
+def validate_pure_posix_path(v: Any) -> PurePosixPath:
+    """Attempt to convert a value to a PurePosixPath"""
+    return PurePosixPath(v)
+
+
+_VALIDATORS.append((PurePosixPath, [validate_pure_posix_path]))
 
 
 class DatasetBase(BaseModel):
     collector_id: str
     trigger_pulse_id: int
-    path: Path
+    path: PurePosixPath
 
 
 class DatasetCreate(DatasetBase):
