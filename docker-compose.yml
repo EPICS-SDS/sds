@@ -9,9 +9,6 @@ services:
       - "8000:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
-      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
-    volumes:
-      - ./collectors.json:/app/config/collectors.json
     depends_on:
       - elasticsearch
 
