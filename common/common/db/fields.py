@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from pydantic import validators
 from pydantic.datetime_parse import parse_datetime
 
@@ -7,7 +9,7 @@ class ESField:
 
     @classmethod
     def to_es(cls, value):
-        if isinstance(value, set):
+        if not isinstance(value, str) and isinstance(value, Iterable):
             return list(value)
         return value
 
