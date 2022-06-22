@@ -17,6 +17,7 @@ _VALIDATORS.append((PurePosixPath, [validate_pure_posix_path]))
 
 class DatasetBase(BaseModel):
     collector_id: str
+    trigger_date: datetime
     trigger_pulse_id: int
     path: PurePosixPath
 

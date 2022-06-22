@@ -4,6 +4,7 @@ from common.db.fields import Date, Integer, Text
 
 class Dataset(Base):
     collector_id: Text
+    trigger_date: Date
     trigger_pulse_id: Integer
     path: Text
     created: Date
