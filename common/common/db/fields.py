@@ -31,13 +31,13 @@ class Keyword(ESField):
 
     @classmethod
     def validate(cls, v):
-        if not isinstance(v, str):
+        if not isinstance(v, str) and isinstance(v, Iterable):
             try:
                 iter(v)
-                return list(map(validators.str_validator, v))
+                return list(map(validators.str_validator, str(v)))
             except TypeError:
                 raise TypeError("string or list of strings required")
-        return validators.str_validator(v)
+        return validators.str_validator(str(v))
 
 
 class Integer(ESField):
@@ -53,10 +53,10 @@ class Text(ESField):
 
     @classmethod
     def validate(cls, v):
-        if not isinstance(v, str):
+        if not isinstance(v, str) and isinstance(v, Iterable):
             try:
                 iter(v)
-                return list(map(validators.str_validator, v))
+                return list(map(validators.str_validator, str(v)))
             except TypeError:
                 raise TypeError("string or list of strings required")
-        return validators.str_validator(v)
+        return validators.str_validator(str(v))
