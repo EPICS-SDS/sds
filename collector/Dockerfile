@@ -21,4 +21,4 @@ USER csi
 
 ENV PATH=/opt/conda/envs/sds_collector/bin:$PATH
 
-CMD python app/main.py
+CMD python -m app.main
