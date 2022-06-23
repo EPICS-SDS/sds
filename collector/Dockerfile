@@ -21,4 +21,7 @@ USER csi
 
 ENV PATH=/opt/conda/envs/sds_collector/bin:$PATH
 
+# Fixes python not printing anything
+ENV PYTHONUNBUFFERED=1
+
 CMD python -m app.main
