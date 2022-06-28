@@ -71,3 +71,10 @@ class Collector(CollectorSchema):
 
     def is_dataset_complete(self, dataset: Dataset):
         return all(map(lambda d: set(d) == self.pvs, dataset.entry))
+
+    def event_matches(self, event: Event):
+        if event.name != self.event_name:
+            return False
+        if event.pv_name not in self.pvs:
+            return False
+        return True

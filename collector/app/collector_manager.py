@@ -1,4 +1,4 @@
-from typing import List
+from typing import Set
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -53,12 +53,12 @@ class AsyncSubscription:
 class CollectorManager:
     def __init__(
         self,
-        collectors: List[Collector],
+        collectors: Set[Collector],
         timeout: int = settings.collector_timeout,
     ):
         self._context = Context("pva")
         self._timeout = timeout
-        self.collectors = list(collectors)
+        self.collectors = set(collectors)
 
     async def __aenter__(self):
         self.start()
@@ -116,12 +116,10 @@ class CollectorManager:
 
     # Finds the event and updates it with the value
     def _event_handler(self, event: Event):
-        collector = next(
-            (c for c in self.collectors if c.name == event.name), None)
-        if collector is None:
-            print(f"Collector '{event.name}' unknown")
-            return
-        collector.update(event)
+        for collector in self.collectors:
+            if not collector.event_matches(event):
+                break
+            collector.update(event)
 
     async def join(self):
         await asyncio.wait(self._tasks)
