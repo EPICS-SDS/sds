@@ -1,14 +1,12 @@
 version: '3'
 services:
   sds_indexer:
-    image: sds_indexer:development
     volumes:
       - ./indexer:/app/indexer
       - ./common:/app/common
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
-    image: sds_retriever:development
     environment:
       STORAGE_PATH: "/data"
     volumes:
@@ -17,7 +15,6 @@ services:
     command: uvicorn retriever:app --host 0.0.0.0 --port 8000 --reload
 
   sds_collector:
-    image: sds_collector:development
     environment:
       STORAGE_PATH: "/data"
     volumes:
