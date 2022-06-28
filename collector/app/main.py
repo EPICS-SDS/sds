@@ -27,7 +27,7 @@ async def load_collectors():
                 json=collector,
             ) as response:
                 response.raise_for_status()
-                if response.status == 202:
+                if response.status == 201:
                     print(f"Collector '{collector.name}' created in DB")
                 else:
                     print(f"Collector '{collector.name}' already in DB")
