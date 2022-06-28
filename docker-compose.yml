@@ -21,7 +21,7 @@ services:
       - "8001:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
-      STORAGE_PATH: "/data"
+      STORAGE_PATH: ${STORAGE_PATH:?}
     volumes:
       - type: bind
         source: ./test_ioc/storage_test/data
@@ -38,6 +38,7 @@ services:
     environment:
       INDEXER_URL: "http://sds_indexer:8000"
       COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
+      STORAGE_PATH: ${STORAGE_PATH:?}
     volumes:
       - ./collectors.json:/app/config/collectors.json
     depends_on:

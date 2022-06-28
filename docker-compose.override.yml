@@ -9,6 +9,8 @@ services:
 
   sds_retriever:
     image: sds_retriever:development
+    environment:
+      STORAGE_PATH: "/data"
     volumes:
       - ./retriever:/app/retriever
       - ./common:/app/common
@@ -17,7 +19,7 @@ services:
   sds_collector:
     image: sds_collector:development
     environment:
-      OUTPUT_DIR: "/data"
+      STORAGE_PATH: "/data"
     volumes:
       - ./collector:/app/collector
       - ./output:/data
