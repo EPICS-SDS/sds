@@ -50,7 +50,7 @@ class Dataset(DatasetSchema):
     async def write(self):
         try:
             print(f"Dataset '{self.name}' writing to '{self.path}'")
-            absolute_path = settings.output_dir / self.path
+            absolute_path = settings.storage_path / self.path
             absolute_path.parent.mkdir(parents=True, exist_ok=True)
             self.entry.save(absolute_path)
             print(f"Dataset '{self.name}' writing done.")
