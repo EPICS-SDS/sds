@@ -49,24 +49,27 @@ class Dataset(DatasetSchema):
 
     async def write(self):
         try:
-            print(f"Dataset '{self.name}' writing to '{self.path}'")
+            print(repr(self), "writing to '{self.path}'")
             absolute_path = settings.storage_path / self.path
             absolute_path.parent.mkdir(parents=True, exist_ok=True)
             self.entry.save(absolute_path)
-            print(f"Dataset '{self.name}' writing done.")
+            print(repr(self), "writing done.")
         except Exception as e:
-            print(f"Dataset '{self.name}' writing failed!")
+            print(repr(self), "writing failed!")
             print(e)
 
     async def upload(self):
         try:
-            print(f"Dataset '{self.name}' indexing...")
+            print(repr(self), "indexing...")
             url = settings.indexer_url + "/datasets"
             data = DatasetSchema.parse_obj(self).json()
             async with aiohttp.ClientSession() as client:
                 async with client.post(url, json=data) as response:
                     response.raise_for_status()
-            print(f"Dataset '{self.name}' indexing done.")
+            print(repr(self), "indexing done.")
         except Exception as e:
-            print(f"Dataset '{self.name}' indexing failed!")
+            print(repr(self), "indexing failed!")
             print(e)
+
+    def __repr__(self):
+        return f"Dataset({self.name})"
