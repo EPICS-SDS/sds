@@ -1,9 +1,7 @@
+from typing import Dict, FrozenSet, Set
+
 import asyncio
 from datetime import datetime
-from typing import Optional, Set
-
-from threading import Timer
-import aiohttp
 from pydantic import BaseModel
 
 from app.config import settings
@@ -15,62 +13,74 @@ class CollectorSchema(BaseModel):
     name: str
     event_name: str
     event_code: int
-    pvs: Set[str]
+    pvs: FrozenSet[str]
 
 
 class Collector(CollectorSchema):
     id: str
-    _dataset: Optional[Dataset] = None
-    _timer: Optional[Timer] = None
-    _task = None
-    _background_tasks = set()
+    _tasks: Set[asyncio.Task] = set()
+    _queues: Dict[int, asyncio.Queue] = dict()
+    _timeout: int = settings.collector_timeout
 
     class Config:
+        frozen = True
         underscore_attrs_are_private = True
+
+    def has_queue(self, id: int):
+        return id in self._queues
+
+    def get_queue(self, id: int):
+        if self.has_queue(id):
+            return self._queues[id]
+        else:
+            queue = asyncio.Queue()
+            self._queues[id] = queue
+            return queue
+
+    def discard_queue(self, id: int):
+        del self._queues[id]
 
     def update(self, event: Event):
         # If the PV does not belong to this event, ignore it.
-        if event.pv_name not in self.pvs:
+        if not self.event_matches(event):
+            print(repr(self), f"received bad event {repr(event)}")
             return
-        if self._task is None or self._task.done():
-            queue = asyncio.Queue()
+
+        if not self.has_queue(event.trigger_pulse_id):
+            queue = self.get_queue(event.trigger_pulse_id)
             dataset = Dataset(
                 collector_id=self.id,
-                name=self.name,
+                collector_name=self.name,
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=event.trigger_pulse_id,
+                event_name=event.name,
+                event_code=event.code,
             )
-            self._task = asyncio.create_task(self._collector(queue, dataset))
+            task = asyncio.create_task(self._collector(queue, dataset))
+            self._tasks.add(task)
+
+            def task_done_cb(task):
+                self._tasks.discard(task)
+                self.discard_queue(event.trigger_pulse_id)
+            task.add_done_callback(task_done_cb)
+
+        queue = self.get_queue(event.trigger_pulse_id)
         queue.put_nowait(event)
 
     async def _collector(self, queue, dataset):
         async def consumer(queue, dataset):
             while True:
                 event = await queue.get()
-                print(f"Collector '{self.name}' received {repr(event)}")
                 dataset.update(event)
-                if self.is_dataset_complete(dataset):
-                    return dataset
         coro = consumer(queue, dataset)
-        timeout = settings.collector_timeout
         try:
-            await asyncio.wait_for(coro, timeout=timeout)
-            print(f"Collector '{self.name}' done")
+            await asyncio.wait_for(coro, self._timeout)
+            print(repr(self), "done")
         except asyncio.TimeoutError:
-            print(f"Collector '{self.name}' timed out")
+            print(repr(self), "timed out")
 
-        # Run write and upload in a separate task so you don't end up with a
-        # gap where wait_for is finished but the _collector task is not done.
-        # Any events enqueued in that gap would never get processed.
-        async def final(dataset):
-            await dataset.upload()
-            await dataset.write()
-        task = asyncio.create_task(final(dataset))
-        self._background_tasks.add(task)
-        task.add_done_callback(self._background_tasks.discard)
-
-    def is_dataset_complete(self, dataset: Dataset):
-        return all(map(lambda d: set(d) == self.pvs, dataset.entry))
+        await dataset.upload()
+        await dataset.write()
 
     def event_matches(self, event: Event):
         if event.name != self.event_name:
