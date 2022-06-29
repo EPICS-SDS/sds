@@ -1,5 +1,3 @@
-from typing import Optional
-
 from datetime import datetime
 from pathlib import Path
 import aiohttp
@@ -10,14 +8,16 @@ from app.config import settings
 from app.event import Event
 
 
-class Dataset(BaseModel):
-    id: Optional[str]
+class DatasetSchema(BaseModel):
     collector_id: str
-    name: str
     trigger_date: datetime
     trigger_pulse_id: int
     path: Path
-    entry: Optional[NXentry]
+
+
+class Dataset(DatasetSchema):
+    name: str
+    entry: NXentry
 
     class Config:
         arbitrary_types_allowed = True
@@ -25,23 +25,23 @@ class Dataset(BaseModel):
     @root_validator(pre=True)
     def extract_path(cls, values):
         timestamp = values["trigger_date"].strftime("%Y%m%d_%H%M%S")
-        name = f"{values['name']}_{timestamp}"
+        name = f"{values['collector_name']}_{timestamp}"
         values.update(name=name)
+
         directory = Path(values["trigger_date"].strftime("%Y"),
                          values["trigger_date"].strftime("%Y-%m-%d"))
         path = directory / f"{name}.h5"
         values.update(path=path)
+
+        entry = NXentry(attrs={
+            "collector_name": values["collector_name"],
+            "event_name": values["event_name"],
+            "event_code": values["event_code"],
+        })
+        values.update(entry=entry)
         return values
 
     def update(self, event: Event):
-        # Create entry if it does not exist
-        if self.entry is None:
-            self.entry = NXentry(attrs={
-                "dataset_name": self.name,
-                "event_name": event.name,
-                "event_code": event.code,
-            })
-        # Add event to entry
         key = f"event_{event.pulse_id}"
         if key not in self.entry:
             self.entry[key] = NXdata(attrs={"pulse_id": event.pulse_id})
