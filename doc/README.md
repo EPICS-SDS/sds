@@ -18,5 +18,5 @@ The following diagram shows the different components of the SDS:
 Details of each component can be found here:
 - [IOCs](ioc.md)
 - [Collector](collector.md)
-- [DB & Storage](storage.md)
-- [Data retriever](retriever.md)
+- [Indexer](indexer.md)
+- [Retriever](retriever.md)

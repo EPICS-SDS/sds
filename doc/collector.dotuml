@@ -1,0 +1,32 @@
+StateDiagram[frame=true label="Collector loop"] {
+    state collector_monitor as "monitor PVs"
+
+    state check_event as "check event\ntype"
+    collector_monitor -> check_event "event received"
+
+    choice event_choice
+    check_event -> event_choice
+
+    state dataset_create as "create\nnew dataset"
+    event_choice -> dataset_create "first PV"
+
+    state timer as "start timer"
+    dataset_create -> timer
+
+    state dataset_update as "update\ndataset"
+    event_choice -> dataset_update "subsequent\nPVs"
+    timer -> dataset_update
+
+    choice dataset_complete
+    dataset_update -> dataset_complete 
+    dataset_complete -> collector_monitor "dataset\nincomplete"
+
+    state dataset_done as "write dataset\nto file"
+    dataset_complete -> dataset_done "dataset\ncomplete"
+    collector_monitor -> dataset_done "timeout"
+
+    state dataset_upload as "send metadata\nto indexer"
+    dataset_done -> dataset_upload
+
+    dataset_upload -> collector_monitor
+}
