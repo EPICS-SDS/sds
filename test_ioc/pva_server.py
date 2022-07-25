@@ -63,7 +63,7 @@ class MyServer(object):
                     arr[0] = counter
 
                     try:
-                        self.pvdb[pv].post({'value': arr, 'pulse_id': counter, 'event_name': 'test', 'event_code':10})
+                        self.pvdb[pv].post({'value': arr, 'pulse_id': counter, 'event_name': 'data-on-demand', 'event_code': 1})
                     except Exception:
                         pass
 
