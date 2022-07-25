@@ -24,8 +24,7 @@ class Dataset(DatasetSchema):
 
     @root_validator(pre=True)
     def extract_path(cls, values):
-        timestamp = values["trigger_date"].strftime("%Y%m%d_%H%M%S")
-        name = f"{values['collector_name']}_{timestamp}"
+        name = values["collector_name"] + "_" + values["trigger_pulse_id"]
         values.update(name=name)
 
         directory = Path(values["trigger_date"].strftime("%Y"),
