@@ -1,14 +1,17 @@
+from io import BytesIO
 from typing import Any, List, Optional
 
 import logging
 from datetime import datetime
 from pathlib import Path
+import zipfile
 from fastapi import FastAPI, APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from common import crud, schemas
 from common.db.connection import wait_for_connection
 from config import settings
+from memory_nexus import MemoryNexus
 
 
 logger = logging.getLogger()
@@ -126,7 +129,6 @@ async def read_datasets(
         if trigger_pulse_id_end:
             range["lte"] = trigger_pulse_id_end
         filters.append({"range": {"trigger_pulse_id": range}})
-    print(filters, flush=True)
     datasets = await crud.dataset.get_multi(filters=filters)
     return datasets
 
@@ -185,66 +187,64 @@ async def read_file(
 app.include_router(files_router, prefix="/files", tags=["datasets"])
 
 
-@app.post("/get_datasets")
+@files_router.post("/compile", response_class=StreamingResponse)
 def get_datasets(datasets: List[schemas.DatasetCreate]):
     """
     Get a set of NeXus files containing the requested datasets, one file per collector.
     - **datasets** (List[Dataset], required): list of datasets to download
     """
 
-    pass
+    # If all the datasets requested and only those are stored in a single file, return that file.
+    paths = list(set([ds.path for ds in datasets]))
+    if len(paths) == 1:
+        response = crud.dataset.get_multi_by_path(paths[0])
+        # If the number of datasets in the file is the same as the number of datasets requested...
+        # No check is done on the datasets, assuming they exist an were obtained using `/search_datasets`
+        if len(response) == len(datasets):
+            return FileResponse(
+                settings.storage_path / paths[0],
+                filename=paths[0].name,
+                media_type="application/x-hdf5",
+            )
 
-    # ## If all the datasets requested and only those are stored in a single file, return that file.
-    # paths = list(set([ds.path for ds in datasets]))
-    # if len(paths) == 1:
-    #     response = es.get_file(paths[0])
-    #     # If the number of datasets in the file is the same as the number of datasets requested...
-    #     # No check is done on the datasets, assuming they exist an were obtained using `/search_datasets`
-    #     if len(response) == len(datasets):
-    #         return FileResponse(
-    #             settings.storage_path / paths[0],
-    #             filename=paths[0].name,
-    #             media_type="application/x-hdf5",
-    #         )
+    collectors = list(set([ds.collectorId for ds in datasets]))
+    pulses_per_collector = {}
+    for collector in collectors:
+        pulses_per_collector[collector] = {"pulses": [], "paths": []}
+        for dataset in datasets:
+            if dataset.collectorId == collector:
+                pulses_per_collector[collector]["filename"] = (
+                    dataset.path[:-19] + ".h5"
+                )  # removing timestamp
+                pulses_per_collector[collector]["pulses"].append(str(dataset.trigger_pulse_id))
+                pulses_per_collector[collector]["paths"].append(str(dataset.path))
 
-    # collectors = list(set([ds.collectorId for ds in datasets]))
-    # pulses_per_collector = {}
-    # for collector in collectors:
-    #     pulses_per_collector[collector] = {"pulses": [], "paths": []}
-    #     for dataset in datasets:
-    #         if dataset.collectorId == collector:
-    #             pulses_per_collector[collector]["filename"] = (
-    #                 dataset.path[:-19] + ".h5"
-    #             )  # removing timestamp
-    #             pulses_per_collector[collector]["pulses"].append(str(dataset.trigger_pulse_id))
-    #             pulses_per_collector[collector]["paths"].append(str(dataset.path))
+    # Create a zip file in memory to collect the data before transferring it
+    zip_io = BytesIO()
+    zip_filename = "datasets.zip"
+    with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
+        for collector in pulses_per_collector.keys():
+            h5_io = BytesIO()
+            new_h5_file = MemoryNexus(h5_io)
 
-    # # Create a zip file in memory to collect the data before transferring it
-    # zip_io = BytesIO()
-    # zip_filename = "datasets.zip"
-    # with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
-    #     for collector in pulses_per_collector.keys():
-    #         h5_io = BytesIO()
-    #         new_h5_file = MemoryNexus(h5_io)
+            for path in list(set(pulses_per_collector[collector]["paths"])):
+                origin_h5_file = hp.File(settings.storage_path / path)
+                origin_data = origin_h5_file["entry"]["data"]
+                pulses_in_file = set.intersection(
+                    set(pulses_per_collector[collector]["pulses"]), set(origin_data.keys())
+                )
+                for pulse in pulses_in_file:
+                    new_h5_file.copy(origin_data[pulse])
+                origin_h5_file.close()
 
-    #         for path in list(set(pulses_per_collector[collector]["paths"])):
-    #             origin_h5_file = hp.File(settings.storage_path / path)
-    #             origin_data = origin_h5_file["entry"]["data"]
-    #             pulses_in_file = set.intersection(
-    #                 set(pulses_per_collector[collector]["pulses"]), set(origin_data.keys())
-    #             )
-    #             for pulse in pulses_in_file:
-    #                 new_h5_file.copy(origin_data[pulse])
-    #             origin_h5_file.close()
+            new_h5_file.close()
 
-    #         new_h5_file.close()
+            h5_io.seek(0)
+            zip.writestr(pulses_per_collector[collector]["filename"], h5_io.read())
+            h5_io.close()
 
-    #         h5_io.seek(0)
-    #         zip.writestr(pulses_per_collector[collector]["filename"], h5_io.read())
-    #         h5_io.close()
-
-    # return StreamingResponse(
-    #     iter([zip_io.getvalue()]),
-    #     media_type="application/x-zip-compressed",
-    #     headers={"Content-Disposition": f"attachment;filename=%s" % zip_filename},
-    # )
+    return StreamingResponse(
+        iter([zip_io.getvalue()]),
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": f"attachment;filename={zip_filename}"},
+    )
