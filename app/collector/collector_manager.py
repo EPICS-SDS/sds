@@ -5,9 +5,9 @@ from contextlib import asynccontextmanager
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
-from app.config import settings
-from app.collector import Collector
-from app.event import Event
+from collector.config import settings
+from collector.collector import Collector
+from collector.event import Event
 
 
 class AsyncSubscription:

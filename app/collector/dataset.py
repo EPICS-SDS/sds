@@ -4,8 +4,8 @@ import aiohttp
 from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
 
-from app.config import settings
-from app.event import Event
+from collector.config import settings
+from collector.event import Event
 
 
 class DatasetSchema(BaseModel):

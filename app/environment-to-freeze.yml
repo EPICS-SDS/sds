@@ -1,0 +1,17 @@
+name: sds
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - aiohttp
+  - elasticsearch
+  - fastapi   
+  - nexusformat
+  - pip
+  - python=3.10
+  - requests
+  - uvicorn
+  - pip:
+    - --index-url https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+    - ess-nexus==0.9.8
+    - p4p==4.1.1

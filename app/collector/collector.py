@@ -4,9 +4,9 @@ import asyncio
 from datetime import datetime
 from pydantic import BaseModel
 
-from app.config import settings
-from app.dataset import Dataset
-from app.event import Event
+from collector.config import settings
+from collector.dataset import Dataset
+from collector.event import Event
 
 
 class CollectorSchema(BaseModel):

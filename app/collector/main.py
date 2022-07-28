@@ -5,9 +5,9 @@ import asyncio
 import aiohttp
 from pydantic import parse_file_as
 
-from app.collector_manager import CollectorManager
-from app.collector import Collector, CollectorSchema
-from app.config import settings
+from collector.collector_manager import CollectorManager
+from collector.collector import Collector, CollectorSchema
+from collector.config import settings
 
 from p4p import set_debug
 

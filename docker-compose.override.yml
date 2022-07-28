@@ -2,22 +2,19 @@ version: '3'
 services:
   sds_indexer:
     volumes:
-      - ./indexer:/app/indexer
-      - ./common:/app/common
+      - ./app:/app/
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
     environment:
       STORAGE_PATH: "/data"
     volumes:
-      - ./retriever:/app/retriever
-      - ./common:/app/common
+      - ./app:/app/
     command: uvicorn retriever:app --host 0.0.0.0 --port 8000 --reload
 
   sds_collector:
     environment:
       STORAGE_PATH: "/data"
     volumes:
-      - ./collector:/app/collector
-      - ./output:/data
-    command: python -m app.main --reload
+      - ./app:/app/
+    command: python -m collector.main --reload

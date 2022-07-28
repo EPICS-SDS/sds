@@ -6,8 +6,8 @@ from fastapi import FastAPI, APIRouter, Response, status
 from common import crud, schemas
 from common.db.connection import wait_for_connection
 from common.db.utils import dict_to_filters
-from config import settings
-from init_db import init_db
+from indexer.config import settings
+from indexer.init_db import init_db
 
 
 logger = logging.getLogger()

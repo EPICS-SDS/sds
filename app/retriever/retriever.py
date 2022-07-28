@@ -10,8 +10,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from common import crud, schemas
 from common.db.connection import wait_for_connection
-from config import settings
-from memory_nexus import MemoryNexus
+from retriever.config import settings
+from retriever.memory_nexus import MemoryNexus
 
 
 logger = logging.getLogger()
