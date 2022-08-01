@@ -2,17 +2,28 @@ from typing import Any, Optional
 
 from datetime import datetime
 from pydantic import BaseModel, Field
-from pathlib import PurePosixPath
-
-from pydantic.validators import _VALIDATORS
+from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
-def validate_pure_posix_path(v: Any) -> PurePosixPath:
-    """Attempt to convert a value to a PurePosixPath"""
-    return PurePosixPath(v)
+class PurePosixPath(UnvalidatedPurePosixPath):
+    '''
+    Subclassing PurePosixPath to add Pydantic validator
+    '''
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
 
+    @classmethod
+    def validate(cls, v: Any):
+        if isinstance(v, str):
+            return UnvalidatedPurePosixPath(v)
+        elif isinstance(v, UnvalidatedPurePosixPath):
+            return v
+        raise TypeError("Type must be string or PurePosixPath")
 
-_VALIDATORS.append((PurePosixPath, [validate_pure_posix_path]))
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type="string", example="/directory/file.h5")
 
 
 class DatasetBase(BaseModel):
@@ -24,7 +35,7 @@ class DatasetBase(BaseModel):
 
 class DatasetCreate(DatasetBase):
     expire_in: Optional[int]
-    created: datetime = Field(default_factory=datetime.utcnow)
+    created: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 
 class DatasetInDBBase(DatasetBase):

@@ -7,6 +7,7 @@ class Dataset(Base):
     trigger_date: Date
     trigger_pulse_id: Integer
     path: Keyword
+    created: Date
 
     class Index:
         name = "dataset"
