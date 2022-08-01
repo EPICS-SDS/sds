@@ -16,7 +16,7 @@ from retriever.memory_nexus import MemoryNexus
 
 logger = logging.getLogger()
 ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.setLevel(settings.log_level)
@@ -63,11 +63,15 @@ async def read_collectors(
     if event_code:
         filters.append({"wildcard": {"event_code": event_code}})
     if pv:
-        filters.append({"query_string": {
-            "query": " ".join(map(lambda s: s.replace(":", r"\:"), pv)),
-            "default_field": "pvs",
-            "default_operator": "AND",
-        }})
+        filters.append(
+            {
+                "query_string": {
+                    "query": " ".join(map(lambda s: s.replace(":", r"\:"), pv)),
+                    "default_field": "pvs",
+                    "default_operator": "AND",
+                }
+            }
+        )
     collectors = await crud.collector.get_multi(filters=filters)
     return collectors
 
@@ -82,8 +86,8 @@ async def read_collector(
         raise HTTPException(status_code=404, detail="Collector not found")
     return collector
 
-app.include_router(collectors_router, prefix="/collectors",
-                   tags=["collectors"])
+
+app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
 
 
 # Datasets
@@ -184,8 +188,6 @@ async def read_file(
         media_type="application/x-hdf5",
     )
 
-app.include_router(files_router, prefix="/files", tags=["datasets"])
-
 
 @files_router.post("/compile", response_class=StreamingResponse)
 def get_datasets(datasets: List[schemas.DatasetCreate]):
@@ -216,7 +218,9 @@ def get_datasets(datasets: List[schemas.DatasetCreate]):
                 pulses_per_collector[collector]["filename"] = (
                     dataset.path[:-19] + ".h5"
                 )  # removing timestamp
-                pulses_per_collector[collector]["pulses"].append(str(dataset.trigger_pulse_id))
+                pulses_per_collector[collector]["pulses"].append(
+                    str(dataset.trigger_pulse_id)
+                )
                 pulses_per_collector[collector]["paths"].append(str(dataset.path))
 
     # Create a zip file in memory to collect the data before transferring it
@@ -231,7 +235,8 @@ def get_datasets(datasets: List[schemas.DatasetCreate]):
                 origin_h5_file = hp.File(settings.storage_path / path)
                 origin_data = origin_h5_file["entry"]["data"]
                 pulses_in_file = set.intersection(
-                    set(pulses_per_collector[collector]["pulses"]), set(origin_data.keys())
+                    set(pulses_per_collector[collector]["pulses"]),
+                    set(origin_data.keys()),
                 )
                 for pulse in pulses_in_file:
                     new_h5_file.copy(origin_data[pulse])
@@ -248,3 +253,6 @@ def get_datasets(datasets: List[schemas.DatasetCreate]):
         media_type="application/x-zip-compressed",
         headers={"Content-Disposition": f"attachment;filename={zip_filename}"},
     )
+
+
+app.include_router(files_router, prefix="/files", tags=["datasets"])
