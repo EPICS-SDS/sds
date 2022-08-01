@@ -17,8 +17,7 @@ set_debug(logging.WARNING)
 async def load_collectors():
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
-    async with aiohttp.ClientSession(
-            json_serialize=CollectorSchema.json) as session:
+    async with aiohttp.ClientSession(json_serialize=CollectorSchema.json) as session:
         collectors = []
         for collector in parse_file_as(List[CollectorSchema], path):
             print(f"Collector '{collector.name}' loaded from file")

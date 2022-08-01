@@ -27,16 +27,20 @@ class Dataset(DatasetSchema):
         name = values["collector_name"] + "_" + values["trigger_pulse_id"]
         values.update(name=name)
 
-        directory = Path(values["trigger_date"].strftime("%Y"),
-                         values["trigger_date"].strftime("%Y-%m-%d"))
+        directory = Path(
+            values["trigger_date"].strftime("%Y"),
+            values["trigger_date"].strftime("%Y-%m-%d"),
+        )
         path = directory / f"{name}.h5"
         values.update(path=path)
 
-        entry = NXentry(attrs={
-            "collector_name": values["collector_name"],
-            "event_name": values["event_name"],
-            "event_code": values["event_code"],
-        })
+        entry = NXentry(
+            attrs={
+                "collector_name": values["collector_name"],
+                "event_name": values["event_name"],
+                "event_code": values["event_code"],
+            }
+        )
         values.update(entry=entry)
         return values
 

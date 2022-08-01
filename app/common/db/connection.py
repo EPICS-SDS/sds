@@ -9,6 +9,7 @@ from common.config import settings
 
 logger = logging.getLogger("sds_common")
 
+
 @asynccontextmanager
 async def get_connection():
     connection = AsyncElasticsearch(settings.elastic_url)
@@ -35,4 +36,5 @@ def with_connection(func):
     async def wrapper(*args, **kwargs):
         async with get_connection() as connection:
             return await func(connection, *args, **kwargs)
+
     return wrapper

@@ -27,6 +27,7 @@ class AsyncSubscription:
         async def cb(value):
             if self._on_message:
                 self._on_message(value)
+
         self._sub = self._context.monitor(self._pv, cb)
 
     def close(self):
@@ -47,6 +48,7 @@ class AsyncSubscription:
         async def _message_generator():
             while True:
                 yield await queue.get()
+
         return _put_in_queue, _message_generator()
 
 
@@ -96,8 +98,7 @@ class CollectorManager:
                             self._message_handler(pv, message)
                 print(f"PV '{pv}' subscription ended")
             except Disconnected:
-                print(
-                    f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
+                print(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
             except Exception as e:
                 print(f"PV '{pv}' error, closing subscription")
                 print(e)

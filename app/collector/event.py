@@ -5,7 +5,9 @@ from p4p import Value
 
 
 def get_attribute(value: Value, name: str):
-    def fn(item): return item.name == name
+    def fn(item):
+        return item.name == name
+
     iter = filter(fn, value.raw["attribute"])
     return next(iter, None)
 

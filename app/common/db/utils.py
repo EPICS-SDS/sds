@@ -24,7 +24,7 @@ def item_to_filters(key: str, value: Any) -> Generator[Dict, None, None]:
                 "params": {
                     "field_key": key,
                     "list_length": len(terms),
-                }
+                },
             }
         }
     }

@@ -12,7 +12,7 @@ from indexer.init_db import init_db
 
 logger = logging.getLogger()
 ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.setLevel(settings.log_level)
@@ -51,8 +51,7 @@ async def create_collector(
     return collector
 
 
-app.include_router(collectors_router,
-                   prefix="/collectors", tags=["collectors"])
+app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
 
 
 # Datasets
@@ -78,5 +77,4 @@ async def create_dataset(
     return dataset
 
 
-app.include_router(datasets_router,
-                   prefix="/datasets", tags=["datasets"])
+app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])

@@ -1,18 +1,18 @@
+import logging
+import zipfile
+from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from typing import Any, List, Optional
 
-import logging
-from datetime import datetime
-from pathlib import Path
-import zipfile
-from fastapi import FastAPI, APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
-
+import h5py as hp
 from common import crud, schemas
 from common.db.connection import wait_for_connection
+from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, StreamingResponse
+
 from retriever.config import settings
 from retriever.memory_nexus import MemoryNexus
-
 
 logger = logging.getLogger()
 ch = logging.StreamHandler()
@@ -201,7 +201,7 @@ def get_datasets(datasets: List[schemas.DatasetCreate]):
     if len(paths) == 1:
         response = crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
-        # No check is done on the datasets, assuming they exist an were obtained using `/search_datasets`
+        # No check is done on the datasets, assuming they exist an were obtained using `/datasets`
         if len(response) == len(datasets):
             return FileResponse(
                 settings.storage_path / paths[0],

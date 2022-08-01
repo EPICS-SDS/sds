@@ -15,6 +15,7 @@ logger = logging.getLogger("sds_common")
 
 class TooManyHitsException(Exception):
     """Raised when the number of hits exceeds the limit"""
+
     pass
 
 
@@ -52,11 +53,13 @@ class Base(BaseModel):
             return self
 
     async def set_expiry(self, date, expiry_index):
-        await expiry_index.create({
-            "index": self.get_index(),
-            "id": self.id,
-            "expire_by": date,
-        })
+        await expiry_index.create(
+            {
+                "index": self.get_index(),
+                "id": self.id,
+                "expire_by": date,
+            }
+        )
 
     @classmethod
     def mappings(cls):
@@ -115,16 +118,14 @@ class Base(BaseModel):
             if n_total > settings.max_query_size:
                 raise TooManyHitsException()
 
-            return list(map(
-                lambda hit: cls(hit=hit),
-                response["hits"]["hits"]))
+            return list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
 
-    @ classmethod
+    @classmethod
     async def create(cls, dict):
         db_obj = cls(**dict)
         await db_obj.save()
         return db_obj
 
-    @ classmethod
+    @classmethod
     def get_index(cls):
         return cls.Index.name

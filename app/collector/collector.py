@@ -62,6 +62,7 @@ class Collector(CollectorSchema):
             def task_done_cb(task):
                 self._tasks.discard(task)
                 self.discard_queue(event.trigger_pulse_id)
+
             task.add_done_callback(task_done_cb)
 
         queue = self.get_queue(event.trigger_pulse_id)
@@ -72,6 +73,7 @@ class Collector(CollectorSchema):
             while True:
                 event = await queue.get()
                 dataset.update(event)
+
         coro = consumer(queue, dataset)
         try:
             await asyncio.wait_for(coro, self._timeout)

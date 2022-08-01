@@ -2,4 +2,5 @@
 # E501: let black handle line length
 # W503 is incompatible with PEP 8
 # E203 whitespace before ':'
-ignore = E501,W503,E203
+# F401 imported but unused, flake8 bug
+ignore = E501,W503,E203,F401

@@ -13,10 +13,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
     def __init__(self, model: Type[ModelType]):
         self.model = model
 
-    async def get(
-        self,
-        id: Any
-    ) -> Optional[ModelType]:
+    async def get(self, id: Any) -> Optional[ModelType]:
         return await self.model.get(id)
 
     async def get_multi(

@@ -11,6 +11,7 @@ from p4p.nt import NTScalar
 
 from ntndarraywithevent import NTNDArrayWithEvent
 
+
 class MyHandler(object):
     def __init__(self, event):
         self.event = event
@@ -21,34 +22,34 @@ class MyHandler(object):
 
         op.done()
 
+
 class MyServer(object):
     def __init__(self, event):
         self.event = event
-        
+
         self.stop_flag = False
         self.pvdb = dict()
         self.process = None
         self.mp_ctxt = get_context("fork")
 
-        self.provider = StaticProvider('test')
+        self.provider = StaticProvider("test")
 
     def add_pv(self, pv_name, n_elem, prefix):
-        print(prefix+pv_name)
+        print(prefix + pv_name)
         pv = SharedPV(nt=NTNDArrayWithEvent(), initial=np.zeros(n_elem))
-        self.provider.add(prefix+pv_name, pv)
+        self.provider.add(prefix + pv_name, pv)
         self.pvdb[pv_name] = pv
 
     def start_server(self):
         if self.pvdb != dict():
-            self.process = self.mp_ctxt.Process(
-                target=self._start_server)
+            self.process = self.mp_ctxt.Process(target=self._start_server)
             self.process.start()
 
     def _start_server(self):
         server = Server(providers=[self.provider])
 
         counter = 0
-      
+
         with server:
             while not self.stop_flag:
                 if self.stop_flag:
@@ -63,7 +64,14 @@ class MyServer(object):
                     arr[0] = counter
 
                     try:
-                        self.pvdb[pv].post({'value': arr, 'pulse_id': counter, 'event_name': 'data-on-demand', 'event_code': 1})
+                        self.pvdb[pv].post(
+                            {
+                                "value": arr,
+                                "pulse_id": counter,
+                                "event_name": "data-on-demand",
+                                "event_code": 1,
+                            }
+                        )
                     except Exception:
                         pass
 
@@ -78,9 +86,9 @@ def run_server(scenario, prefix):
     mngr = mp_ctxt.Manager()
     event = mngr.Event()
 
-    provider = StaticProvider('trigger')
+    provider = StaticProvider("trigger")
     trigger_pv = SharedPV(handler=MyHandler(event), nt=NTScalar("?"), initial=False)
-    provider.add(prefix+'TRIG', trigger_pv)
+    provider.add(prefix + "TRIG", trigger_pv)
 
     servers = []
     for i in range(cpu_count()):
@@ -112,8 +120,6 @@ def run_server(scenario, prefix):
 
 
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) >= 3:
         n_elem = [
             int(float(n))

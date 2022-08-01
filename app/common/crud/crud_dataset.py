@@ -21,11 +21,7 @@ class CRUDDataset(CRUDBase[Dataset, DatasetCreate]):
             await db_obj.set_expiry(date, Expiry)
         return db_obj
 
-    async def get_multi_by_path(
-        self,
-        *
-        paths: List[Path]
-    ) -> List[Dataset]:
+    async def get_multi_by_path(self, *paths: List[Path]) -> List[Dataset]:
         clauses = [{"match": {"path": path}} for path in paths]
         query = {"bool": {"should": clauses}}
         return await self.model.mget(query=query)

@@ -6,9 +6,10 @@ from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
 class PurePosixPath(UnvalidatedPurePosixPath):
-    '''
+    """
     Subclassing PurePosixPath to add Pydantic validator
-    '''
+    """
+
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
