@@ -73,7 +73,7 @@ async def create_dataset(
     Create a dataset
     - **ttl**: time for the dataset to live in seconds
     """
-    dataset = await crud.dataset.create(obj_in=dataset_in, ttl=ttl)
+    dataset = await crud.dataset.create(dataset_in, ttl=ttl)
     return dataset
 
 

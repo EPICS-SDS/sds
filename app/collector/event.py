@@ -8,8 +8,8 @@ def get_attribute(value: Value, name: str):
     def fn(item):
         return item.name == name
 
-    iter = filter(fn, value.raw["attribute"])
-    return next(iter, None)
+    iterator = filter(fn, value.raw["attribute"])
+    return next(iterator, None)
 
 
 class Event(BaseModel):

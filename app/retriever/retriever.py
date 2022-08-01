@@ -14,6 +14,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from retriever.config import settings
 from retriever.memory_nexus import MemoryNexus
 
+HDF5_MIME_TYPE = "application/x-hdf5"
+
 logger = logging.getLogger()
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -120,19 +122,19 @@ async def read_datasets(
         for id in collector_id:
             filters.append({"match": {"collector_id": id}})
     if start or end:
-        range = {}
+        timestamp_range = {}
         if start:
-            range["gte"] = start
+            timestamp_range["gte"] = start
         if end:
-            range["lte"] = end
-        filters.append({"range": {"created": range}})
+            timestamp_range["lte"] = end
+        filters.append({"range": {"created": timestamp_range}})
     if trigger_pulse_id_start or trigger_pulse_id_end:
-        range = {}
+        pulse_id_range = {}
         if trigger_pulse_id_start:
-            range["gte"] = trigger_pulse_id_start
+            pulse_id_range["gte"] = trigger_pulse_id_start
         if trigger_pulse_id_end:
-            range["lte"] = trigger_pulse_id_end
-        filters.append({"range": {"trigger_pulse_id": range}})
+            pulse_id_range["lte"] = trigger_pulse_id_end
+        filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
     datasets = await crud.dataset.get_multi(filters=filters)
     return datasets
 
@@ -162,7 +164,7 @@ async def read_dataset_file(
     return FileResponse(
         settings.storage_path / dataset.path,
         filename=dataset.path.name,
-        media_type="application/x-hdf5",
+        media_type=HDF5_MIME_TYPE,
     )
 
 
@@ -185,7 +187,7 @@ async def read_file(
     return FileResponse(
         settings.storage_path / path,
         filename=path.name,
-        media_type="application/x-hdf5",
+        media_type=HDF5_MIME_TYPE,
     )
 
 
@@ -206,7 +208,7 @@ def get_datasets(datasets: List[schemas.DatasetCreate]):
             return FileResponse(
                 settings.storage_path / paths[0],
                 filename=paths[0].name,
-                media_type="application/x-hdf5",
+                media_type=HDF5_MIME_TYPE,
             )
 
     collectors = list(set([ds.collectorId for ds in datasets]))

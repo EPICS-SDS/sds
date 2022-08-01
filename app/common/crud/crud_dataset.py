@@ -11,9 +11,9 @@ from common.schemas import DatasetCreate
 class CRUDDataset(CRUDBase[Dataset, DatasetCreate]):
     async def create(
         self,
+        obj_in: DatasetCreate,
         *,
         ttl: Optional[int] = None,
-        obj_in: DatasetCreate,
     ) -> Dataset:
         db_obj = await super().create(obj_in=obj_in)
         if ttl:
