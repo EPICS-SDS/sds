@@ -2,7 +2,7 @@ docker_image:
 	docker build -t sds .
 
 pull_elastic:
-	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.3.2
+	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.3.3
 
 all: docker_image pull_elastic
 
