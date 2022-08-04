@@ -24,7 +24,7 @@ class Dataset(DatasetSchema):
 
     @root_validator(pre=True)
     def extract_path(cls, values):
-        name = values["collector_name"] + "_" + values["trigger_pulse_id"]
+        name = values["collector_name"] + "_" + str(values["trigger_pulse_id"])
         values.update(name=name)
 
         directory = Path(
