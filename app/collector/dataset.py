@@ -1,10 +1,8 @@
 from datetime import datetime
-import json
 from pathlib import Path
 import aiohttp
 from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
-from typing import Any, Callable, cast
 
 from collector.config import settings
 from collector.event import Event
@@ -67,13 +65,9 @@ class Dataset(DatasetSchema):
         try:
             print(repr(self), "indexing...")
             url = settings.indexer_url + "/datasets"
-            data = DatasetSchema.parse_obj(self).dict()
-            data["@timestamp"] = datetime.utcnow()
-            encoder = cast(Callable[[Any], Any], self.__json_encoder__)
+            data = DatasetSchema.parse_obj(self).json()
             async with aiohttp.ClientSession() as client:
-                async with client.post(
-                    url, json=json.dumps(data, default=encoder)
-                ) as response:
+                async with client.post(url, json=data) as response:
                     response.raise_for_status()
             print(repr(self), "indexing done.")
         except Exception as e:
