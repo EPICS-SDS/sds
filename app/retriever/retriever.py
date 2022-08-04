@@ -142,6 +142,39 @@ async def query_datasets(
     return datasets
 
 
+@datasets_router.get(
+    "/file",
+    response_class=StreamingResponse,
+    summary="Compile datasets in file based on a query",
+)
+async def compile_dataset_file(
+    collector_id: Optional[List[str]] = Query(default=None),
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    trigger_pulse_id_start: Optional[int] = None,
+    trigger_pulse_id_end: Optional[int] = None,
+):
+    """
+    Search for datasets in the index and returns a file containing all hits.
+    - **collector_id** (List[str], optional): list of collector IDs to
+      consider for the search
+    - **start** (int, optional): UTC timestamp for interval start
+    - **end** (int, optional): UTC timestamp for interval end
+    - **trigger_pulse_id_start** (int, optional):
+    - **trigger_pulse_id_end** (int, optional):
+
+    To search for a set of PVs, first one needs to search for collectors
+    containing those PVs and then search by collector IDs.
+    """
+    datasets = await query_datasets(
+        collector_id, start, end, trigger_pulse_id_start, trigger_pulse_id_end
+    )
+    if datasets == []:
+        raise HTTPException(status_code=404, detail="Datasets not found")
+
+    return query_datasets(datasets)
+
+
 @datasets_router.get("/{id}", response_model=schemas.Dataset)
 async def get_dataset(
     *,
