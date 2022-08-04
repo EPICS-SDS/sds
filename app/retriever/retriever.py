@@ -46,10 +46,9 @@ async def read_collectors(
     """
     Search for collectors that contain **at least** the PVs given as a parameter.
     The collector can contain more PVs than the ones defined, it does not need to be a perfect match.
-    All the parameters except the id can contain wildcards, including PV names.
+    All the parameters can contain wildcards, including PV names.
 
     Arguments:
-    - **id** (List[str], optional): list of collector IDs
     - **name** (str, optional): name of the collector
     - **event_name** (str, optional): name of the event
     - **event_code** (int, optional): event code
@@ -127,7 +126,8 @@ async def read_datasets(
             timestamp_range["gte"] = start
         if end:
             timestamp_range["lte"] = end
-        filters.append({"range": {"created": timestamp_range}})
+
+        filters.append({"range": {"trigger_date": timestamp_range}})
     if trigger_pulse_id_start or trigger_pulse_id_end:
         pulse_id_range = {}
         if trigger_pulse_id_start:
@@ -192,7 +192,7 @@ async def read_file(
 
 
 @files_router.post("/compile", response_class=StreamingResponse)
-def get_datasets(datasets: List[schemas.DatasetCreate]):
+def get_datasets(datasets: List[schemas.DatasetBase]):
     """
     Get a set of NeXus files containing the requested datasets, one file per collector.
     - **datasets** (List[Dataset], required): list of datasets to download
