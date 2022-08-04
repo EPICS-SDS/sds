@@ -19,4 +19,7 @@ WORKDIR /app
 
 USER csi
 
+# Fixes python not printing anything
+ENV PYTHONUNBUFFERED=1
+
 ENV PATH=/opt/conda/envs/sds/bin:$PATH
