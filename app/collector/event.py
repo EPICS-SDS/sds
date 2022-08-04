@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, root_validator
 from p4p import Value
+from pydantic import BaseModel, root_validator
 
 
 def get_attribute(value: Value, name: str):
@@ -17,6 +18,8 @@ class Event(BaseModel):
     code: int
     pv_name: str
     value: Any
+    data_date: datetime
+    trigger_date: datetime
     pulse_id: int
     trigger_pulse_id: int
 
@@ -28,6 +31,10 @@ class Event(BaseModel):
         # value
         values.update(
             value=value,
+            data_date=datetime.fromtimestamp(
+                value.raw.timeStamp.secondsPastEpoch
+                + value.raw.timeStamp.nanoseconds * 1e-9
+            ),
             pulse_id=value.raw.timeStamp.userTag,
         )
         # eventName
@@ -35,6 +42,10 @@ class Event(BaseModel):
         if attribute is not None:
             values.update(
                 name=attribute["value"],
+                trigger_date=datetime.fromtimestamp(
+                    value.raw.timeStamp.secondsPastEpoch
+                    + value.raw.timeStamp.nanoseconds * 1e-9
+                ),
                 trigger_pulse_id=attribute.timestamp.userTag,
             )
         # eventCode
