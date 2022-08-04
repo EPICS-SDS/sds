@@ -260,8 +260,8 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
         for dataset in datasets:
             if dataset.collectorId == collector:
                 pulses_per_collector[collector]["filename"] = (
-                    dataset.path[:-19] + ".h5"
-                )  # removing timestamp
+                    dataset.path[: dataset.path.rfind("_")] + ".h5"
+                )  # removing pulse id from filename to obtain collector name
                 pulses_per_collector[collector]["pulses"].append(
                     str(dataset.trigger_pulse_id)
                 )
