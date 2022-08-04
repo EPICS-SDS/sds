@@ -1,27 +1,25 @@
 version: '3'
 services:
   sds_indexer:
-    image: sds_indexer
-    build:
-      context: .
-      dockerfile: ./indexer/Dockerfile
+    image: sds
+    container_name: sds_indexer
     ports:
       - "8000:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
+    command: uvicorn indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
     depends_on:
       - elasticsearch
 
   sds_retriever:
-    image: sds_retriever
-    build:
-      context: .
-      dockerfile: ./retriever/Dockerfile
+    image: sds
+    container_name: sds_retriever
     ports:
       - "8001:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
       STORAGE_PATH: ${STORAGE_PATH:?}
+    command: uvicorn retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
     volumes:
       - type: bind
         source: ./test_ioc/storage_test/data
@@ -30,22 +28,25 @@ services:
       - elasticsearch
 
   sds_collector:
-    image: sds_collector
-    build:
-      context: ./collector
+    image: sds
+    container_name: sds_collector
     ports:
       - "8002:8000"
     environment:
       INDEXER_URL: "http://sds_indexer:8000"
       COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
       STORAGE_PATH: ${STORAGE_PATH:?}
+    command: python -m collector.main
     volumes:
       - ./collectors.json:/app/config/collectors.json
+      - type: bind
+        source: ./test_ioc/storage_test/data
+        target: /data
     depends_on:
       - sds_indexer
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:8.2.0"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.3.3"
     container_name: elasticsearch
     ports:
       - "9200:9200"

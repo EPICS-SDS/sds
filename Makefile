@@ -1,11 +1,13 @@
-indexer_image:
-	docker build -t sds_indexer -f indexer/Dockerfile .
+docker_image:
+	docker build -t sds .
 
-retriever_image:
-	docker build -t sds_retriever -f retriever/Dockerfile .
+pull_elastic:
+	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.3.3
 
-
-all: indexer_image retriever_image
+all: docker_image pull_elastic
 
 run:
-	docker-compose up
+	docker compose -f docker-compose.yml up
+
+debug:
+	docker compose up
