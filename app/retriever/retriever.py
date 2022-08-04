@@ -37,7 +37,7 @@ collectors_router = APIRouter()
 
 
 @collectors_router.get("", response_model=List[schemas.Collector])
-async def read_collectors(
+async def query_collectors(
     name: Optional[str] = None,
     event_name: Optional[str] = None,
     event_code: Optional[int] = None,
@@ -78,10 +78,13 @@ async def read_collectors(
 
 
 @collectors_router.get("/{id}", response_model=schemas.Collector)
-async def read_collector(
+async def get_collector(
     *,
     id: Any,
 ):
+    """
+    Return the collector with the given `id`
+    """
     collector = await crud.collector.get(id)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
@@ -97,7 +100,7 @@ datasets_router = APIRouter()
 
 
 @datasets_router.get("", response_model=List[schemas.Dataset])
-async def read_datasets(
+async def query_datasets(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
@@ -140,10 +143,13 @@ async def read_datasets(
 
 
 @datasets_router.get("/{id}", response_model=schemas.Dataset)
-async def read_dataset(
+async def get_dataset(
     *,
     id: Any,
 ):
+    """
+    Get the dataset metadata with the give `id`
+    """
     dataset = await crud.dataset.get(id)
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -151,10 +157,13 @@ async def read_dataset(
 
 
 @datasets_router.get("/{id}/file", response_class=FileResponse)
-async def read_dataset_file(
+async def get_dataset_file(
     *,
     id: Any,
 ):
+    """
+    Get the NeXus file containing the dataset with the given `id`
+    """
     dataset = await crud.dataset.get(id)
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -176,7 +185,7 @@ files_router = APIRouter()
 
 
 @files_router.get("", response_class=FileResponse)
-async def read_file(
+async def get_file(
     *,
     path: Path,
 ):
@@ -192,7 +201,7 @@ async def read_file(
 
 
 @files_router.post("/compile", response_class=StreamingResponse)
-def get_datasets(datasets: List[schemas.DatasetBase]):
+def get_datasets_file(datasets: List[schemas.DatasetBase]):
     """
     Get a set of NeXus files containing the requested datasets, one file per collector.
     - **datasets** (List[Dataset], required): list of datasets to download
