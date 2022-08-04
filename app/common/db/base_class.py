@@ -16,8 +16,6 @@ logger = logging.getLogger("sds_common")
 class TooManyHitsException(Exception):
     """Raised when the number of hits exceeds the limit"""
 
-    pass
-
 
 class Base(BaseModel):
     id: Optional[str]

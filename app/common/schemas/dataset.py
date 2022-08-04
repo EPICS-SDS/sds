@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
@@ -36,12 +36,10 @@ class DatasetBase(BaseModel):
 
 class DatasetCreate(DatasetBase):
     expire_in: Optional[int]
-    created: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 
 class DatasetInDBBase(DatasetBase):
     id: str
-    created: datetime
 
     class Config:
         orm_mode = True
