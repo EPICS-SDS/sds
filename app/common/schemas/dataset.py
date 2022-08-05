@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
@@ -32,6 +32,9 @@ class DatasetBase(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: PurePosixPath
+    timestamp: Optional[datetime] = Field(
+        default_factory=datetime.utcnow, alias="@timestamp"
+    )
 
 
 class DatasetCreate(DatasetBase):

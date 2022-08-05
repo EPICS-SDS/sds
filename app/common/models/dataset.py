@@ -1,5 +1,5 @@
 import logging
-import time
+from datetime import datetime
 
 from common.config import settings
 from common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
@@ -23,26 +23,13 @@ class Dataset(Base):
     trigger_date: Date
     trigger_pulse_id: Integer
     path: Keyword
+    timestamp: Date
+
+    class Config:
+        fields = {"timestamp": "@timestamp"}
 
     class Index:
         name = "dataset"
-
-    def document(self):
-        """
-        Overriding this method to add the @timestamp field that cannot be added as a class member
-        """
-        document = super().document()
-        document["@timestamp"] = Date.to_es(time.time())
-        return document
-
-    @classmethod
-    def mappings(cls):
-        """
-        Overriding this method to add the @timestamp field that cannot be added as a class member
-        """
-        mappings = super().mappings()
-        mappings["properties"]["@timestamp"] = {"type": Date.es_type}
-        return mappings
 
     @classmethod
     async def init(cls):

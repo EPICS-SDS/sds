@@ -34,18 +34,11 @@ class Base(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    def document(self):
-        document = {}
-        for key, es_type in self.__annotations__.items():
-            value = getattr(self, key)
-            document[key] = es_type.to_es(value)
-        return document
-
     async def save(self):
         async with get_connection() as es:
             response = await es.index(
                 index=self.get_index(),
-                document=self.document(),
+                document=self.dict(by_alias=True, exclude_none=True),
             )
             self.id = response["_id"]
             return self

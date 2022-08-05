@@ -24,4 +24,4 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         return await self.model.mget(filters=filters)
 
     async def create(self, obj_in: CreateSchemaType) -> ModelType:
-        return await self.model.create(obj_in.dict())
+        return await self.model.create(obj_in.dict(by_alias=True))
