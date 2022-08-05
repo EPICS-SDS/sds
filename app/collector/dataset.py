@@ -66,8 +66,9 @@ class Dataset(DatasetSchema):
             print(repr(self), "indexing...")
             url = settings.indexer_url + "/datasets"
             data = DatasetSchema.parse_obj(self).json()
-            async with aiohttp.ClientSession() as client:
-                async with client.post(url, json=data) as response:
+            headers = {"Content-Type": "application/json"}
+            async with aiohttp.ClientSession(headers=headers) as client:
+                async with client.post(url, data=data) as response:
                     response.raise_for_status()
             print(repr(self), "indexing done.")
         except Exception as e:
