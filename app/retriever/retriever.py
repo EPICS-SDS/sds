@@ -172,7 +172,7 @@ async def compile_dataset_file(
     if datasets == []:
         raise HTTPException(status_code=404, detail="Datasets not found")
 
-    return query_datasets(datasets)
+    return get_datasets_file(datasets)
 
 
 @datasets_router.get("/{id}", response_model=schemas.Dataset)
