@@ -11,11 +11,11 @@ class MemoryNexus(File):
     def __init__(self, h5_io):
         super().__init__()
 
-        self.file = hp.File(h5_io, "w")
+        self.h5file = hp.File(h5_io, "w")
 
         # add groups:
         # File entry
-        self.nxentry = self.file.create_group("entry")
+        self.nxentry = self.h5file.create_group("entry")
         self.nxentry.attrs["NX_class"] = "NXentry"
 
         # File User
@@ -26,7 +26,5 @@ class MemoryNexus(File):
         self.nxentry.create_group("instruments")
         self.nxentry["instruments"].attrs["NX_class"] = "NXinstrument"
 
-        self.nxentry.create_group("data")
-
     def copy(self, group):
-        self.file["entry"]["data"].copy(group, self.file["entry"]["data"])
+        self.h5file["entry"].copy(group, self.h5file["entry"])

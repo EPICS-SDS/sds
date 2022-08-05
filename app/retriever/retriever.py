@@ -226,6 +226,9 @@ async def get_file(
     Get a NeXus file from the storage
     - **path** (str, required): file path
     """
+
+    if not (settings.storage_path / path).exists():
+        raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(
         settings.storage_path / path,
         filename=path.name,
@@ -253,17 +256,18 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
                 media_type=HDF5_MIME_TYPE,
             )
 
-    collectors = list(set([ds.collectorId for ds in datasets]))
+    collectors = list(set([ds.collector_id for ds in datasets]))
     pulses_per_collector = {}
     for collector in collectors:
         pulses_per_collector[collector] = {"pulses": [], "paths": []}
         for dataset in datasets:
-            if dataset.collectorId == collector:
+            if dataset.collector_id == collector:
                 pulses_per_collector[collector]["filename"] = (
-                    dataset.path[: dataset.path.rfind("_")] + ".h5"
+                    dataset.path.as_posix()[: dataset.path.as_posix().rfind("_")]
+                    + ".h5"
                 )  # removing pulse id from filename to obtain collector name
                 pulses_per_collector[collector]["pulses"].append(
-                    str(dataset.trigger_pulse_id)
+                    dataset.trigger_pulse_id
                 )
                 pulses_per_collector[collector]["paths"].append(str(dataset.path))
 
@@ -277,13 +281,16 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
 
             for path in list(set(pulses_per_collector[collector]["paths"])):
                 origin_h5_file = hp.File(settings.storage_path / path)
-                origin_data = origin_h5_file["entry"]["data"]
-                pulses_in_file = set.intersection(
+                origin_data = origin_h5_file["entry"]
+                pulses_in_file = [
+                    origin_data[key].attrs.get("pulse_id") for key in origin_data.keys()
+                ]
+                pulses_to_copy = set.intersection(
                     set(pulses_per_collector[collector]["pulses"]),
-                    set(origin_data.keys()),
+                    set(pulses_in_file),
                 )
-                for pulse in pulses_in_file:
-                    new_h5_file.copy(origin_data[pulse])
+                for pulse in pulses_to_copy:
+                    new_h5_file.copy(origin_data[f"event_{pulse}"])
                 origin_h5_file.close()
 
             new_h5_file.close()

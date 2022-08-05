@@ -75,11 +75,13 @@ class Base(BaseModel):
     async def get(cls, id):
         async with get_connection() as es:
             try:
-                response = await es.get(
+                response = await es.search(
                     index=cls.get_index(),
-                    id=id,
+                    query={"ids": {"values": [id]}},
                 )
-                return cls(hit=response)
+                if response["hits"]["hits"] == []:
+                    return None
+                return cls(hit=response["hits"]["hits"][0])
             except NotFoundError:
                 return None
 
