@@ -122,3 +122,8 @@ class Base(BaseModel):
     @classmethod
     def get_index(cls):
         return cls.Index.name
+
+    @classmethod
+    async def refresh_index(cls):
+        async with get_connection() as es:
+            return await es.indices.refresh(index=cls.Index.name)

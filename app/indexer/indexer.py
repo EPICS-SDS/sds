@@ -1,14 +1,14 @@
-from typing import Optional
-
 import logging
-from fastapi import FastAPI, APIRouter, Response, status
+from asyncio import Lock
+from typing import Optional
 
 from common import crud, schemas
 from common.db.connection import wait_for_connection
 from common.db.utils import dict_to_filters
+from fastapi import APIRouter, FastAPI, Response, status
+
 from indexer.config import settings
 from indexer.init_db import init_db
-
 
 logger = logging.getLogger()
 ch = logging.StreamHandler()
@@ -29,6 +29,7 @@ async def startup_event():
 # Collectors
 
 collectors_router = APIRouter()
+collectors_lock = Lock()
 
 
 @collectors_router.post(
@@ -42,12 +43,14 @@ async def create_collector(
     collector_in: schemas.CollectorCreate,
 ):
     filters = dict_to_filters(collector_in.dict(exclude={"created"}))
-    collectors = await crud.collector.get_multi(filters=filters)
-    # HTTP 200 if the collector already exists
-    if len(collectors) > 0:
-        response.status_code = status.HTTP_200_OK
-        return collectors[0]
-    collector = await crud.collector.create(obj_in=collector_in)
+    async with collectors_lock:
+        collectors = await crud.collector.get_multi(filters=filters)
+        # HTTP 200 if the collector already exists
+        if len(collectors) > 0:
+            response.status_code = status.HTTP_200_OK
+            return collectors[0]
+        collector = await crud.collector.create(obj_in=collector_in)
+        await crud.collector.refresh_index()
     return collector
 
 
