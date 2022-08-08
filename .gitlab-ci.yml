@@ -2,3 +2,36 @@
 include:
   - remote: "https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/PreCommit.gitlab-ci.yml"
   - remote: "https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/SonarScanner.gitlab-ci.yml"
+
+variables:
+  CONTAINER_TEST_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+
+default:
+  tags:
+    - docker
+
+before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+build_test:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t sds .
+    - docker build -t "$CONTAINER_TEST_IMAGE" tests
+    - docker push "$CONTAINER_TEST_IMAGE"
+
+test:
+  stage: test
+  image: "$CONTAINER_TEST_IMAGE"
+  services:
+    - name: docker.elastic.co/elasticsearch/elasticsearch:8.3.3
+      alias: elasticsearch
+      command: ["bin/elasticsearch", "-Ediscovery.type=single-node"]
+  variables:
+    STORAGE_PATH: /data
+    ELASTIC_URL: "http://elasticsearch:9200"
+  before_script:
+    - uvicorn indexer:app --host 0.0.0.0 --port 8000
+  script:
+    - python -m pytest
