@@ -7,7 +7,6 @@ from common.db.base_class import Base
 from common.db.connection import get_connection
 from common.db.fields import Date, Integer, Keyword
 from elasticsearch import AsyncElasticsearch, NotFoundError
-from elasticsearch.client import IlmClient
 
 logger = logging.getLogger("sds_common")
 
@@ -73,16 +72,14 @@ class Dataset(Base):
             },
         }
 
-        client = IlmClient(es)
-
         try:
-            current_policy = await client.get_lifecycle(name=DATASET_POLICY_NAME)
+            current_policy = await es.ilm.get_lifecycle(name=DATASET_POLICY_NAME)
             check_dict_for_updated_entries(
                 current_policy[DATASET_POLICY_NAME]["policy"], ilm_policy
             )
         except (NotFoundError, UpdateRequiredException):
             logger.info("ES dataset_policy ILM policy created or updated")
-            await client.put_lifecycle(name=DATASET_POLICY_NAME, policy=ilm_policy)
+            await es.ilm.put_lifecycle(name=DATASET_POLICY_NAME, policy=ilm_policy)
 
     @classmethod
     async def init_dataset_mapping_template(cls, es: AsyncElasticsearch):
