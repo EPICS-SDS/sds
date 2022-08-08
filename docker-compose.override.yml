@@ -16,6 +16,8 @@ services:
     command: python -m collector.main --reload
 
   elasticsearch:
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -27,3 +29,8 @@ services:
       - "5601:5601"
     expose:
       - "5601"
+  
+
+volumes:
+  esdata:
+    driver: local
