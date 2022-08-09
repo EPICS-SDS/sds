@@ -45,12 +45,13 @@ test:
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
-    - cp -R /app/. .
+    - cp -R tests app/
+    - cd app
     - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:
     paths:
-      - junit.xml
-      - coverage.xml
+      - app/junit.xml
+      - app/coverage.xml
     reports:
-      junit: junit.xml
+      junit: app/junit.xml
     expire_in: 1 hour
