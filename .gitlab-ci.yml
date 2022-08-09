@@ -17,6 +17,7 @@ build_test:
   stage: build
   image: docker:latest
   script:
+    - docker pull "$CONTAINER_TEST_IMAGE" || true
     - docker build -t sds .
     - docker build -t "$CONTAINER_TEST_IMAGE" tests
     - docker push "$CONTAINER_TEST_IMAGE"
