@@ -1,0 +1,5 @@
+[paths]
+source =
+    collector/
+    indexer/
+    retriever/

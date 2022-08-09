@@ -28,13 +28,29 @@ test:
   services:
     - name: docker.elastic.co/elasticsearch/elasticsearch:8.3.3
       alias: elasticsearch
-      command: ["bin/elasticsearch", "-Expack.security.enabled=false", "-Expack.security.http.ssl.enabled=false", "-Ediscovery.type=single-node"]
+      command:
+        [
+          "bin/elasticsearch",
+          "-Expack.security.enabled=false",
+          "-Expack.security.http.ssl.enabled=false",
+          "-Ediscovery.type=single-node",
+        ]
     - name: $CONTAINER_TEST_IMAGE
       alias: sds_indexer
       command: ["uvicorn", "indexer:app", "--host", "0.0.0.0", "--port", "8000"]
+    - name: $CONTAINER_TEST_IMAGE
+      alias: sds_retriever
+      command: ["uvicorn", "indexer:app", "--host", "0.0.0.0", "--port", "8001"]
   variables:
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
     - cd /app
-    - python -m pytest
+    - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
+  artifacts:
+    paths:
+      - junit.xml
+      - coverage.xml
+    reports:
+      junit: junit.xml
+    expire_in: 1 hour

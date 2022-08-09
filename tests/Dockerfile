@@ -2,7 +2,8 @@ FROM sds
 
 USER root
 
-RUN pip install pytest
+RUN pip install pytest \
+    && pip install pytest-cov
 
 COPY --chown=csi:csi . /app/tests
 
@@ -10,4 +11,4 @@ USER csi
 
 EXPOSE 8000
 
-CMD pytest tests -v
+CMD python -m pytest tests -v
