@@ -27,7 +27,7 @@ test:
   services:
     - name: docker.elastic.co/elasticsearch/elasticsearch:8.3.3
       alias: elasticsearch
-      command: ["bin/elasticsearch", "-Ediscovery.type=single-node"]
+      command: ["bin/elasticsearch", "-Expack.security.enabled=false", "-Expack.security.http.ssl.enabled=false", "-Ediscovery.type=single-node"]
   variables:
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
