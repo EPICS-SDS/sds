@@ -42,6 +42,7 @@ test:
     - cp -R tests app/
     - cd app
     - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
+    - coverage xml -i
   artifacts:
     paths:
       - app/junit.xml
