@@ -6,6 +6,8 @@ services:
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
+    ports:
+      - "8001:8000"
     volumes:
       - ./app:/app/
     command: uvicorn retriever:app --host 0.0.0.0 --port 8000 --reload

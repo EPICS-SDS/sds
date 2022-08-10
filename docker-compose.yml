@@ -16,8 +16,6 @@ services:
   sds_retriever:
     image: sds
     container_name: sds_retriever
-    ports:
-      - "8001:8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
       STORAGE_PATH: /data

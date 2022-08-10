@@ -1,5 +1,4 @@
 import requests
-import pytest
 import json
 from datetime import datetime
 
@@ -7,20 +6,28 @@ from pydantic import ValidationError
 from common import schemas
 
 indexer_url = "http://sds_indexer:8000"
+ELASTIC_URL = "http://elasticsearch:9200"
 
 
 class TestCollector:
     test_collector = {
-        "name": "collector_test",
+        "name": "indexer_test",
         "event_name": "test_event",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
     }
     test_collector_bad_schema = {
-        "name": "collector_test_2",
+        "name": "indexer_test_2",
         "event_name": "test_event_2",
         "event_code": 2,
     }
+
+    @classmethod
+    def setup_class(cls):
+        # Make sure there is no collector that matches the collector that is created in the test_create test
+        query = {"query": {"match": {"name": "indexer_test"}}}
+        requests.post(ELASTIC_URL + "/collector/_delete_by_query", json=query)
+        requests.post(ELASTIC_URL + "/collector/_refresh")
 
     def test_create(self):
         response = requests.post(indexer_url + "/collectors", json=self.test_collector)

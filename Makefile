@@ -15,7 +15,7 @@ debug:
 test_image: docker_image
 	docker build -t sds_test tests
 
-test_pre:
+test_pre: test_image
 	rm -r esdata | true
 	mkdir esdata
 	docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch sds_indexer sds_retriever

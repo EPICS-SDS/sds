@@ -40,7 +40,7 @@ test:
       command: ["uvicorn", "indexer:app", "--host", "0.0.0.0", "--port", "8000"]
     - name: $CONTAINER_TEST_IMAGE
       alias: sds_retriever
-      command: ["uvicorn", "indexer:app", "--host", "0.0.0.0", "--port", "8001"]
+      command: ["uvicorn", "retriever:app", "--host", "0.0.0.0", "--port", "8001"]
   variables:
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"

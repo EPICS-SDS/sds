@@ -7,8 +7,10 @@ RUN pip install pytest \
 
 COPY --chown=csi:csi . /app/tests
 
+RUN mkdir /data && chown csi:csi /data
+
 USER csi
 
-EXPOSE 8000
+EXPOSE 8000 8001
 
 CMD python -m pytest tests -v
