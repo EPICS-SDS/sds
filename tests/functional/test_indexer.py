@@ -5,8 +5,10 @@ from datetime import datetime
 from pydantic import ValidationError
 from common import schemas
 
-indexer_url = "http://sds_indexer:8000"
+INDEXER_URL = "http://sds_indexer:8000"
 ELASTIC_URL = "http://elasticsearch:9200"
+COLLECTORS_ENDPOINT = "/collectors"
+DATASETS_ENDPOINT = "/datasets"
 
 
 class TestCollector:
@@ -30,21 +32,27 @@ class TestCollector:
         requests.post(ELASTIC_URL + "/collector/_refresh")
 
     def test_create(self):
-        response = requests.post(indexer_url + "/collectors", json=self.test_collector)
+        response = requests.post(
+            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+        )
         assert response.status_code == 201
 
     def test_create_bad_schema(self):
         response = requests.post(
-            indexer_url + "/collectors", json=self.test_collector_bad_schema
+            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector_bad_schema
         )
         assert response.status_code == 422
 
     def test_get(self):
-        response = requests.post(indexer_url + "/collectors", json=self.test_collector)
+        response = requests.post(
+            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+        )
         assert response.status_code == 200
 
     def test_validate_schema(self):
-        response = requests.post(indexer_url + "/collectors", json=self.test_collector)
+        response = requests.post(
+            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+        )
         try:
             schemas.Collector.parse_obj(json.loads(response.content))
         except ValidationError:
@@ -67,29 +75,33 @@ class TestDatasets:
     @classmethod
     def setup_class(cls):
         response = requests.post(
-            indexer_url + "/collectors", json=TestCollector.test_collector
+            INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
         )
         collector = json.loads(response.content)
         cls.test_dataset["collector_id"] = collector["id"]
 
     def test_create(self):
-        response = requests.post(indexer_url + "/datasets", json=self.test_dataset)
+        response = requests.post(
+            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
+        )
         assert response.status_code == 201
 
     def test_create_ttl(self):
         response = requests.post(
-            indexer_url + "/datasets", params={"ttl": 10}, json=self.test_dataset
+            INDEXER_URL + DATASETS_ENDPOINT, params={"ttl": 10}, json=self.test_dataset
         )
         assert response.status_code == 201
 
     def test_create_bad_schema(self):
         response = requests.post(
-            indexer_url + "/datasets", json=self.test_dataset_bad_schema
+            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset_bad_schema
         )
         assert response.status_code == 422
 
     def test_validate_schema(self):
-        response = requests.post(indexer_url + "/datasets", json=self.test_dataset)
+        response = requests.post(
+            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
+        )
         try:
             schemas.Dataset.parse_obj(json.loads(response.content))
         except ValidationError:
