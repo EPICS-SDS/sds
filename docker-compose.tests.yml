@@ -26,10 +26,11 @@ services:
     container_name: sds_tests
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
+      STORAGE_PATH: /data
     volumes:
       - ./app:/app/
       - ./tests:/app/tests/
-    command: python -m pytest -v
+    command: python -m pytest tests
 
   elasticsearch:
     volumes:

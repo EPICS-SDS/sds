@@ -1,14 +1,19 @@
-import requests
 import json
 from datetime import datetime
 
-from pydantic import ValidationError
+import aiohttp
+import pytest
+import pytest_asyncio
+import requests
 from common import schemas
+from pydantic import ValidationError
+from tests.functional.service_loader import INDEXER_PORT, indexer_service
 
-INDEXER_URL = "http://sds_indexer:8000"
 ELASTIC_URL = "http://elasticsearch:9200"
 COLLECTORS_ENDPOINT = "/collectors"
 DATASETS_ENDPOINT = "/datasets"
+
+INDEXER_URL = "http://0.0.0.0:" + str(INDEXER_PORT)
 
 
 class TestCollector:
@@ -24,6 +29,10 @@ class TestCollector:
         "event_code": 2,
     }
 
+    @pytest.fixture(autouse=True)
+    def _start_indexer_service(self, indexer_service):
+        pass
+
     @classmethod
     def setup_class(cls):
         # Make sure there is no collector that matches the collector that is created in the test_create test
@@ -31,33 +40,43 @@ class TestCollector:
         requests.post(ELASTIC_URL + "/collector/_delete_by_query", json=query)
         requests.post(ELASTIC_URL + "/collector/_refresh")
 
-    def test_create(self):
-        response = requests.post(
-            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
-        )
-        assert response.status_code == 201
+    @pytest.mark.asyncio
+    async def test_create(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+            ) as response:
+                assert response.status == 201
 
-    def test_create_bad_schema(self):
-        response = requests.post(
-            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector_bad_schema
-        )
-        assert response.status_code == 422
+    @pytest.mark.asyncio
+    async def test_create_bad_schema(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector_bad_schema
+            ) as response:
+                assert response.status == 422
 
-    def test_get(self):
-        response = requests.post(
-            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
-        )
-        assert response.status_code == 200
+    @pytest.mark.asyncio
+    async def test_get(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+            ) as response:
+                assert response.status == 200
 
-    def test_validate_schema(self):
-        response = requests.post(
-            INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
-        )
-        try:
-            schemas.Collector.parse_obj(json.loads(response.content))
-        except ValidationError:
-            assert False
-        assert True
+    @pytest.mark.asyncio
+    async def test_validate_schema(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
+            ) as response:
+                try:
+                    schemas.Collector.parse_obj(
+                        json.loads(await response.content.read())
+                    )
+                except ValidationError:
+                    assert False
+                assert True
 
 
 class TestDatasets:
@@ -72,38 +91,49 @@ class TestDatasets:
         "path": "/directory/file.h5",
     }
 
-    @classmethod
-    def setup_class(cls):
-        response = requests.post(
-            INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
-        )
-        collector = json.loads(response.content)
-        cls.test_dataset["collector_id"] = collector["id"]
+    @pytest_asyncio.fixture(autouse=True)
+    async def _start_indexer_service(self, indexer_service):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
+            ) as response:
+                collector = json.loads(await response.content.read())
+                self.test_dataset["collector_id"] = collector["id"]
 
-    def test_create(self):
-        response = requests.post(
-            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
-        )
-        assert response.status_code == 201
+    @pytest.mark.asyncio
+    async def test_create(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
+            ) as response:
+                assert response.status == 201
 
-    def test_create_ttl(self):
-        response = requests.post(
-            INDEXER_URL + DATASETS_ENDPOINT, params={"ttl": 10}, json=self.test_dataset
-        )
-        assert response.status_code == 201
+    @pytest.mark.asyncio
+    async def test_create_ttl(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + DATASETS_ENDPOINT,
+                params={"ttl": 10},
+                json=self.test_dataset,
+            ) as response:
+                assert response.status == 201
 
-    def test_create_bad_schema(self):
-        response = requests.post(
-            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset_bad_schema
-        )
-        assert response.status_code == 422
+    @pytest.mark.asyncio
+    async def test_create_bad_schema(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset_bad_schema
+            ) as response:
+                assert response.status == 422
 
-    def test_validate_schema(self):
-        response = requests.post(
-            INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
-        )
-        try:
-            schemas.Dataset.parse_obj(json.loads(response.content))
-        except ValidationError:
-            assert False
-        assert True
+    @pytest.mark.asyncio
+    async def test_validate_schema(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
+            ) as response:
+                try:
+                    schemas.Dataset.parse_obj(json.loads(await response.content.read()))
+                except ValidationError:
+                    assert False
+                assert True

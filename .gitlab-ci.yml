@@ -35,12 +35,6 @@ test:
           "-Expack.security.http.ssl.enabled=false",
           "-Ediscovery.type=single-node",
         ]
-    - name: $CONTAINER_TEST_IMAGE
-      alias: sds_indexer
-      command: ["uvicorn", "indexer:app", "--host", "0.0.0.0", "--port", "8000"]
-    - name: $CONTAINER_TEST_IMAGE
-      alias: sds_retriever
-      command: ["uvicorn", "retriever:app", "--host", "0.0.0.0", "--port", "8001"]
   variables:
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"

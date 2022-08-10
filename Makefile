@@ -18,7 +18,7 @@ test_image: docker_image
 test_pre: test_image
 	rm -r esdata | true
 	mkdir esdata
-	docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch sds_indexer sds_retriever
+	docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch
 
 test: test_image
 	docker compose -f docker-compose.yml -f docker-compose.tests.yml run --rm sds_tests

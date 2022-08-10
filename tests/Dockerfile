@@ -3,7 +3,8 @@ FROM sds
 USER root
 
 RUN pip install pytest \
-    && pip install pytest-cov
+    && pip install pytest-cov \
+    && pip install pytest-asyncio
 
 COPY --chown=csi:csi . /app/tests
 
