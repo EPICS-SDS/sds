@@ -69,15 +69,12 @@ class CollectorManager:
     async def __aexit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    # Start monitoring each PV for the events
+    # Start monitoring each PV
     def start(self):
-        pvs = set()
-        for collector in self.collectors:
-            pvs |= collector.pvs
-
-        self._tasks = []
-        for pv in pvs:
-            self._tasks.append(asyncio.create_task(self._subscribe(pv)))
+        # Collect PVs into a set to remove duplicates
+        pvs = {pv for collector in self.collectors for pv in collector.pvs}
+        # Subscribe to each PV and store the task reference
+        self._tasks = [asyncio.create_task(self._subscribe(pv)) for pv in pvs]
 
     def close(self):
         self._context.close()
