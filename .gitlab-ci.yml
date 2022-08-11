@@ -5,7 +5,6 @@ include:
 
 variables:
   CONTAINER_TEST_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  FF_NETWORK_PER_BUILD: "true"
 
 default:
   tags:
