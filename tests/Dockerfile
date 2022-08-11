@@ -5,7 +5,8 @@ USER root
 RUN pip install pytest \
     && pip install pytest-cov \
     && pip install pytest-asyncio \
-    && pip install coverage
+    && pip install coverage \
+    && pip install aiofiles
 
 COPY --chown=csi:csi . /app/tests
 

@@ -1,12 +1,17 @@
 import json
 from datetime import datetime
+from pathlib import Path
 
 import aiohttp
+import aiofiles
 import pytest
 import pytest_asyncio
 import requests
+from collector.dataset import Dataset
 from common import schemas
+from nexusformat.nexus import NXdata, NXentry
 from pydantic import ValidationError
+from retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
     RETRIEVER_PORT,
@@ -119,12 +124,10 @@ class TestDatasets:
     test_dataset_1 = {
         "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
         "trigger_pulse_id": 1,
-        "path": "/directory/file1.h5",
     }
     test_dataset_2 = {
         "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
         "trigger_pulse_id": 2,
-        "path": "/directory/file2.h5",
     }
 
     @pytest_asyncio.fixture(autouse=True)
@@ -142,6 +145,19 @@ class TestDatasets:
         query = {"query": {"match": {"collector_id": collector["id"]}}}
         requests.post(ELASTIC_URL + "/dataset/_delete_by_query", json=query)
         requests.post(ELASTIC_URL + "/dataset/_refresh")
+
+        # Create the NeXus files
+        for dataset in [self.test_dataset_1, self.test_dataset_2]:
+            dataset_nexus = Dataset(
+                collector_id=dataset["collector_id"],
+                collector_name=TestCollector.test_collector["name"],
+                trigger_date=datetime.utcnow(),
+                trigger_pulse_id=dataset["trigger_pulse_id"],
+                event_name=TestCollector.test_collector["event_name"],
+                event_code=TestCollector.test_collector["event_code"],
+            )
+            await dataset_nexus.write()
+            dataset["path"] = str(dataset_nexus.path)
 
         # Create a dataset to test queries
         for dataset in [self.test_dataset_1, self.test_dataset_2]:
@@ -228,3 +244,34 @@ class TestDatasets:
                 except ValidationError:
                     assert False
                 assert True
+
+        # File endpoints
+
+    @pytest.mark.asyncio
+    async def test_get_existing_file_with_id(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL
+                + DATASETS_ENDPOINT
+                + "/"
+                + self.test_dataset_1["dataset_id"]
+                + "/file"
+            ) as response:
+                assert response.status == 200
+                assert (
+                    response.content_disposition.filename
+                    == Path(self.test_dataset_1["path"]).name
+                )
+                f = await aiofiles.open(
+                    settings.storage_path / self.test_dataset_1["path"], mode="rb"
+                )
+                assert await f.read() == await response.read()
+                await f.close()
+
+    @pytest.mark.asyncio
+    async def test_get_non_existing_file_with_id(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT + "/wrong_id/file"
+            ) as response:
+                assert response.status == 404

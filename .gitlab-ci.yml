@@ -35,10 +35,13 @@ test:
           "-Ediscovery.type=single-node",
         ]
   variables:
+    INDEXER_URL: "http://0.0.0.0:8000"
+    COLLECTOR_DEFINITIONS: "collectors.json"
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
     - cp -R tests app/
+    - cp collectors.json app/
     - cd app
     - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:

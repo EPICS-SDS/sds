@@ -203,6 +203,9 @@ async def get_dataset_file(
 
     dataset = schemas.Dataset.from_orm(dataset)
 
+    if not (settings.storage_path / dataset.path).exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
     return FileResponse(
         settings.storage_path / dataset.path,
         filename=dataset.path.name,
@@ -280,6 +283,10 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
             new_h5_file = MemoryNexus(h5_io)
 
             for path in list(set(pulses_per_collector[collector]["paths"])):
+                if not (settings.storage_path / path).exists():
+                    raise HTTPException(
+                        status_code=404, detail=f"File {path} not found"
+                    )
                 origin_h5_file = hp.File(settings.storage_path / path)
                 origin_data = origin_h5_file["entry"]
                 pulses_in_file = [

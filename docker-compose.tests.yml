@@ -25,11 +25,15 @@ services:
     image: sds_test
     container_name: sds_tests
     environment:
+      INDEXER_URL: "http://0.0.0.0:8000"
+      COLLECTOR_DEFINITIONS: "collectors.json"
       ELASTIC_URL: "http://elasticsearch:9200"
       STORAGE_PATH: /data
     volumes:
+      - ./data:/data/
       - ./app:/app/
       - ./tests:/app/tests/
+      - ./collectors.json:/app/collectors.json
     command: python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 
   elasticsearch:
