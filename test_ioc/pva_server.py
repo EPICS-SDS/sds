@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from multiprocessing import cpu_count, get_context
+import time
+from multiprocessing import cpu_count, get_context, shared_memory
 
 import numpy as np
+from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
-from p4p.nt import NTScalar
 
 from ntndarraywithevent import NTNDArrayWithEvent
 
 
-class MyHandler(object):
+class TriggerHandler(object):
     def __init__(self, event):
         self.event = event
 
@@ -23,9 +24,22 @@ class MyHandler(object):
         op.done()
 
 
+class NPulsesHandler(object):
+    def __init__(self, n_pulses):
+        self.n_pulses = n_pulses
+
+    def put(self, pv, op):
+        if op.value().raw.value > 0:
+            pv.post(op.value())
+            self.n_pulses.buf[0] = op.value().raw.value
+
+        op.done()
+
+
 class MyServer(object):
-    def __init__(self, event):
+    def __init__(self, event, n_pulses):
         self.event = event
+        self.n_pulses = n_pulses
 
         self.stop_flag = False
         self.pvdb = dict()
@@ -48,32 +62,38 @@ class MyServer(object):
     def _start_server(self):
         server = Server(providers=[self.provider])
 
-        counter = 0
+        pulse_id = 0
 
         with server:
             while not self.stop_flag:
                 if self.stop_flag:
                     break
-                counter += 1
 
                 self.event.wait()
                 self.event.clear()
 
-                for pv in self.pvdb:
-                    arr = np.random.random(self.pvdb[pv].current().shape[0])
-                    arr[0] = counter
+                trigger_pulse_id = pulse_id
+                trigger_timestamp = time.time_ns()
+                for i in range(int(self.n_pulses.buf[0])):
+                    for pv in self.pvdb:
+                        arr = np.random.random(self.pvdb[pv].current().shape[0])
+                        arr[0] = pulse_id
 
-                    try:
-                        self.pvdb[pv].post(
-                            {
-                                "value": arr,
-                                "pulse_id": counter,
-                                "event_name": "data-on-demand",
-                                "event_code": 1,
-                            }
-                        )
-                    except Exception:
-                        pass
+                        try:
+                            self.pvdb[pv].post(
+                                {
+                                    "value": arr,
+                                    "trigger_pulse_id": trigger_pulse_id,
+                                    "trigger_timestamp": trigger_timestamp,
+                                    "timestamp": time.time_ns(),
+                                    "pulse_id": pulse_id,
+                                    "event_name": "data-on-demand",
+                                    "event_code": 1,
+                                }
+                            )
+                        except Exception:
+                            pass
+                    pulse_id += 1
 
     def join(self):
         if self.process is not None:
@@ -85,14 +105,22 @@ def run_server(scenario, prefix):
 
     mngr = mp_ctxt.Manager()
     event = mngr.Event()
-
-    provider = StaticProvider("trigger")
-    trigger_pv = SharedPV(handler=MyHandler(event), nt=NTScalar("?"), initial=False)
-    provider.add(prefix + "TRIG", trigger_pv)
+    n_pulses = shared_memory.SharedMemory(create=True, size=sys.getsizeof(1))
+    n_pulses.buf[0] = 1
 
     servers = []
     for i in range(cpu_count()):
-        servers.append(MyServer(event))
+        servers.append(MyServer(event, n_pulses))
+
+    provider = StaticProvider("trigger")
+    trigger_pv = SharedPV(
+        handler=TriggerHandler(event), nt=NTScalar("?"), initial=False
+    )
+    n_pulses_pv = SharedPV(
+        handler=NPulsesHandler(n_pulses), nt=NTScalar("i"), initial=1
+    )
+    provider.add(prefix + "TRIG", trigger_pv)
+    provider.add(prefix + "N_PULSES", n_pulses_pv)
 
     next_server = 0
     for filename in scenario.keys():
