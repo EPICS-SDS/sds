@@ -1,6 +1,2 @@
 [paths]
-source =
-    collector/
-    common/
-    indexer/
-    retriever/
+source = app/
