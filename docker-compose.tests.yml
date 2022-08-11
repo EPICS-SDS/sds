@@ -30,7 +30,7 @@ services:
     volumes:
       - ./app:/app/
       - ./tests:/app/tests/
-    command: python -m pytest tests
+    command: python -m pytest tests --cov-report html --cov '.'
 
   elasticsearch:
     volumes:
