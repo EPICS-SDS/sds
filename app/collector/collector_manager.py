@@ -115,9 +115,8 @@ class CollectorManager:
     # Finds the event and updates it with the value
     def _event_handler(self, event: Event):
         for collector in self.collectors:
-            if not collector.event_matches(event):
-                break
-            collector.update(event)
+            if collector.event_matches(event):
+                collector.update(event)
 
     async def join(self):
         await asyncio.wait(self._tasks)
