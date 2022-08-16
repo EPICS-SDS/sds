@@ -7,9 +7,9 @@ import aiofiles
 import pytest
 import pytest_asyncio
 import requests
-from collector.dataset import Dataset
 from common import schemas
 from nexusformat.nexus import NXdata, NXentry
+from common.files.dataset import Dataset
 from pydantic import ValidationError
 from retriever.config import settings
 from tests.functional.service_loader import (
