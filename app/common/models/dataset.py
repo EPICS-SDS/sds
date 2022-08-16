@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from common.config import settings
+from common.db import settings
 from common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 from common.db.base_class import Base
 from common.db.connection import get_connection

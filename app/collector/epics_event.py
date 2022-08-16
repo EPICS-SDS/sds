@@ -2,27 +2,16 @@ from datetime import datetime
 from typing import Any
 
 from p4p import Value
-from pydantic import BaseModel, root_validator
+from pydantic import root_validator
+from common.files.event import Event
 
 
 def get_attribute(value: Value, name: str):
-    def fn(item):
-        return item.name == name
-
-    iterator = filter(fn, value.raw["attribute"])
+    iterator = filter(lambda item: item.name == name, value.raw["attribute"])
     return next(iterator, None)
 
 
-class Event(BaseModel):
-    name: str
-    code: int
-    pv_name: str
-    value: Any
-    data_date: datetime
-    trigger_date: datetime
-    pulse_id: int
-    trigger_pulse_id: int
-
+class EpicsEvent(Event):
     @root_validator(pre=True)
     def extract_values(cls, values: Value):
         if "value" not in values:
@@ -41,7 +30,7 @@ class Event(BaseModel):
         attribute = get_attribute(value, "eventName")
         if attribute is not None:
             values.update(
-                name=attribute["value"],
+                timming_event_name=attribute["value"],
                 trigger_date=datetime.fromtimestamp(
                     value.raw.timeStamp.secondsPastEpoch
                     + value.raw.timeStamp.nanoseconds * 1e-9
@@ -52,7 +41,7 @@ class Event(BaseModel):
         attribute = get_attribute(value, "eventCode")
         if attribute is not None:
             values.update(
-                code=attribute.value,
+                timming_event_code=attribute.value,
                 trigger_pulse_id=attribute.timestamp.userTag,
             )
         return values

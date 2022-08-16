@@ -1,14 +1,20 @@
 from datetime import datetime
 from pathlib import Path
+
 import aiohttp
+from common.files.event import Event
 from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
 
-from collector.config import settings
-from collector.event import Event
+from common.files.config import settings
 
 
 class DatasetSchema(BaseModel):
+    """
+    Model for a file containing Event objects that belong to the same timing
+    event (same trigger_pulse_id) and share the same collector.
+    """
+
     collector_id: str
     trigger_date: datetime
     trigger_pulse_id: int
@@ -45,23 +51,45 @@ class Dataset(DatasetSchema):
         return values
 
     def update(self, event: Event):
-        key = f"event_{event.pulse_id}"
-        if key not in self.entry:
-            self.entry[key] = NXdata(attrs={"pulse_id": event.pulse_id})
-        self.entry[key][event.pv_name] = event.value
+        """
+        Add an event to the NeXus file
+        """
+        trigger_key = f"trigger_{event.trigger_pulse_id}"
+        pulse_key = f"pulse_{event.pulse_id}"
+        if trigger_key not in self.entry:
+            self.entry[trigger_key] = NXentry(
+                attrs={
+                    "trigger_pulse_id": event.trigger_pulse_id,
+                    "trigger_timestamp": event.trigger_date.isoformat(),
+                }
+            )
+        if pulse_key not in self.entry[trigger_key]:
+            self.entry[trigger_key][pulse_key] = NXdata(
+                attrs={
+                    "pulse_id": event.pulse_id,
+                    "timestamp": event.data_date.isoformat(),
+                }
+            )
+        self.entry[trigger_key][pulse_key][event.pv_name] = event.value
 
     async def write(self):
+        """
+        Write NeXus file into storage
+        """
         try:
-            print(repr(self), "writing to '{self.path}'")
+            print(repr(self), f"writing to '{self.path}'")
             absolute_path = settings.storage_path / self.path
             absolute_path.parent.mkdir(parents=True, exist_ok=True)
-            self.entry.save(absolute_path)
+            self.entry.save(absolute_path, mode="w")
             print(repr(self), "writing done.")
         except Exception as e:
             print(repr(self), "writing failed!")
             print(e)
 
     async def upload(self):
+        """
+        Publish metadata into the indexer service
+        """
         try:
             print(repr(self), "indexing...")
             url = settings.indexer_url + "/datasets"

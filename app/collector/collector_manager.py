@@ -1,17 +1,18 @@
-from typing import Set
-
 import asyncio
 from contextlib import asynccontextmanager
+from typing import Set
+
+from common.files import Event
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
-from collector.config import settings
 from collector.collector import Collector
-from collector.event import Event
+from collector.config import settings
+from collector.epics_event import EpicsEvent
 
 
 class AsyncSubscription:
-    def __init__(self, context, pv):
+    def __init__(self, context: Context, pv):
         self._context = context
         self._pv = pv
         self._on_message = None
@@ -105,7 +106,7 @@ class CollectorManager:
 
     def _message_handler(self, pv, message):
         try:
-            event = Event(pv_name=pv, value=message)
+            event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError:
             print(f"PV '{pv}' event validation error")
             return
@@ -115,9 +116,8 @@ class CollectorManager:
     # Finds the event and updates it with the value
     def _event_handler(self, event: Event):
         for collector in self.collectors:
-            if not collector.event_matches(event):
-                break
-            collector.update(event)
+            if collector.event_matches(event):
+                collector.update(event)
 
     async def join(self):
         await asyncio.wait(self._tasks)

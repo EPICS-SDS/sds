@@ -1,18 +1,20 @@
 import logging
+import os
 import zipfile
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-import h5py as hp
+import aiofiles
 from common import crud, schemas
 from common.db.connection import wait_for_connection
+from common.files import Collector
+from common.models import Dataset
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 
 from retriever.config import settings
-from retriever.memory_nexus import MemoryNexus
 
 HDF5_MIME_TYPE = "application/x-hdf5"
 
@@ -61,15 +63,14 @@ async def query_collectors(
         filters.append({"wildcard": {"name": name}})
     if event_name:
         filters.append({"wildcard": {"event_name": event_name}})
-    if event_code:
-        filters.append({"wildcard": {"event_code": event_code}})
+    if event_code is not None:
+        filters.append({"term": {"event_code": event_code}})
     if pv:
         filters.append(
             {
                 "query_string": {
-                    "query": " ".join(map(lambda s: s.replace(":", r"\:"), pv)),
+                    "query": " AND ".join(map(lambda s: s.replace(":", r"\:"), pv)),
                     "default_field": "pvs",
-                    "default_operator": "AND",
                 }
             }
         )
@@ -106,7 +107,7 @@ async def query_datasets(
     end: Optional[datetime] = None,
     trigger_pulse_id_start: Optional[int] = None,
     trigger_pulse_id_end: Optional[int] = None,
-):
+) -> List[Dataset]:
     """
     Search for datasets in the index.
     - **collector_id** (List[str], optional): list of collector IDs to
@@ -142,12 +143,72 @@ async def query_datasets(
     return datasets
 
 
-@datasets_router.get(
-    "/file",
-    response_class=StreamingResponse,
-    summary="Compile datasets in file based on a query",
-)
-async def compile_dataset_file(
+@datasets_router.get("/{id}", response_model=schemas.Dataset)
+async def get_dataset(
+    *,
+    id: Any,
+):
+    """
+    Get the dataset metadata with the give `id`
+    """
+    dataset = await crud.dataset.get(id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    return dataset
+
+
+app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])
+
+# Files
+
+files_router = APIRouter()
+
+
+@files_router.get("", response_class=FileResponse)
+async def get_file_by_path(
+    *,
+    path: Path,
+):
+    """
+    Get a NeXus file from the storage
+    - **path** (str, required): file path
+    """
+
+    if not (settings.storage_path / path).exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(
+        settings.storage_path / path,
+        filename=path.name,
+        media_type=HDF5_MIME_TYPE,
+    )
+
+
+@files_router.get("/dataset/{id}", response_class=FileResponse)
+async def get_file_by_dataset_id(
+    *,
+    id: Any,
+):
+    """
+    Get the NeXus file containing the dataset with the given `id`
+    """
+    dataset = await crud.dataset.get(id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    dataset = schemas.Dataset.from_orm(dataset)
+
+    if not (settings.storage_path / dataset.path).exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(
+        settings.storage_path / dataset.path,
+        filename=dataset.path.name,
+        media_type=HDF5_MIME_TYPE,
+    )
+
+
+@files_router.get("/datasets", response_class=StreamingResponse)
+async def get_file_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
@@ -172,77 +233,15 @@ async def compile_dataset_file(
     if datasets == []:
         raise HTTPException(status_code=404, detail="Datasets not found")
 
-    return get_datasets_file(datasets)
-
-
-@datasets_router.get("/{id}", response_model=schemas.Dataset)
-async def get_dataset(
-    *,
-    id: Any,
-):
-    """
-    Get the dataset metadata with the give `id`
-    """
-    dataset = await crud.dataset.get(id)
-    if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
-    return dataset
-
-
-@datasets_router.get("/{id}/file", response_class=FileResponse)
-async def get_dataset_file(
-    *,
-    id: Any,
-):
-    """
-    Get the NeXus file containing the dataset with the given `id`
-    """
-    dataset = await crud.dataset.get(id)
-    if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
-
-    dataset = schemas.Dataset.from_orm(dataset)
-
-    if not (settings.storage_path / dataset.path).exists():
-        raise HTTPException(status_code=404, detail="File not found")
-
-    return FileResponse(
-        settings.storage_path / dataset.path,
-        filename=dataset.path.name,
-        media_type=HDF5_MIME_TYPE,
-    )
-
-
-app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])
-
-# Files
-
-files_router = APIRouter()
-
-
-@files_router.get("", response_class=FileResponse)
-async def get_file(
-    *,
-    path: Path,
-):
-    """
-    Get a NeXus file from the storage
-    - **path** (str, required): file path
-    """
-
-    if not (settings.storage_path / path).exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(
-        settings.storage_path / path,
-        filename=path.name,
-        media_type=HDF5_MIME_TYPE,
+    return await get_file_with_multiple_datasets(
+        [schemas.DatasetBase.parse_obj(dataset) for dataset in datasets]
     )
 
 
 @files_router.post("/compile", response_class=StreamingResponse)
-def get_datasets_file(datasets: List[schemas.DatasetBase]):
+async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
     """
-    Get a set of NeXus files containing the requested datasets, one file per collector.
+    Get a set of NeXus files containing the requested datasets, one file per collector (zipped if needed).
     - **datasets** (List[Dataset], required): list of datasets to download
     """
 
@@ -251,7 +250,7 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
     if len(paths) == 1:
         response = crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
-        # No check is done on the datasets, assuming they exist an were obtained using `/datasets`
+        # No check is done on the datasets, assuming they exist an were obtained using the `/datasets` endpoint
         if len(response) == len(datasets):
             return FileResponse(
                 settings.storage_path / paths[0],
@@ -259,52 +258,23 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
                 media_type=HDF5_MIME_TYPE,
             )
 
-    collectors = list(set([ds.collector_id for ds in datasets]))
-    pulses_per_collector = {}
-    for collector in collectors:
-        pulses_per_collector[collector] = {"pulses": [], "paths": []}
-        for dataset in datasets:
-            if dataset.collector_id == collector:
-                pulses_per_collector[collector]["filename"] = (
-                    dataset.path.as_posix()[: dataset.path.as_posix().rfind("_")]
-                    + ".h5"
-                )  # removing pulse id from filename to obtain collector name
-                pulses_per_collector[collector]["pulses"].append(
-                    dataset.trigger_pulse_id
-                )
-                pulses_per_collector[collector]["paths"].append(str(dataset.path))
+    collectors: Dict[str, Collector] = dict()
+    for dataset in datasets:
+        collector = collectors.get(dataset.collector_id)
+        if collector is None:
+            collectors[dataset.collector_id] = Collector.create(dataset)
+        else:
+            collector.update(dataset)
 
-    # Create a zip file in memory to collect the data before transferring it
-    zip_io = BytesIO()
-    zip_filename = "datasets.zip"
-    with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
-        for collector in pulses_per_collector.keys():
-            h5_io = BytesIO()
-            new_h5_file = MemoryNexus(h5_io)
+    # Create a temporary zip file to collect the data before transferring it
+    async with aiofiles.tempfile.TemporaryDirectory() as d:
+        zip_filename = "datasets.zip"
+        zip_io = BytesIO()
+        with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
+            for collector in collectors.values():
+                await collector.write(d)
 
-            for path in list(set(pulses_per_collector[collector]["paths"])):
-                if not (settings.storage_path / path).exists():
-                    raise HTTPException(
-                        status_code=404, detail=f"File {path} not found"
-                    )
-                origin_h5_file = hp.File(settings.storage_path / path)
-                origin_data = origin_h5_file["entry"]
-                pulses_in_file = [
-                    origin_data[key].attrs.get("pulse_id") for key in origin_data.keys()
-                ]
-                pulses_to_copy = set.intersection(
-                    set(pulses_per_collector[collector]["pulses"]),
-                    set(pulses_in_file),
-                )
-                for pulse in pulses_to_copy:
-                    new_h5_file.copy(origin_data[f"event_{pulse}"])
-                origin_h5_file.close()
-
-            new_h5_file.close()
-
-            h5_io.seek(0)
-            zip.writestr(pulses_per_collector[collector]["filename"], h5_io.read())
-            h5_io.close()
+                zip.write(os.path.join(d, collector.path), collector.path)
 
     return StreamingResponse(
         iter([zip_io.getvalue()]),
@@ -313,4 +283,4 @@ def get_datasets_file(datasets: List[schemas.DatasetBase]):
     )
 
 
-app.include_router(files_router, prefix="/files", tags=["datasets"])
+app.include_router(files_router, prefix="/files", tags=["files"])
