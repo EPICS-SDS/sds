@@ -7,7 +7,7 @@ from elasticsearch import BadRequestError, NotFoundError
 from pydantic import BaseModel, root_validator
 
 from common.db.connection import get_connection
-from common.config import settings
+from common.db import settings
 
 
 logger = logging.getLogger("sds_common")

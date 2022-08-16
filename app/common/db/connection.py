@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from functools import wraps
 from elasticsearch import AsyncElasticsearch
 
-from common.config import settings
+from common.db import settings
 
 logger = logging.getLogger("sds_common")
 
