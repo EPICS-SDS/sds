@@ -6,7 +6,7 @@ from common.files.event import Event
 from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
 
-from collector.config import settings
+from common.files.config import settings
 
 
 class DatasetSchema(BaseModel):

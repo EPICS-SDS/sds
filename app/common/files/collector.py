@@ -5,7 +5,7 @@ import nexusformat.nexus.tree as nx
 from common.files.dataset import Dataset
 from pydantic import BaseModel
 
-from collector.config import settings
+from common.files.config import settings
 
 
 class Collector(BaseModel):
