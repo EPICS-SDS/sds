@@ -1,15 +1,17 @@
+from io import BytesIO
 import json
 from datetime import datetime
 from pathlib import Path
+import zipfile
 
-import aiohttp
 import aiofiles
+import aiohttp
 import pytest
 import pytest_asyncio
 import requests
 from common import schemas
-from nexusformat.nexus import NXdata, NXentry
 from common.files.dataset import Dataset
+from common.files.event import Event
 from pydantic import ValidationError
 from retriever.config import settings
 from tests.functional.service_loader import (
@@ -36,20 +38,32 @@ class TestCollector:
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
     }
 
+    test_collector_2 = {
+        "name": "retriever_test_2",
+        "event_name": "test_event_2",
+        "event_code": 2,
+        "pvs": ["PV:TEST:3", "PV:TEST:4"],
+    }
+
     @pytest_asyncio.fixture(autouse=True)
     async def _start_services(self, indexer_service, retriever_service):
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
-            ) as response:
-                collector = json.loads(await response.content.read())
-                self.test_collector["collector_id"] = collector["id"]
+            for collector in [
+                TestCollector.test_collector,
+                TestCollector.test_collector_2,
+            ]:
+                async with session.post(
+                    INDEXER_URL + COLLECTORS_ENDPOINT, json=collector
+                ) as response:
+                    response_json = json.loads(await response.content.read())
+                    collector["collector_id"] = response_json["id"]
 
     @pytest.mark.asyncio
     async def test_query_existing_collector(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test"}
+                RETRIEVER_URL + COLLECTORS_ENDPOINT,
+                params={"name": self.test_collector["name"]},
             ) as response:
                 assert response.status == 200
                 assert (
@@ -65,6 +79,49 @@ class TestCollector:
             ) as response:
                 assert response.status == 200
                 assert json.loads(await response.content.read()) == []
+
+    @pytest.mark.asyncio
+    async def test_query_collector_all_filters(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + COLLECTORS_ENDPOINT,
+                params={
+                    "name": self.test_collector["name"],
+                    "event_name": self.test_collector["event_name"],
+                    "event_code": self.test_collector["event_code"],
+                    "pv": ["PV:TEST:1", "PV:TEST:2"],
+                },
+            ) as response:
+                assert response.status == 200
+                json_response = json.loads(await response.content.read())
+                assert len(json_response) == 1
+                assert json_response[0]["id"] == self.test_collector["collector_id"]
+
+    @pytest.mark.asyncio
+    async def test_query_collector_pv_filter_overlap(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + COLLECTORS_ENDPOINT,
+                params={
+                    "name": "retriever_test*",
+                    "pv": ["PV:TEST:3"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 2
+
+    @pytest.mark.asyncio
+    async def test_query_collector_pv_filter_wildcard(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + COLLECTORS_ENDPOINT,
+                params={
+                    "name": "retriever_test*",
+                    "pv": ["PV:*:1"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 1
 
     @pytest.mark.asyncio
     async def test_get_existing_collector(self):
@@ -157,6 +214,20 @@ class TestDatasets:
                 event_name=TestCollector.test_collector["event_name"],
                 event_code=TestCollector.test_collector["event_code"],
             )
+
+            for i, pv in enumerate(TestCollector.test_collector["pvs"]):
+                new_event = Event(
+                    pv_name=pv,
+                    value=i,
+                    timming_event_name=TestCollector.test_collector["event_name"],
+                    timming_event_code=TestCollector.test_collector["event_code"],
+                    data_date=datetime.utcnow(),
+                    trigger_date=datetime.utcnow(),
+                    pulse_id=dataset["trigger_pulse_id"],
+                    trigger_pulse_id=dataset["trigger_pulse_id"],
+                )
+                dataset_nexus.update(new_event)
+
             await dataset_nexus.write()
             dataset["path"] = str(dataset_nexus.path)
 
@@ -273,5 +344,54 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + FILES_ENDPOINT + "/dataset/wrong_id"
+            ) as response:
+                assert response.status == 404
+
+    @pytest.mark.asyncio
+    async def test_get_existing_file_with_path(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + FILES_ENDPOINT,
+                params={"path": self.test_dataset_1["path"]},
+            ) as response:
+                assert response.status == 200
+                assert (
+                    response.content_disposition.filename
+                    == Path(self.test_dataset_1["path"]).name
+                )
+                f = await aiofiles.open(
+                    settings.storage_path / self.test_dataset_1["path"], mode="rb"
+                )
+                assert await f.read() == await response.read()
+                await f.close()
+
+    @pytest.mark.asyncio
+    async def test_get_non_existing_file_with_path(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + FILES_ENDPOINT, params={"path": "/wrong/path/file.h5"}
+            ) as response:
+                assert response.status == 404
+
+    @pytest.mark.asyncio
+    async def test_get_existing_file_with_query(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + FILES_ENDPOINT + DATASETS_ENDPOINT,
+                params={"collector_id": self.test_dataset_1["collector_id"]},
+            ) as response:
+                assert response.status == 200
+                assert response.content_disposition.filename == "datasets.zip"
+                with zipfile.ZipFile(BytesIO(await response.read())) as zip:
+                    assert zip.namelist() == [
+                        TestCollector.test_collector["name"] + ".h5"
+                    ]
+
+    @pytest.mark.asyncio
+    async def test_get_non_existing_file_with_query(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + FILES_ENDPOINT + DATASETS_ENDPOINT,
+                params={"collector_id": "wrong_id"},
             ) as response:
                 assert response.status == 404
