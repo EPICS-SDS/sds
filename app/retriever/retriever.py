@@ -63,8 +63,8 @@ async def query_collectors(
         filters.append({"wildcard": {"name": name}})
     if event_name:
         filters.append({"wildcard": {"event_name": event_name}})
-    if event_code:
-        filters.append({"wildcard": {"event_code": event_code}})
+    if event_code is not None:
+        filters.append({"term": {"event_code": event_code}})
     if pv:
         filters.append(
             {
