@@ -69,9 +69,8 @@ async def query_collectors(
         filters.append(
             {
                 "query_string": {
-                    "query": " ".join(map(lambda s: s.replace(":", r"\:"), pv)),
+                    "query": " AND ".join(map(lambda s: s.replace(":", r"\:"), pv)),
                     "default_field": "pvs",
-                    "default_operator": "AND",
                 }
             }
         )
