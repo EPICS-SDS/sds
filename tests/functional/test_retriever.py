@@ -25,6 +25,7 @@ RETRIEVER_URL = "http://0.0.0.0:" + str(RETRIEVER_PORT)
 
 COLLECTORS_ENDPOINT = "/collectors"
 DATASETS_ENDPOINT = "/datasets"
+FILES_ENDPOINT = "/files"
 
 
 class TestCollector:
@@ -252,10 +253,9 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL
-                + DATASETS_ENDPOINT
-                + "/"
+                + FILES_ENDPOINT
+                + "/dataset/"
                 + self.test_dataset_1["dataset_id"]
-                + "/file"
             ) as response:
                 assert response.status == 200
                 assert (
@@ -272,6 +272,6 @@ class TestDatasets:
     async def test_get_non_existing_file_with_id(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + DATASETS_ENDPOINT + "/wrong_id/file"
+                RETRIEVER_URL + FILES_ENDPOINT + "/dataset/wrong_id"
             ) as response:
                 assert response.status == 404
