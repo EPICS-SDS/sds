@@ -248,7 +248,7 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
     # If all the datasets requested and only those are stored in a single file, return that file.
     paths = list(set([ds.path for ds in datasets]))
     if len(paths) == 1:
-        response = crud.dataset.get_multi_by_path(paths[0])
+        response = await crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
         # No check is done on the datasets, assuming they exist an were obtained using the `/datasets` endpoint
         if len(response) == len(datasets):

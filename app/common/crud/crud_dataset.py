@@ -22,7 +22,7 @@ class CRUDDataset(CRUDBase[Dataset, DatasetCreate]):
         return db_obj
 
     async def get_multi_by_path(self, *paths: List[Path]) -> List[Dataset]:
-        clauses = [{"match": {"path": path}} for path in paths]
+        clauses = [{"match": {"path": str(path)}} for path in paths]
         query = {"bool": {"should": clauses}}
         return await self.model.mget(query=query)
 
