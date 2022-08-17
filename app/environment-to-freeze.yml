@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - aiofiles
   - aiohttp
   - elasticsearch
   - fastapi   
@@ -13,5 +14,4 @@ dependencies:
   - uvicorn
   - pip:
     - --index-url https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
-    - ess-nexus==0.9.8
     - p4p==4.1.1
