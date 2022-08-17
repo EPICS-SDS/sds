@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 
-import aiohttp
 from common.files.event import Event
 from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
@@ -84,23 +83,6 @@ class Dataset(DatasetSchema):
             print(repr(self), "writing done.")
         except Exception as e:
             print(repr(self), "writing failed!")
-            print(e)
-
-    async def upload(self):
-        """
-        Publish metadata into the indexer service
-        """
-        try:
-            print(repr(self), "indexing...")
-            url = settings.indexer_url + "/datasets"
-            data = DatasetSchema.parse_obj(self).json()
-            headers = {"Content-Type": "application/json"}
-            async with aiohttp.ClientSession(headers=headers) as client:
-                async with client.post(url, data=data) as response:
-                    response.raise_for_status()
-            print(repr(self), "indexing done.")
-        except Exception as e:
-            print(repr(self), "indexing failed!")
             print(e)
 
     def __repr__(self):

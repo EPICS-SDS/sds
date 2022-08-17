@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, FrozenSet, Set
 
 from common.files import Event
-from common.files import Dataset
+from collector.indexable_dataset import IndexableDataset
 from pydantic import BaseModel
 
 from collector.config import settings
@@ -48,7 +48,7 @@ class Collector(CollectorSchema):
 
         if not self.has_queue(event.trigger_pulse_id):
             queue = self.get_queue(event.trigger_pulse_id)
-            dataset = Dataset(
+            dataset = IndexableDataset(
                 collector_id=self.id,
                 collector_name=self.name,
                 trigger_date=datetime.utcnow(),
@@ -81,7 +81,7 @@ class Collector(CollectorSchema):
         except asyncio.TimeoutError:
             print(repr(self), "timed out")
 
-        await dataset.upload()
+        await dataset.index()
         await dataset.write()
 
     def event_matches(self, event: Event):

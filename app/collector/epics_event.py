@@ -3,7 +3,7 @@ from typing import Any
 
 from p4p import Value
 from pydantic import root_validator
-from common.files.event import Event
+from common.files import Event
 
 
 def get_attribute(value: Value, name: str):
