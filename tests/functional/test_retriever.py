@@ -1,8 +1,9 @@
-from io import BytesIO
 import json
-from datetime import datetime
-from pathlib import Path
+import os
 import zipfile
+from datetime import datetime
+from io import BytesIO
+from pathlib import Path
 
 import aiofiles
 import aiohttp
@@ -179,14 +180,22 @@ class TestCollector:
 
 
 class TestDatasets:
-    test_dataset_1 = {
-        "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
-        "trigger_pulse_id": 1,
-    }
-    test_dataset_2 = {
-        "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
-        "trigger_pulse_id": 2,
-    }
+    test_dataset_1 = [
+        {
+            "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
+            "trigger_pulse_id": 1,
+        }
+    ]
+    test_dataset_2 = [
+        {
+            "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
+            "trigger_pulse_id": 2,
+        },
+        {
+            "trigger_date": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
+            "trigger_pulse_id": 3,
+        },
+    ]
 
     @pytest_asyncio.fixture(autouse=True)
     async def _start_services(self, indexer_service, retriever_service):
@@ -196,8 +205,9 @@ class TestDatasets:
                 INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
             ) as response:
                 collector = json.loads(await response.content.read())
-                self.test_dataset_1["collector_id"] = collector["id"]
-                self.test_dataset_2["collector_id"] = collector["id"]
+                self.test_dataset_1[0]["collector_id"] = collector["id"]
+                self.test_dataset_2[0]["collector_id"] = collector["id"]
+                self.test_dataset_2[1]["collector_id"] = collector["id"]
 
         # Remove the datasets in case they already exist
         query = {"query": {"match": {"collector_id": collector["id"]}}}
@@ -205,41 +215,43 @@ class TestDatasets:
         requests.post(ELASTIC_URL + "/dataset/_refresh")
 
         # Create the NeXus files
-        for dataset in [self.test_dataset_1, self.test_dataset_2]:
+        for datasets in [self.test_dataset_1, self.test_dataset_2]:
             dataset_nexus = Dataset(
-                collector_id=dataset["collector_id"],
+                collector_id=datasets[0]["collector_id"],
                 collector_name=TestCollector.test_collector["name"],
                 trigger_date=datetime.utcnow(),
-                trigger_pulse_id=dataset["trigger_pulse_id"],
+                trigger_pulse_id=datasets[0]["trigger_pulse_id"],
                 event_name=TestCollector.test_collector["event_name"],
                 event_code=TestCollector.test_collector["event_code"],
             )
-
-            for i, pv in enumerate(TestCollector.test_collector["pvs"]):
-                new_event = Event(
-                    pv_name=pv,
-                    value=i,
-                    timming_event_name=TestCollector.test_collector["event_name"],
-                    timming_event_code=TestCollector.test_collector["event_code"],
-                    data_date=datetime.utcnow(),
-                    trigger_date=datetime.utcnow(),
-                    pulse_id=dataset["trigger_pulse_id"],
-                    trigger_pulse_id=dataset["trigger_pulse_id"],
-                )
-                dataset_nexus.update(new_event)
+            for dataset in datasets:
+                for i, pv in enumerate(TestCollector.test_collector["pvs"]):
+                    new_event = Event(
+                        pv_name=pv,
+                        value=i,
+                        timming_event_name=TestCollector.test_collector["event_name"],
+                        timming_event_code=TestCollector.test_collector["event_code"],
+                        data_date=datetime.utcnow(),
+                        trigger_date=datetime.utcnow(),
+                        pulse_id=dataset["trigger_pulse_id"],
+                        trigger_pulse_id=dataset["trigger_pulse_id"],
+                    )
+                    dataset_nexus.update(new_event)
 
             await dataset_nexus.write()
-            dataset["path"] = str(dataset_nexus.path)
+            for dataset in datasets:
+                dataset["path"] = str(dataset_nexus.path)
 
-        # Create a dataset to test queries
-        for dataset in [self.test_dataset_1, self.test_dataset_2]:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    INDEXER_URL + DATASETS_ENDPOINT, json=dataset
-                ) as response:
-                    assert response.status == 201
-                    new_dataset = json.loads(await response.content.read())
-                    dataset["dataset_id"] = new_dataset["id"]
+        # Create datasets to test queries
+        for datasets in [self.test_dataset_1, self.test_dataset_2]:
+            for dataset in datasets:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        INDEXER_URL + DATASETS_ENDPOINT, json=dataset
+                    ) as response:
+                        assert response.status == 201
+                        new_dataset = json.loads(await response.content.read())
+                        dataset["dataset_id"] = new_dataset["id"]
 
         # Make sure the index is refreshed
         requests.post(ELASTIC_URL + "/dataset/_refresh")
@@ -249,10 +261,10 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
-                params={"collector_id": self.test_dataset_1["collector_id"]},
+                params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 2
+                assert len(json.loads(await response.content.read())) == 3
 
     @pytest.mark.asyncio
     async def test_query_non_existing_dataset_by_collector_id(self):
@@ -270,12 +282,12 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
-                    "start": self.test_dataset_1["trigger_date"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
+                    "start": self.test_dataset_1[0]["trigger_date"],
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 2
+                assert len(json.loads(await response.content.read())) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_end(self):
@@ -283,8 +295,8 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
-                    "end": self.test_dataset_1["trigger_date"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
+                    "end": self.test_dataset_1[0]["trigger_date"],
                 },
             ) as response:
                 assert response.status == 200
@@ -296,7 +308,7 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
                     "end": datetime(2000, 1, 1, 0, 0, 1).isoformat(),
                 },
             ) as response:
@@ -309,12 +321,14 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
-                    "trigger_pulse_id_start": self.test_dataset_1["trigger_pulse_id"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
+                    "trigger_pulse_id_start": self.test_dataset_1[0][
+                        "trigger_pulse_id"
+                    ],
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 2
+                assert len(json.loads(await response.content.read())) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_trigger_id_end(self):
@@ -322,8 +336,8 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
-                    "trigger_pulse_id_end": self.test_dataset_1["trigger_pulse_id"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
+                    "trigger_pulse_id_end": self.test_dataset_1[0]["trigger_pulse_id"],
                 },
             ) as response:
                 assert response.status == 200
@@ -335,7 +349,7 @@ class TestDatasets:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
-                    "collector_id": self.test_dataset_1["collector_id"],
+                    "collector_id": self.test_dataset_1[0]["collector_id"],
                     "trigger_pulse_id_end": 0,
                 },
             ) as response:
@@ -349,12 +363,12 @@ class TestDatasets:
                 RETRIEVER_URL
                 + DATASETS_ENDPOINT
                 + "/"
-                + self.test_dataset_1["dataset_id"]
+                + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 assert response.status == 200
                 assert (
                     json.loads(await response.content.read())["id"]
-                    == self.test_dataset_1["dataset_id"]
+                    == self.test_dataset_1[0]["dataset_id"]
                 )
 
     @pytest.mark.asyncio
@@ -370,7 +384,7 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
-                params={"collector_id": self.test_dataset_1["collector_id"]},
+                params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 try:
                     schemas.Dataset.parse_obj(
@@ -387,7 +401,7 @@ class TestDatasets:
                 RETRIEVER_URL
                 + DATASETS_ENDPOINT
                 + "/"
-                + self.test_dataset_1["dataset_id"]
+                + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 try:
                     schemas.Dataset.parse_obj(json.loads(await response.content.read()))
@@ -404,18 +418,39 @@ class TestDatasets:
                 RETRIEVER_URL
                 + FILES_ENDPOINT
                 + "/dataset/"
-                + self.test_dataset_1["dataset_id"]
+                + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 assert response.status == 200
                 assert (
                     response.content_disposition.filename
-                    == Path(self.test_dataset_1["path"]).name
+                    == Path(self.test_dataset_1[0]["path"]).name
                 )
                 f = await aiofiles.open(
-                    settings.storage_path / self.test_dataset_1["path"], mode="rb"
+                    settings.storage_path / self.test_dataset_1[0]["path"], mode="rb"
                 )
                 assert await f.read() == await response.read()
                 await f.close()
+
+    @pytest.mark.asyncio
+    async def test_get_removed_file_with_id(self):
+        # Move file to somewhere else
+        os.rename(
+            settings.storage_path / self.test_dataset_1[0]["path"],
+            settings.storage_path / (self.test_dataset_1[0]["path"] + ".bak"),
+        )
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL
+                + FILES_ENDPOINT
+                + "/dataset/"
+                + self.test_dataset_1[0]["dataset_id"]
+            ) as response:
+                assert response.status == 404
+        # Renaming the file back
+        os.rename(
+            settings.storage_path / (self.test_dataset_1[0]["path"] + ".bak"),
+            settings.storage_path / self.test_dataset_1[0]["path"],
+        )
 
     @pytest.mark.asyncio
     async def test_get_non_existing_file_with_id(self):
@@ -430,15 +465,15 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + FILES_ENDPOINT,
-                params={"path": self.test_dataset_1["path"]},
+                params={"path": self.test_dataset_1[0]["path"]},
             ) as response:
                 assert response.status == 200
                 assert (
                     response.content_disposition.filename
-                    == Path(self.test_dataset_1["path"]).name
+                    == Path(self.test_dataset_1[0]["path"]).name
                 )
                 f = await aiofiles.open(
-                    settings.storage_path / self.test_dataset_1["path"], mode="rb"
+                    settings.storage_path / self.test_dataset_1[0]["path"], mode="rb"
                 )
                 assert await f.read() == await response.read()
                 await f.close()
@@ -456,7 +491,7 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + FILES_ENDPOINT + DATASETS_ENDPOINT,
-                params={"collector_id": self.test_dataset_1["collector_id"]},
+                params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 assert response.status == 200
                 assert response.content_disposition.filename == "datasets.zip"
@@ -473,3 +508,46 @@ class TestDatasets:
                 params={"collector_id": "wrong_id"},
             ) as response:
                 assert response.status == 404
+
+    @pytest.mark.asyncio
+    async def test_get_existing_file_with_dataset_list_1(self):
+        async with aiohttp.ClientSession() as session:
+            dataset = dict(self.test_dataset_1[0])
+            dataset.pop("dataset_id")
+            async with session.post(
+                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                json=[dataset],
+            ) as response:
+                assert response.status == 200
+                assert (
+                    response.content_disposition.filename
+                    == Path(self.test_dataset_1[0]["path"]).name
+                )
+                f = await aiofiles.open(
+                    settings.storage_path / self.test_dataset_1[0]["path"], mode="rb"
+                )
+                assert await f.read() == await response.read()
+                await f.close()
+
+    @pytest.mark.asyncio
+    async def test_get_existing_file_with_dataset_list_2(self):
+        async with aiohttp.ClientSession() as session:
+            datasets = []
+            for dataset in self.test_dataset_2:
+                dataset = dict(dataset)
+                dataset.pop("dataset_id")
+                datasets.append(dataset)
+            async with session.post(
+                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                json=datasets,
+            ) as response:
+                assert response.status == 200
+                assert (
+                    response.content_disposition.filename
+                    == Path(self.test_dataset_2[0]["path"]).name
+                )
+                f = await aiofiles.open(
+                    settings.storage_path / self.test_dataset_2[0]["path"], mode="rb"
+                )
+                assert await f.read() == await response.read()
+                await f.close()
