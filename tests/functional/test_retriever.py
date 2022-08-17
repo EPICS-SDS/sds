@@ -245,7 +245,7 @@ class TestDatasets:
         requests.post(ELASTIC_URL + "/dataset/_refresh")
 
     @pytest.mark.asyncio
-    async def test_query_existing_dataset(self):
+    async def test_query_existing_dataset_by_collector_id(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
@@ -255,11 +255,89 @@ class TestDatasets:
                 assert len(json.loads(await response.content.read())) == 2
 
     @pytest.mark.asyncio
-    async def test_query_non_existing_dataset(self):
+    async def test_query_non_existing_dataset_by_collector_id(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={"collector_id": "wrong_id"},
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 0
+
+    @pytest.mark.asyncio
+    async def test_query_existing_dataset_by_start(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "start": self.test_dataset_1["trigger_date"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 2
+
+    @pytest.mark.asyncio
+    async def test_query_existing_dataset_by_end(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "end": self.test_dataset_1["trigger_date"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 1
+
+    @pytest.mark.asyncio
+    async def test_query_no_dataset_by_end(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "end": datetime(2000, 1, 1, 0, 0, 1).isoformat(),
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 0
+
+    @pytest.mark.asyncio
+    async def test_query_existing_dataset_by_trigger_id_start(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "trigger_pulse_id_start": self.test_dataset_1["trigger_pulse_id"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 2
+
+    @pytest.mark.asyncio
+    async def test_query_existing_dataset_by_trigger_id_end(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "trigger_pulse_id_end": self.test_dataset_1["trigger_pulse_id"],
+                },
+            ) as response:
+                assert response.status == 200
+                assert len(json.loads(await response.content.read())) == 1
+
+    @pytest.mark.asyncio
+    async def test_query_no_dataset_by_trigger_id_end(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": self.test_dataset_1["collector_id"],
+                    "trigger_pulse_id_end": 0,
+                },
             ) as response:
                 assert response.status == 200
                 assert len(json.loads(await response.content.read())) == 0
