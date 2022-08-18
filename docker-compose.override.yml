@@ -32,6 +32,12 @@ services:
     expose:
       - "5601"
   
+  test_ioc:
+    image: sds
+    container_name: sds_test_ioc
+    command: python test_ioc/pva_server.py
+    volumes:
+      - ./test_ioc/:/app/test_ioc/
 
 volumes:
   esdata:

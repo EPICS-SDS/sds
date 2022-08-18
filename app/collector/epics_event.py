@@ -3,7 +3,7 @@ from typing import Any
 
 from p4p import Value
 from pydantic import root_validator
-from common.files.event import Event
+from common.files import Event
 
 
 def get_attribute(value: Value, name: str):
@@ -30,7 +30,7 @@ class EpicsEvent(Event):
         attribute = get_attribute(value, "eventName")
         if attribute is not None:
             values.update(
-                timming_event_name=attribute["value"],
+                timing_event_name=attribute["value"],
                 trigger_date=datetime.fromtimestamp(
                     value.raw.timeStamp.secondsPastEpoch
                     + value.raw.timeStamp.nanoseconds * 1e-9
@@ -41,7 +41,7 @@ class EpicsEvent(Event):
         attribute = get_attribute(value, "eventCode")
         if attribute is not None:
             values.update(
-                timming_event_code=attribute.value,
+                timing_event_code=attribute.value,
                 trigger_pulse_id=attribute.timestamp.userTag,
             )
         return values

@@ -32,13 +32,13 @@ class DatasetBase(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: PurePosixPath
-    timestamp: Optional[datetime] = Field(
-        default_factory=datetime.utcnow, alias="@timestamp"
-    )
 
 
 class DatasetCreate(DatasetBase):
     expire_in: Optional[int]
+    timestamp: Optional[datetime] = Field(
+        default_factory=datetime.utcnow, alias="@timestamp"
+    )
 
 
 class DatasetInDBBase(DatasetBase):

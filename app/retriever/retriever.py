@@ -59,9 +59,9 @@ async def query_collectors(
     Returns: a list of dataset descriptions
     """
     filters = []
-    if name:
+    if name is not None:
         filters.append({"wildcard": {"name": name}})
-    if event_name:
+    if event_name is not None:
         filters.append({"wildcard": {"event_name": event_name}})
     if event_code is not None:
         filters.append({"term": {"event_code": event_code}})
@@ -121,10 +121,10 @@ async def query_datasets(
     containing those PVs and then search by collector IDs.
     """
     filters = []
-    if collector_id:
+    if collector_id is not None:
         for id in collector_id:
             filters.append({"match": {"collector_id": id}})
-    if start or end:
+    if start is not None or end is not None:
         timestamp_range = {}
         if start:
             timestamp_range["gte"] = start
@@ -132,11 +132,11 @@ async def query_datasets(
             timestamp_range["lte"] = end
 
         filters.append({"range": {"trigger_date": timestamp_range}})
-    if trigger_pulse_id_start or trigger_pulse_id_end:
+    if trigger_pulse_id_start is not None or trigger_pulse_id_end is not None:
         pulse_id_range = {}
-        if trigger_pulse_id_start:
+        if trigger_pulse_id_start is not None:
             pulse_id_range["gte"] = trigger_pulse_id_start
-        if trigger_pulse_id_end:
+        if trigger_pulse_id_end is not None:
             pulse_id_range["lte"] = trigger_pulse_id_end
         filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
     datasets = await crud.dataset.get_multi(filters=filters)
@@ -248,7 +248,7 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
     # If all the datasets requested and only those are stored in a single file, return that file.
     paths = list(set([ds.path for ds in datasets]))
     if len(paths) == 1:
-        response = crud.dataset.get_multi_by_path(paths[0])
+        response = await crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
         # No check is done on the datasets, assuming they exist an were obtained using the `/datasets` endpoint
         if len(response) == len(datasets):
