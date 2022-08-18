@@ -229,8 +229,8 @@ class TestDatasets:
                     new_event = Event(
                         pv_name=pv,
                         value=i,
-                        timming_event_name=TestCollector.test_collector["event_name"],
-                        timming_event_code=TestCollector.test_collector["event_code"],
+                        timing_event_name=TestCollector.test_collector["event_name"],
+                        timing_event_code=TestCollector.test_collector["event_code"],
                         data_date=datetime.utcnow(),
                         trigger_date=datetime.utcnow(),
                         pulse_id=dataset["trigger_pulse_id"],

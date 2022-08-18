@@ -53,8 +53,8 @@ class Collector(CollectorSchema):
                 collector_name=self.name,
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=event.trigger_pulse_id,
-                event_name=event.timming_event_name,
-                event_code=event.timming_event_code,
+                event_name=event.timing_event_name,
+                event_code=event.timing_event_code,
             )
             task = asyncio.create_task(self._collector(queue, dataset))
             self._tasks.add(task)
@@ -85,7 +85,7 @@ class Collector(CollectorSchema):
         await dataset.write()
 
     def event_matches(self, event: Event):
-        if event.timming_event_name != self.event_name:
+        if event.timing_event_name != self.event_name:
             return False
         if event.pv_name not in self.pvs:
             return False

@@ -11,8 +11,8 @@ class Event(BaseModel):
 
     pv_name: str
     value: Any
-    timming_event_name: str
-    timming_event_code: int
+    timing_event_name: str
+    timing_event_code: int
     data_date: datetime
     trigger_date: datetime
     pulse_id: int
