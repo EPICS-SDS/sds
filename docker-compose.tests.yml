@@ -33,6 +33,7 @@ services:
       - ./data:/data/
       - ./app:/app/
       - ./tests:/app/tests/
+      - ./test_ioc/:/app/test_ioc/
       - ./collectors.json:/app/collectors.json
     command: python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 

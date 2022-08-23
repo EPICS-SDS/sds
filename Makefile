@@ -18,6 +18,8 @@ test_image: docker_image
 test_pre: test_image
 	rm -r esdata | true
 	mkdir esdata
+	rm -r data | true
+	mkdir data
 	docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch
 
 test: test_image

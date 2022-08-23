@@ -1,5 +1,7 @@
 from indexer import app as indexer_app
 from retriever import app as retriever_app
+from collector.main import load_collectors
+from collector.collector_manager import CollectorManager
 import uvicorn
 import asyncio
 from typing import List, Optional
@@ -64,3 +66,18 @@ async def retriever_service():
     await server.up()
     yield
     await server.down()
+
+
+@pytest_asyncio.fixture()
+async def collector_service():
+    """Start server as test fixture and tear down after test"""
+
+    collectors = await load_collectors()
+    print("Starting collectors...")
+
+    cm = CollectorManager(collectors)
+    cm.start()
+    await cm.wait_for_startup()
+    yield
+    cm.close()
+    await cm.join()
