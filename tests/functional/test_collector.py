@@ -6,17 +6,15 @@ from typing import List
 
 import pytest
 from collector.collector import CollectorSchema
+from collector.collector_manager import CollectorManager
 from collector.config import settings
+from collector.main import load_collectors
 from common.files.config import settings as file_settings
-from nexusformat.nexus import NXFile, NXdata, NXentry
+from nexusformat.nexus import NXFile
 from p4p.client.asyncio import Context, timesout
 from p4p.client.thread import Context as ThContext
 from pydantic import parse_file_as
-from tests.functional.service_loader import (
-    INDEXER_PORT,
-    collector_service,
-    indexer_service,
-)
+from tests.functional.service_loader import collector_service, indexer_service
 
 
 class TestCollector:
@@ -132,3 +130,9 @@ class TestCollector:
     @pytest.mark.asyncio
     async def test_trigger_3_pulse(self):
         await self.trigger_n_pulses(3)
+
+    @pytest.mark.asyncio
+    async def test_collector_manager_as_context_manager(self):
+        collectors = await load_collectors()
+        async with CollectorManager(collectors) as cm:
+            await cm.wait_for_startup()
