@@ -62,6 +62,8 @@ class CollectorManager:
         self._context = Context("pva")
         self._timeout = timeout
         self.collectors = set(collectors)
+        self.startup_event = asyncio.Event()
+        self.startup_lock = asyncio.Lock()
 
     async def __aenter__(self):
         self.start()
@@ -75,7 +77,11 @@ class CollectorManager:
         # Collect PVs into a set to remove duplicates
         pvs = {pv for collector in self.collectors for pv in collector.pvs}
         # Subscribe to each PV and store the task reference
+        self.n_subscriptions = len(pvs)
         self._tasks = [asyncio.create_task(self._subscribe(pv)) for pv in pvs]
+
+    async def wait_for_startup(self):
+        await self.startup_event.wait()
 
     def close(self):
         self._context.close()
@@ -87,6 +93,12 @@ class CollectorManager:
             try:
                 print(f"PV '{pv}' subscribing...")
                 async with AsyncSubscription(self._context, pv) as sub:
+                    # Trigger the event when startup is finished
+                    async with self.startup_lock:
+                        if self.n_subscriptions > 0:
+                            self.n_subscriptions -= 1
+                        if self.n_subscriptions == 0:
+                            self.startup_event.set()
                     async with sub.messages() as messages:
                         print(f"PV '{pv}' subscribed!")
                         async for message in messages:
