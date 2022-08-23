@@ -77,7 +77,6 @@ class Collector(CollectorSchema):
         coro = consumer(queue, dataset)
         try:
             await asyncio.wait_for(coro, self._timeout)
-            print(repr(self), "done")
         except asyncio.TimeoutError:
             print(repr(self), "timed out")
 
