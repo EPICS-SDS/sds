@@ -18,12 +18,6 @@ from tests.functional.service_loader import (
     indexer_service,
 )
 
-ELASTIC_URL = "http://elasticsearch:9200"
-COLLECTORS_ENDPOINT = "/collectors"
-DATASETS_ENDPOINT = "/datasets"
-
-INDEXER_URL = "http://0.0.0.0:" + str(INDEXER_PORT)
-
 
 class TestCollector:
     @pytest.fixture(autouse=True)
@@ -97,6 +91,9 @@ class TestCollector:
         # Check files
         collectors_path = settings.collector_definitions
         for collector in parse_file_as(List[CollectorSchema], collectors_path):
+            # Skip never triggered event
+            if collector.event_code != 1:
+                continue
             directory = Path(
                 datetime.fromtimestamp(value.timestamp).strftime("%Y"),
                 datetime.fromtimestamp(value.timestamp).strftime("%Y-%m-%d"),
