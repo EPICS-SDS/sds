@@ -14,12 +14,13 @@ from ntndarraywithevent import NTNDArrayWithEvent
 
 
 class TriggerHandler(object):
-    def __init__(self, event):
-        self.event = event
+    def __init__(self, events):
+        self.events = events
 
     def put(self, pv, op):
         if op.value().raw.value is True:
-            self.event.set()
+            for event in self.events:
+                event.set()
 
         op.done()
 
@@ -104,25 +105,24 @@ def run_server(scenario, prefix):
     mp_ctxt = get_context("fork")
 
     mngr = mp_ctxt.Manager()
-    event = mngr.Event()
+    events = [mngr.Event() for i in range(cpu_count())]
     n_pulses = shared_memory.SharedMemory(create=True, size=sys.getsizeof(1))
     n_pulses.buf[0] = 1
 
     servers = []
     for i in range(cpu_count()):
-        servers.append(MyServer(event, n_pulses))
+        servers.append(MyServer(events[i], n_pulses))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
-        handler=TriggerHandler(event), nt=NTScalar("?"), initial=False
+        handler=TriggerHandler(events), nt=NTScalar("?"), initial=False
     )
     n_pulses_pv = SharedPV(
         handler=NPulsesHandler(n_pulses), nt=NTScalar("i"), initial=1
     )
-    provider.add(prefix + "TRIG", trigger_pv)
-    provider.add(prefix + "N_PULSES", n_pulses_pv)
 
     next_server = 0
+    pvs = []
     for filename in scenario.keys():
         n_pvs = scenario[filename]["n_pvs"]
         n_elem = scenario[filename]["n_elem"]
@@ -137,9 +137,20 @@ def run_server(scenario, prefix):
                 servers[next_server].add_pv(pv_name, n_elem[i], prefix)
                 next_server += 1
                 next_server %= len(servers)
+                pvs.append(pv_name)
+
+    provider.add(prefix + "N_PULSES", n_pulses_pv)
+    provider.add(prefix + "TRIG", trigger_pv)
+
+    pvs_pv = SharedPV(nt=NTScalar("as"), initial=pvs)
+    provider.add(prefix + "PVS", pvs_pv)
 
     for server in servers:
         server.start_server()
+
+    # Set the event to load meaninful data from the start
+    for event in events:
+        event.set()
 
     Server.forever(providers=[provider])
 
