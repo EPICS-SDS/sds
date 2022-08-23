@@ -80,16 +80,17 @@ class TestCollector:
 
         ctxt = Context()
         mon = ctxt.monitor("SDS:TEST:PV_1_0", cb=cb)
-        return queue
+        return mon, queue
 
     async def trigger_n_pulses(self, n: int):
         await self.set_n_pulses(n)
 
         first_pulse = await self.get_count() + 1
         last_pulse = await self.get_count() + n
-        queue = await self.wait_for_pv_value(last_pulse)
+        mon, queue = await self.wait_for_pv_value(last_pulse)
         await self.trigger()
-        value = await asyncio.wait_for(queue.get(), 15)
+        value = await asyncio.wait_for(queue.get(), 5)
+        mon.close()
         # Waiting one more second than the collector timeout to make sure the files are written to disk
         await asyncio.sleep(settings.collector_timeout + 1)
 

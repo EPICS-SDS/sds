@@ -19,8 +19,9 @@ class TriggerHandler(object):
 
     def put(self, pv, op):
         if op.value().raw.value is True:
-            for event in self.events:
-                event.set()
+            for (lock, event) in self.events:
+                with lock:
+                    event.set()
 
         op.done()
 
@@ -38,7 +39,8 @@ class NPulsesHandler(object):
 
 
 class MyServer(object):
-    def __init__(self, event, n_pulses):
+    def __init__(self, lock, event, n_pulses):
+        self.lock = lock
         self.event = event
         self.n_pulses = n_pulses
 
@@ -71,7 +73,8 @@ class MyServer(object):
                     break
 
                 self.event.wait()
-                self.event.clear()
+                with self.lock:
+                    self.event.clear()
 
                 trigger_pulse_id = pulse_id
                 trigger_timestamp = time.time_ns()
@@ -105,13 +108,13 @@ def run_server(scenario, prefix):
     mp_ctxt = get_context("fork")
 
     mngr = mp_ctxt.Manager()
-    events = [mngr.Event() for i in range(cpu_count())]
+    events = [(mngr.Lock(), mngr.Event()) for i in range(cpu_count())]
     n_pulses = shared_memory.SharedMemory(create=True, size=sys.getsizeof(1))
     n_pulses.buf[0] = 1
 
     servers = []
     for i in range(cpu_count()):
-        servers.append(MyServer(events[i], n_pulses))
+        servers.append(MyServer(*events[i], n_pulses))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
@@ -149,8 +152,9 @@ def run_server(scenario, prefix):
         server.start_server()
 
     # Set the event to load meaninful data from the start
-    for event in events:
-        event.set()
+    for (lock, event) in events:
+        with lock:
+            event.set()
 
     Server.forever(providers=[provider])
 
