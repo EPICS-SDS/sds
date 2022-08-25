@@ -178,16 +178,22 @@ class TestDatasets:
         {
             "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "trigger_pulse_id": 1,
+            "data_date": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
+            "data_pulse_id": [1],
         }
     ]
     test_dataset_2 = [
         {
             "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
             "trigger_pulse_id": 2,
+            "data_date": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
+            "data_pulse_id": [2],
         },
         {
             "trigger_date": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "trigger_pulse_id": 3,
+            "data_date": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
+            "data_pulse_id": [3],
         },
     ]
 
@@ -215,6 +221,8 @@ class TestDatasets:
                 collector_name=TestCollector.test_collector["name"],
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=datasets[0]["trigger_pulse_id"],
+                data_date=[datetime.utcnow()],
+                data_pulse_id=[datasets[0]["trigger_pulse_id"]],
                 event_name=TestCollector.test_collector["event_name"],
                 event_code=TestCollector.test_collector["event_code"],
             )

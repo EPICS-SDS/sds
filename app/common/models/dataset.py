@@ -1,11 +1,10 @@
 import logging
-from datetime import datetime
 
 from common.db import settings
-from common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 from common.db.base_class import Base
 from common.db.connection import get_connection
 from common.db.fields import Date, Integer, Keyword
+from common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 from elasticsearch import AsyncElasticsearch, NotFoundError
 
 logger = logging.getLogger("sds_common")
@@ -23,6 +22,8 @@ class Dataset(Base):
     trigger_pulse_id: Integer
     path: Keyword
     timestamp: Date
+    data_date: Date
+    data_pulse_id: Integer
 
     class Config:
         fields = {"timestamp": "@timestamp"}

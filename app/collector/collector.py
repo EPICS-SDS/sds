@@ -55,6 +55,8 @@ class Collector(CollectorSchema):
                 trigger_pulse_id=event.trigger_pulse_id,
                 event_name=event.timing_event_name,
                 event_code=event.timing_event_code,
+                data_date=[event.data_date],
+                data_pulse_id=[event.pulse_id],
             )
             task = asyncio.create_task(self._collector(queue, dataset))
             self._tasks.add(task)

@@ -82,6 +82,7 @@ class TestCollector:
         mon, queue = await self.wait_for_pv_value(last_pulse)
         await self.trigger()
         value = await asyncio.wait_for(queue.get(), 5)
+        assert value == last_pulse
         mon.close()
         # Waiting one more second than the collector timeout to make sure the files are written to disk
         await asyncio.sleep(settings.collector_timeout + 1)

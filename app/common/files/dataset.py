@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 from common.files.event import Event
 from nexusformat.nexus import NXdata, NXentry
@@ -18,6 +19,8 @@ class DatasetSchema(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: Path
+    data_date: List[datetime]
+    data_pulse_id: List[int]
 
 
 class Dataset(DatasetSchema):
@@ -70,6 +73,8 @@ class Dataset(DatasetSchema):
                 }
             )
         self.entry[trigger_key][pulse_key][event.pv_name] = event.value
+        self.data_date.append(event.data_date)
+        self.data_pulse_id.append(event.pulse_id)
 
     async def write(self):
         """

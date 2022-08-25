@@ -23,6 +23,8 @@ class Date(ESField):
 
     @classmethod
     def validate(cls, v):
+        if not isinstance(v, str) and isinstance(v, Iterable):
+            return list(map(parse_datetime, v))
         return parse_datetime(v)
 
 
@@ -42,6 +44,8 @@ class Integer(ESField):
 
     @classmethod
     def validate(cls, v):
+        if not isinstance(v, str) and isinstance(v, Iterable):
+            return list(map(validators.int_validator, v))
         return validators.int_validator(v)
 
 
