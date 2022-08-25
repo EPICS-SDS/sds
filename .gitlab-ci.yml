@@ -41,6 +41,7 @@ test:
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
     - cp -R tests app/
+    - cp -R test_ioc app/
     - cp collectors.json app/
     - cd app
     - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'

@@ -32,5 +32,14 @@
             "SDS:TEST:PV_10_4",
             "SDS:TEST:PV_100_1"
         ]
+    },
+    {
+        "name": "not-event",
+        "event_name": "never-happens",
+        "event_code": 2,
+        "pvs": [
+            "SDS:TEST:PV_10_1",
+            "SDS:TEST:PV_10_2"
+        ]
     }
 ]

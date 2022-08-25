@@ -13,11 +13,13 @@ debug:
 	docker compose up
 
 test_image: docker_image
-	docker build -t sds_test tests
+	docker build -t sds_test --rm tests
 
 test_pre: test_image
 	rm -r esdata | true
 	mkdir esdata
+	rm -r data | true
+	mkdir data
 	docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch
 
 test: test_image
