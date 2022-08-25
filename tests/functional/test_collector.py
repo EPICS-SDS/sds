@@ -8,7 +8,7 @@ import pytest
 from collector.collector import CollectorSchema
 from collector.collector_manager import CollectorManager
 from collector.config import settings
-from collector.main import load_collectors
+from collector.main import load_collectors, main
 from common.files.config import settings as file_settings
 from nexusformat.nexus import NXFile
 from p4p.client.asyncio import Context, timesout
@@ -136,3 +136,16 @@ class TestCollector:
         collectors = await load_collectors()
         async with CollectorManager(collectors) as cm:
             await cm.wait_for_startup()
+
+    async def main_no_cancelled_error(self):
+        try:
+            await main()
+        except asyncio.CancelledError:
+            pass
+
+    @pytest.mark.asyncio
+    async def test_main_and_wait(self):
+        task = asyncio.create_task(self.main_no_cancelled_error())
+        await asyncio.sleep(1)
+        task.cancel()
+        await task

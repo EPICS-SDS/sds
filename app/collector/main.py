@@ -37,7 +37,11 @@ async def load_collectors():
                         indexer_connected = True
                         obj = await response.json()
                         collectors.append(Collector.parse_obj(obj))
-                except (ClientConnectorError, ClientResponseError):
+                except (
+                    ClientConnectorError,
+                    ClientResponseError,
+                    ConnectionRefusedError,
+                ):
                     if settings.wait_for_indexer:
                         print(
                             f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {settings.indexer_timeout} s."
