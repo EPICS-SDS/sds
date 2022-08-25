@@ -56,7 +56,7 @@ class TestCollector:
                 async with session.post(
                     INDEXER_URL + COLLECTORS_ENDPOINT, json=collector
                 ) as response:
-                    response_json = json.loads(await response.content.read())
+                    response_json = await response.json()
                     collector["collector_id"] = response_json["id"]
 
     @pytest.mark.asyncio
@@ -67,10 +67,9 @@ class TestCollector:
                 params={"name": self.test_collector["name"]},
             ) as response:
                 assert response.status == 200
-                assert (
-                    json.loads(await response.content.read())[0]["id"]
-                    == self.test_collector["collector_id"]
-                )
+                assert (await response.json())[0]["id"] == self.test_collector[
+                    "collector_id"
+                ]
 
     @pytest.mark.asyncio
     async def test_query_non_existing_collector(self):
@@ -79,7 +78,7 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test2"}
             ) as response:
                 assert response.status == 200
-                assert json.loads(await response.content.read()) == []
+                assert (await response.json()) == []
 
     @pytest.mark.asyncio
     async def test_query_collector_all_filters(self):
@@ -94,7 +93,7 @@ class TestCollector:
                 },
             ) as response:
                 assert response.status == 200
-                json_response = json.loads(await response.content.read())
+                json_response = await response.json()
                 assert len(json_response) == 1
                 assert json_response[0]["id"] == self.test_collector["collector_id"]
 
@@ -109,7 +108,7 @@ class TestCollector:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 2
+                assert len(await response.json()) == 2
 
     @pytest.mark.asyncio
     async def test_query_collector_pv_filter_wildcard(self):
@@ -122,7 +121,7 @@ class TestCollector:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 1
+                assert len(await response.json()) == 1
 
     @pytest.mark.asyncio
     async def test_get_existing_collector(self):
@@ -134,10 +133,9 @@ class TestCollector:
                 + self.test_collector["collector_id"]
             ) as response:
                 assert response.status == 200
-                assert (
-                    json.loads(await response.content.read())["id"]
-                    == self.test_collector["collector_id"]
-                )
+                assert (await response.json())["id"] == self.test_collector[
+                    "collector_id"
+                ]
 
     @pytest.mark.asyncio
     async def test_get_non_existing_collector(self):
@@ -154,9 +152,7 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test"}
             ) as response:
                 try:
-                    schemas.Collector.parse_obj(
-                        json.loads(await response.content.read())[0]
-                    )
+                    schemas.Collector.parse_obj((await response.json())[0])
                 except ValidationError:
                     assert False
                 assert True
@@ -171,9 +167,7 @@ class TestCollector:
                 + self.test_collector["collector_id"]
             ) as response:
                 try:
-                    schemas.Collector.parse_obj(
-                        json.loads(await response.content.read())
-                    )
+                    schemas.Collector.parse_obj(await response.json())
                 except ValidationError:
                     assert False
                 assert True
@@ -204,7 +198,7 @@ class TestDatasets:
             async with session.post(
                 INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
             ) as response:
-                collector = json.loads(await response.content.read())
+                collector = await response.json()
                 self.test_dataset_1[0]["collector_id"] = collector["id"]
                 self.test_dataset_2[0]["collector_id"] = collector["id"]
                 self.test_dataset_2[1]["collector_id"] = collector["id"]
@@ -250,7 +244,7 @@ class TestDatasets:
                         INDEXER_URL + DATASETS_ENDPOINT, json=dataset
                     ) as response:
                         assert response.status == 201
-                        new_dataset = json.loads(await response.content.read())
+                        new_dataset = await response.json()
                         dataset["dataset_id"] = new_dataset["id"]
 
         # Make sure the index is refreshed
@@ -264,7 +258,7 @@ class TestDatasets:
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 3
+                assert len(await response.json()) == 3
 
     @pytest.mark.asyncio
     async def test_query_non_existing_dataset_by_collector_id(self):
@@ -274,7 +268,7 @@ class TestDatasets:
                 params={"collector_id": "wrong_id"},
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 0
+                assert len(await response.json()) == 0
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_start(self):
@@ -287,7 +281,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 3
+                assert len(await response.json()) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_end(self):
@@ -300,7 +294,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 1
+                assert len(await response.json()) == 1
 
     @pytest.mark.asyncio
     async def test_query_no_dataset_by_end(self):
@@ -313,7 +307,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 0
+                assert len(await response.json()) == 0
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_trigger_id_start(self):
@@ -328,7 +322,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 3
+                assert len(await response.json()) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_trigger_id_end(self):
@@ -341,7 +335,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 1
+                assert len(await response.json()) == 1
 
     @pytest.mark.asyncio
     async def test_query_no_dataset_by_trigger_id_end(self):
@@ -354,7 +348,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(json.loads(await response.content.read())) == 0
+                assert len(await response.json()) == 0
 
     @pytest.mark.asyncio
     async def test_get_existing_dataset(self):
@@ -366,10 +360,9 @@ class TestDatasets:
                 + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 assert response.status == 200
-                assert (
-                    json.loads(await response.content.read())["id"]
-                    == self.test_dataset_1[0]["dataset_id"]
-                )
+                assert (await response.json())["id"] == self.test_dataset_1[0][
+                    "dataset_id"
+                ]
 
     @pytest.mark.asyncio
     async def test_get_non_existing_dataset(self):
@@ -387,9 +380,7 @@ class TestDatasets:
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj(
-                        json.loads(await response.content.read())[0]
-                    )
+                    schemas.Dataset.parse_obj((await response.json())[0])
                 except ValidationError:
                     assert False
                 assert True
@@ -404,7 +395,7 @@ class TestDatasets:
                 + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj(json.loads(await response.content.read()))
+                    schemas.Dataset.parse_obj(await response.json())
                 except ValidationError:
                     assert False
                 assert True
