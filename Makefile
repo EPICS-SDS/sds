@@ -2,7 +2,7 @@ docker_image:
 	docker build -t sds .
 
 pull_elastic:
-	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.3.3
+	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.4.1
 
 all: docker_image pull_elastic
 
@@ -13,7 +13,7 @@ debug:
 	docker compose up
 
 test_image: docker_image
-	docker build -t sds_test --rm tests
+	docker build -t sds_test tests
 
 test_pre: test_image
 	rm -r esdata | true
