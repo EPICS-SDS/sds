@@ -47,7 +47,7 @@ test_pre: test_services.lock
 test: test_services.lock
 	docker compose -f docker-compose.yml -f docker-compose.tests.yml run --rm sds_tests
 
-test_ioc: test_services.lock
+test_ioc: test_image.lock
 	@echo "Starting IOC for performance tests"
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d sds_test_ioc
 

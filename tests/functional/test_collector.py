@@ -32,6 +32,12 @@ class TestCollector:
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
         ctxt = ThContext()
         ctxt.get("SDS:TEST:TRIG")
+
+        pv_len = 100
+        n_pvs = 10
+        cls.test_pv = f"SDS:TEST:PV_{pv_len}_0"
+        ctxt.put("SDS:TEST:N_ELEM", pv_len)
+        ctxt.put("SDS:TEST:N_PVS", n_pvs)
         ctxt.close()
 
     @classmethod
@@ -52,8 +58,8 @@ class TestCollector:
 
     async def get_count(self):
         with Context() as ctxt:
-            value = await asyncio.wait_for(ctxt.get("SDS:TEST:PV_1_0"), 5)
-        return value
+            value = await asyncio.wait_for(ctxt.get(self.test_pv), 5)
+        return value[0]
 
     async def get_pv_list(self):
         with Context() as ctxt:
@@ -65,13 +71,13 @@ class TestCollector:
         mon = None
 
         async def cb(value):
-            if value == new_value:
+            if value[0] == new_value:
                 await queue.put(value)
                 if mon is not None:
                     mon.close()
 
         ctxt = Context()
-        mon = ctxt.monitor("SDS:TEST:PV_1_0", cb=cb)
+        mon = ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
 
     async def trigger_n_pulses(self, n: int):
@@ -82,7 +88,7 @@ class TestCollector:
         mon, queue = await self.wait_for_pv_value(last_pulse)
         await self.trigger()
         value = await asyncio.wait_for(queue.get(), 5)
-        assert value == last_pulse
+        assert value[0] == last_pulse
         mon.close()
         # Waiting one more second than the collector timeout to make sure the files are written to disk
         await asyncio.sleep(settings.collector_timeout + 1)

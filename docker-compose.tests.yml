@@ -33,7 +33,8 @@ services:
       - ./data:/data/
       - ./app:/app/
       - ./tests:/app/tests/
-      - ./collectors.json:/app/collectors.json
+      - ./test_ioc/:/app/test_ioc/
+      - ./tests/collectors.json:/app/collectors.json
     command: python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 
   sds_test_ioc:
