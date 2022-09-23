@@ -44,7 +44,7 @@ test:
     - cp -R test_ioc app/
     - cp collectors.json app/
     - cd app
-    - python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
+    - python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:
     paths:
       - app/junit.xml

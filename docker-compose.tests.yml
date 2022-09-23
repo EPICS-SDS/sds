@@ -33,9 +33,16 @@ services:
       - ./data:/data/
       - ./app:/app/
       - ./tests:/app/tests/
+      - ./collectors.json:/app/collectors.json
+    command: python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
+
+  sds_test_ioc:
+    image: sds_test
+    container_name: sds_test_ioc
+    volumes:
       - ./test_ioc/:/app/test_ioc/
       - ./collectors.json:/app/collectors.json
-    command: python -m pytest --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
+    command: python test_ioc/pva_server.py
 
   elasticsearch:
     volumes:

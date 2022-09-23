@@ -1,11 +1,14 @@
+import asyncio
+import json
+from typing import List, Optional
+
+import pytest_asyncio
+import uvicorn
+from collector.collector_manager import CollectorManager
+from collector.main import load_collectors
+from collector.config import settings
 from indexer import app as indexer_app
 from retriever import app as retriever_app
-from collector.main import load_collectors
-from collector.collector_manager import CollectorManager
-import uvicorn
-import asyncio
-from typing import List, Optional
-import pytest_asyncio
 
 INDEXER_PORT = 8000
 RETRIEVER_PORT = 8001
@@ -52,7 +55,7 @@ class UvicornTestServer(uvicorn.Server):
 
 @pytest_asyncio.fixture()
 async def indexer_service():
-    """Start server as test fixture and tear down after test"""
+    """Start indexer service as test fixture and tear down after test"""
     server = UvicornTestServer(indexer_app, port=INDEXER_PORT)
     await server.up()
     yield
@@ -61,7 +64,7 @@ async def indexer_service():
 
 @pytest_asyncio.fixture()
 async def retriever_service():
-    """Start server as test fixture and tear down after test"""
+    """Start retriever service as test fixture and tear down after test"""
     server = UvicornTestServer(retriever_app, port=RETRIEVER_PORT)
     await server.up()
     yield
@@ -81,3 +84,42 @@ async def collector_service():
     yield
     cm.close()
     await cm.join()
+
+
+class ConfigurableCollectorService:
+    def generate_collector_definitions_file(
+        self, n_pvs: int, pv_len: int, n_collectors: int
+    ):
+        collectors = [
+            {
+                "name": "collector_" + str(i),
+                "event_name": "data-on-demand",
+                "event_code": 1,
+                "pvs": [f"SDS:TEST:PV_{pv_len}_{j}" for j in range(n_pvs)],
+            }
+            for i in range(n_collectors)
+        ]
+        with open("collector_perf_config.json", "w") as config:
+            json.dump(collectors, config, indent=4)
+            settings.collector_definitions = config.name
+
+    async def start(self):
+        collectors = await load_collectors()
+        print("Starting collectors...")
+
+        self.cm = CollectorManager(collectors)
+        self.cm.start()
+        await self.cm.wait_for_startup()
+
+    async def stop(self):
+        self.cm.close()
+        await self.cm.join()
+
+
+@pytest_asyncio.fixture()
+async def configurable_collector_service():
+    """Start server as test fixture and tear down after test"""
+
+    collector_service = ConfigurableCollectorService()
+    yield collector_service
+    await collector_service.stop()
