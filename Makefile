@@ -25,10 +25,14 @@ test_image.lock: docker_image.lock
 
 	@touch test_image.lock
 
-test_services.lock: test_image.lock
-	@mkdir esdata | true
+test_clean:
 	@echo "Cleaning data directory"
 	@rm -r data | true
+	@echo "Cleaning elastic search data directory"
+	@rm -r esdata | true
+
+test_services.lock: test_image.lock test_clean
+	@mkdir esdata | true
 	@mkdir data
 	@echo "Starting elastic search service..."
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch
@@ -52,7 +56,7 @@ test_ioc: test_image.lock
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d sds_test_ioc
 
 ifndef IOC_ADDR
-test_perf: test_ioc
+test_perf: test_ioc test_services.lock
 endif
 
 ifdef IOC_ADDR
@@ -60,7 +64,7 @@ test_perf: test_services.lock
 endif
 
 test_perf:
-	docker compose -f docker-compose.yml -f docker-compose.tests.yml run --rm sds_tests python -m pytest tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
+	@docker compose -f docker-compose.yml -f docker-compose.tests.yml run -e EPICS_PVA_ADDR_LIST=${IOC_ADDR} --rm sds_tests python -m pytest tests/performance -s -v --no-header --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 
 test_post:
 	@rm -f docker_image.lock

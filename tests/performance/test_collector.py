@@ -1,15 +1,13 @@
 import asyncio
-import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import List
+import numpy as np
 
 import pytest
 from collector.collector import CollectorSchema
-from collector.collector_manager import CollectorManager
 from collector.config import settings
-from collector.main import load_collectors, main
 from common.files.config import settings as file_settings
 from nexusformat.nexus import NXFile
 from p4p.client.asyncio import Context, timesout
@@ -31,16 +29,9 @@ class TestCollector:
         cls.ctxt = Context()
         with open("output.csv", "w") as out_file:
             out_file.writelines(
-                "data rate [Mbps], success rate [%], # updates received, # PVs, # pulses, # triggers \n"
+                "data rate [Mbps], real data rate [Mbps], freq [Hz], real freq [Hz], success rate [%], # updates received, # PVs, PV length, # pulses, # triggers, test time [s] \n"
             )
 
-        # n_elem = [1, 10, 100, 1000, 10000, 100000, int(1e6)]
-        # n_pvs = [100] * len(n_elem)
-        # cls.p = subprocess.Popen(
-        #     ["python", "test_ioc/pva_server.py", str(n_elem), str(n_pvs)],
-        #     stdout=subprocess.DEVNULL,
-        #     stderr=subprocess.DEVNULL,
-        # )
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
         ctxt = ThContext()
         ctxt.get("SDS:TEST:TRIG")
@@ -53,19 +44,19 @@ class TestCollector:
 
     @pytest.mark.asyncio
     @timesout()
-    async def trigger(self, timeout=10):
+    async def trigger(self):
         await self.ctxt.put("SDS:TEST:TRIG", True)
 
     @pytest.mark.asyncio
-    @timesout()
-    async def configure_ioc(self, n_pulses=None, pv_len=None, n_pvs=None, timeout=10):
+    @timesout(deftimeout=10)
+    async def configure_ioc(self, n_pulses=None, pv_len=None, n_pvs=None):
         if pv_len is not None:
             await self.ctxt.put("SDS:TEST:N_ELEM", pv_len)
         if n_pvs is not None:
             await self.ctxt.put("SDS:TEST:N_PVS", n_pvs)
         if n_pulses is not None:
             await self.ctxt.put("SDS:TEST:N_PULSES", n_pulses)
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
 
     async def get_count(self):
         value = await asyncio.wait_for(self.ctxt.get(self.test_pv), 5)
@@ -80,13 +71,8 @@ class TestCollector:
         mon = None
 
         async def cb(value):
-            value = value
-            print(f"value {value} received")
             if value[0] == new_value:
-                print(f"sending value {value} to queue")
                 await queue.put(value)
-                if mon is not None:
-                    mon.close()
 
         mon = self.ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
@@ -94,18 +80,20 @@ class TestCollector:
     async def trigger_n_pulses(
         self, n_pulses: int, n_pvs: int, pv_len: int, freq: float, n_triggers: int
     ):
-        self.test_pv = f"SDS:TEST:PV_{pv_len}_0"
+        self.test_pv = f"SDS:TEST:PV_{pv_len}"
+        if n_pvs > 1:
+            self.test_pv += "_0"
         await self.configure_ioc(n_pulses=n_pulses, pv_len=pv_len, n_pvs=n_pvs)
 
         first_pulse = await self.get_count() + 1
         last_pulse = first_pulse + n_pulses - 1
-        print("first_pulse = ", first_pulse, " last_pulse= ", last_pulse)
         for i in range(n_triggers):
             t0 = time.time()
             mon, queue = await self.wait_for_pv_value(last_pulse + i * n_pulses)
             await self.trigger()
-            print(f"============---- waiting for value {last_pulse + i * n_pulses}")
             value = await asyncio.wait_for(queue.get(), 5)
+            if mon is not None:
+                mon.close()
             assert value[0] == last_pulse + i * n_pulses
             mon.close()
             time_delta = n_pulses / freq - (time.time() - t0)
@@ -115,11 +103,12 @@ class TestCollector:
                 print(f"time_delta={time_delta}")
 
         # Waiting one more second than the collector timeout to make sure the files are written to disk
-        await asyncio.sleep(settings.collector_timeout + 2)
+        await asyncio.sleep(settings.collector_timeout + 5)
 
         # Check files
         pv_updates_collected = 0
         collectors_path = settings.collector_definitions
+        timestamps = []
         for collector in parse_file_as(List[CollectorSchema], collectors_path):
             for i in range(n_triggers):
                 try:
@@ -144,6 +133,10 @@ class TestCollector:
                     )
                     assert trigger is not None
 
+                    timestamps.append(
+                        datetime.fromisoformat(trigger.attrs["trigger_timestamp"])
+                    )
+
                     pv_list = await self.get_pv_list()
 
                     for n in range(n_pulses):
@@ -166,52 +159,55 @@ class TestCollector:
                 except AssertionError:
                     pass
 
-        return pv_updates_collected
+        elapsed = (np.max(timestamps) - np.min(timestamps)).total_seconds()
+        return pv_updates_collected, elapsed
 
     @pytest.mark.asyncio
-    async def test_trigger_1_pulse(self, configurable_collector_service):
-        n_pvs = 5
-        pv_len = 100000
-        n_pulses = 1
-        freq = 1
-        n_triggers = 10
+    @pytest.mark.parametrize(
+        "n_pvs, pv_len , n_pulses",
+        # "n_pvs, pv_len",
+        [
+            (
+                n_pvs,
+                int(pv_len / n_pvs),
+                n_pulses,
+            )
+            for n_pvs in [1, 10, 20, 50]
+            for pv_len in [1e4, 1e5, 1e6]
+            for n_pulses in [1, 5, 10]
+        ],
+    )
+    async def test_trigger_1_pulse(
+        self,
+        configurable_collector_service,
+        n_pvs,
+        pv_len,
+        n_pulses,
+        freq=14,
+        n_triggers=50,
+    ):
         configurable_collector_service.generate_collector_definitions_file(
             n_pvs=n_pvs, pv_len=pv_len, n_collectors=1
         )
         await configurable_collector_service.start()
-        pv_updates_collected = await self.trigger_n_pulses(
+
+        n_triggers = int(n_triggers / n_pulses)
+
+        pv_updates_collected, elapsed = await self.trigger_n_pulses(
             n_pulses=n_pulses,
             n_pvs=n_pvs,
             pv_len=pv_len,
             freq=freq,
             n_triggers=n_triggers,
         )
-        data_rate = n_pvs * pv_len * n_pulses * freq * 1e-6
+
+        data_rate = n_pvs * pv_len * freq * 1e-6 * 8 * 8
+        real_freq = n_pulses * (n_triggers - 1) / elapsed
+        data_rate_real = n_pvs * pv_len * real_freq * 1e-6 * 8 * 8
         success_rate = pv_updates_collected / (n_pvs * n_pulses * n_triggers)
         with open("output.csv", "a") as out_file:
             out_file.writelines(
-                f"{data_rate}, {success_rate*100}, {pv_updates_collected},{n_pvs},{n_pulses},{n_triggers}\n"
+                f"{data_rate}, {data_rate_real}, {freq}, {real_freq}, {success_rate*100}, {pv_updates_collected}, {n_pvs}, {pv_len}, {n_pulses},{n_triggers}, {elapsed}\n"
             )
         # Tests won't fail, this is only to measure performance
         assert True
-
-    # @pytest.mark.asyncio
-    # async def test_trigger_1_pulse(self, configurable_collector_service):
-    #     n_pvs = 50
-    #     pv_len=100000
-    #     n_pulses=1
-    #     freq=1
-    #     n_triggers=10
-    #     configurable_collector_service.generate_collector_definitions_file(n_pvs=n_pvs, pv_len=pv_len, n_collectors=1)
-    #     await configurable_collector_service.start()
-    #     pv_updates_collected = await self.trigger_n_pulses(n_pulses=n_pulses, freq=freq, n_triggers=n_triggers)
-    #     data_rate = n_pvs * pv_len * n_pulses * freq * 1e-6
-    #     success_rate = pv_updates_collected / (n_pvs * n_pulses * n_triggers)
-    #     with open('output.csv', 'a') as out_file:
-    #         out_file.writelines(f'{data_rate}, {success_rate}, {pv_updates_collected},{n_pvs},{n_pulses},{n_triggers}\n')
-    #     # Tests won't fail, this is only to measure performance
-    #     assert True
-
-    # @pytest.mark.asyncio
-    # async def test_trigger_3_pulse(self):
-    #     await self.trigger_n_pulses(3)

@@ -8,11 +8,9 @@ RUN pip install pytest \
     && pip install coverage \
     && pip install aiofiles
 
-COPY --chown=csi:csi . /app/tests
 
-RUN mkdir /data && chown csi:csi /data
+RUN mkdir /data 
 
-USER csi
 
 EXPOSE 8000 8001
 

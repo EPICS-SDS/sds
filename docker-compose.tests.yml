@@ -44,6 +44,7 @@ services:
       - ./test_ioc/:/app/test_ioc/
       - ./collectors.json:/app/collectors.json
     command: python test_ioc/pva_server.py
+    network_mode: "host"
 
   elasticsearch:
     volumes:
