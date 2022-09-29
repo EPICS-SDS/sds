@@ -80,7 +80,7 @@ class Collector(CollectorSchema):
         try:
             await asyncio.wait_for(coro, self._timeout)
         except asyncio.TimeoutError:
-            print(repr(self), "timed out")
+            pass
 
         await dataset.index()
         await dataset.write()

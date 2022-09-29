@@ -104,7 +104,6 @@ class CollectorManager:
                         async for message in messages:
                             if isinstance(message, Exception):
                                 raise message
-                            print(f"PV '{pv}' received message")
                             self._message_handler(pv, message)
                 print(f"PV '{pv}' subscription ended")
             except Disconnected:
@@ -122,7 +121,6 @@ class CollectorManager:
         except ValidationError:
             print(f"PV '{pv}' event validation error")
             return
-        print(f"PV '{pv}' received event {repr(event)}")
         self._event_handler(event)
 
     # Finds the event and updates it with the value

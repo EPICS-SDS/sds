@@ -27,13 +27,15 @@ test_image.lock: docker_image.lock
 
 test_clean:
 	@echo "Cleaning data directory"
-	@rm -r data | true
+	@rm -rf data/* | true
 	@echo "Cleaning elastic search data directory"
-	@rm -r esdata | true
+	@rm -rf esdata/* | true
 
 test_services.lock: test_image.lock test_clean
-	@mkdir esdata | true
-	@mkdir data
+	@mkdir -p esdata | true
+	@mkdir -p data | true
+	@chmod 777 esdata
+	@chmod 777 data
 	@echo "Starting elastic search service..."
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d elasticsearch
 	@echo "Waiting for elastic search service"
