@@ -28,8 +28,6 @@ test_image.lock: docker_image.lock
 test_clean:
 	@echo "Cleaning data directory"
 	@rm -rf data/* | true
-	@echo "Cleaning elastic search data directory"
-	@rm -rf esdata/* | true
 
 test_services.lock: test_image.lock test_clean
 	@mkdir -p esdata | true
@@ -66,7 +64,7 @@ test_perf: test_services.lock
 endif
 
 test_perf:
-	@docker compose -f docker-compose.yml -f docker-compose.tests.yml run -e EPICS_PVA_ADDR_LIST=${IOC_ADDR} --rm sds_tests python -m pytest tests/performance -s -v --no-header --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
+	@docker compose -f docker-compose.yml -f docker-compose.tests.yml run -e EPICS_PVA_ADDR_LIST=${IOC_ADDR} --rm sds_tests python -m pytest tests/performance -s -v --no-header
 
 test_post:
 	@rm -f docker_image.lock

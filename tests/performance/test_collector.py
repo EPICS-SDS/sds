@@ -29,7 +29,7 @@ class TestCollector:
         cls.ctxt = Context()
         with open("output.csv", "w") as out_file:
             out_file.writelines(
-                "data rate [Mbps], real data rate [Mbps], freq [Hz], real freq [Hz], success rate [%], # updates received, # PVs, PV length, # pulses, # triggers, test time [s] \n"
+                "data rate [Mbps], real data rate [Mbps], freq [Hz], real freq [Hz], success rate [%], # updates received,  # updates expected, # PVs, PV length, # pulses, # triggers, test time [s] \n"
             )
 
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
@@ -77,13 +77,33 @@ class TestCollector:
         mon = self.ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
 
-    async def trigger_n_pulses(
+    async def single_test(
+        self, n_pulses: int, n_pvs: int, pv_len: int, freq: float, n_triggers: int
+    ):
+        first_pulse, last_pulse, timestamp = await self.trigger_ioc_updates(
+            n_pulses, n_pvs, pv_len, freq, n_triggers
+        )
+
+        # Waiting one more second than the collector timeout to make sure the files are written to disk
+        await asyncio.sleep(settings.collector_timeout + 5)
+
+        directory = Path(
+            datetime.fromtimestamp(timestamp).strftime("%Y"),
+            datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d"),
+        )
+
+        pv_updates_collected, elapsed = await self.check_output(
+            n_pulses, directory, first_pulse, n_triggers
+        )
+
+        return pv_updates_collected, elapsed
+
+    async def trigger_ioc_updates(
         self, n_pulses: int, n_pvs: int, pv_len: int, freq: float, n_triggers: int
     ):
         self.test_pv = f"SDS:TEST:PV_{pv_len}"
         if n_pvs > 1:
             self.test_pv += "_0"
-        await self.configure_ioc(n_pulses=n_pulses, pv_len=pv_len, n_pvs=n_pvs)
 
         first_pulse = await self.get_count() + 1
         last_pulse = first_pulse + n_pulses - 1
@@ -101,10 +121,11 @@ class TestCollector:
                 await asyncio.sleep(time_delta)
             else:
                 print(f"time_delta={time_delta}")
+        return first_pulse, last_pulse, value.timestamp
 
-        # Waiting one more second than the collector timeout to make sure the files are written to disk
-        await asyncio.sleep(settings.collector_timeout + 5)
-
+    async def check_output(
+        self, n_pulses: int, directory: Path, first_pulse: int, n_triggers: int
+    ):
         # Check files
         pv_updates_collected = 0
         collectors_path = settings.collector_definitions
@@ -112,11 +133,6 @@ class TestCollector:
         for collector in parse_file_as(List[CollectorSchema], collectors_path):
             for i in range(n_triggers):
                 try:
-                    directory = Path(
-                        datetime.fromtimestamp(value.timestamp).strftime("%Y"),
-                        datetime.fromtimestamp(value.timestamp).strftime("%Y-%m-%d"),
-                    )
-
                     file_path = (
                         file_settings.storage_path
                         / directory
@@ -165,7 +181,6 @@ class TestCollector:
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "n_pvs, pv_len , n_pulses",
-        # "n_pvs, pv_len",
         [
             (
                 n_pvs,
@@ -177,7 +192,7 @@ class TestCollector:
             for n_pulses in [1, 5, 10]
         ],
     )
-    async def test_trigger_1_pulse(
+    async def test_parametric(
         self,
         configurable_collector_service,
         n_pvs,
@@ -186,6 +201,8 @@ class TestCollector:
         freq=14,
         n_triggers=50,
     ):
+        await self.configure_ioc(n_pulses=n_pulses, pv_len=pv_len, n_pvs=n_pvs)
+
         configurable_collector_service.generate_collector_definitions_file(
             n_pvs=n_pvs, pv_len=pv_len, n_collectors=1
         )
@@ -193,7 +210,7 @@ class TestCollector:
 
         n_triggers = int(n_triggers / n_pulses)
 
-        pv_updates_collected, elapsed = await self.trigger_n_pulses(
+        pv_updates_collected, elapsed = await self.single_test(
             n_pulses=n_pulses,
             n_pvs=n_pvs,
             pv_len=pv_len,
@@ -207,7 +224,7 @@ class TestCollector:
         success_rate = pv_updates_collected / (n_pvs * n_pulses * n_triggers)
         with open("output.csv", "a") as out_file:
             out_file.writelines(
-                f"{data_rate}, {data_rate_real}, {freq}, {real_freq}, {success_rate*100}, {pv_updates_collected}, {n_pvs}, {pv_len}, {n_pulses},{n_triggers}, {elapsed}\n"
+                f"{data_rate}, {data_rate_real}, {freq}, {real_freq}, {success_rate*100}, {pv_updates_collected}, {n_pvs * n_pulses * n_triggers}, {n_pvs}, {pv_len}, {n_pulses},{n_triggers}, {elapsed}\n"
             )
         # Tests won't fail, this is only to measure performance
         assert True
