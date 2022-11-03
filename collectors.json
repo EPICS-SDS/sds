@@ -2,7 +2,7 @@
     {
         "name": "CSLab-Test",
         "event_name": "data-on-demand",
-        "event_code": 15,
+        "event_code": 20,
         "pvs": [
             "LabS-ICS:Ctrl-AMC-412:CH1-SDSData"
         ]

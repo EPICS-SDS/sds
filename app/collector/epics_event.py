@@ -40,6 +40,7 @@ class EpicsEvent(Event):
         acq_evt = value.raw.get("acqEvt")
         if acq_evt is not None:
             values.update(
-                timing_event_code=acq_evt.code,
+                timing_event_code=int(acq_evt.code),
+                timing_event_name='test',
             )
         return values

@@ -30,10 +30,8 @@ services:
   sds_collector:
     image: sds
     container_name: sds_collector
-    ports:
-      - "8002:8000"
     environment:
-      INDEXER_URL: "http://sds_indexer:8000"
+      INDEXER_URL: "http://127.0.0.1:8000"
       COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
       STORAGE_PATH: /data
     command: python -m collector.main
@@ -42,6 +40,7 @@ services:
       - type: bind
         source: ${STORAGE_PATH:?}
         target: /data
+    network_mode: "host"
     depends_on:
       - sds_indexer
 
