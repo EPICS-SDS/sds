@@ -6,8 +6,8 @@ docker_image.lock:
 	@touch docker_image.lock
 
 pull_elastic:
-	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.4.2
-	docker pull docker.elastic.co/kibana/kibana:8.4.2
+	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+	docker pull docker.elastic.co/kibana/kibana:8.5.0
 
 build: docker_image pull_elastic
 
