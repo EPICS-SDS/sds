@@ -6,11 +6,6 @@ from pydantic import root_validator
 from common.files import Event
 
 
-def get_attribute(value: Value, name: str):
-    iterator = filter(lambda item: item.name == name, value.raw["attribute"])
-    return next(iterator, None)
-
-
 class EpicsEvent(Event):
     @root_validator(pre=True)
     def extract_values(cls, values: Value):
@@ -24,24 +19,27 @@ class EpicsEvent(Event):
                 value.raw.timeStamp.secondsPastEpoch
                 + value.raw.timeStamp.nanoseconds * 1e-9
             ),
-            pulse_id=value.raw.timeStamp.userTag,
         )
-        # eventName
-        attribute = get_attribute(value, "eventName")
-        if attribute is not None:
-            values.update(
-                timing_event_name=attribute["value"],
-                trigger_date=datetime.fromtimestamp(
-                    value.raw.timeStamp.secondsPastEpoch
-                    + value.raw.timeStamp.nanoseconds * 1e-9
-                ),
-                trigger_pulse_id=attribute.timestamp.userTag,
-            )
+
+        # pulse_id
+        pulse_id = value.get("cycleId")
+        if pulse_id is not None:
+            # For the moment we use the same pulse ID for the triggering event, since we have no circular buffers
+            values.update(pulse_id=pulse_id, trigger_pulse_id=pulse_id)
+
         # eventCode
-        attribute = get_attribute(value, "eventCode")
-        if attribute is not None:
+        sds_info = value.get("sdsInfo")
+        if sds_info is not None:
             values.update(
-                timing_event_code=attribute.value,
-                trigger_pulse_id=attribute.timestamp.userTag,
+                trigger_date=datetime.fromtimestamp(
+                    sds_info.raw.timeStamp.secondsPastEpoch
+                    + sds_info.raw.timeStamp.nanoseconds * 1e-9
+                ),
+            )
+        # For the moment take the acqEvt code instead of the sds code (missing)
+        acq_evt = value.get("acqEvt")
+        if acq_evt is not None:
+            values.update(
+                timing_event_code=acq_evt.raw.code,
             )
         return values
