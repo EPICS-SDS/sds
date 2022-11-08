@@ -33,9 +33,10 @@ class EpicsEvent(Event):
             values.update(
                 trigger_date=datetime.fromtimestamp(
                     sds_info.timeStamp.secondsPastEpoch
-                    + sds_info.timeStamp.nanoseconds * 1e-9),
-                trigger_pulse_id = sds_info.pulseId,
+                    + sds_info.timeStamp.nanoseconds * 1e-9
+                ),
+                trigger_pulse_id=sds_info.pulseId,
                 timing_event_code=int(sds_info.evtCode),
-                timing_event_name='test',
+                timing_event_name="test",
             )
         return values
