@@ -22,10 +22,10 @@ class EpicsEvent(Event):
         )
 
         # pulse_id
-        pulse_id = value.raw.get("cycleId")
+        pulse_id = value.raw.get("pulseId")
         if pulse_id is not None:
             # For the moment we use the same pulse ID for the triggering event, since we have no circular buffers
-            values.update(pulse_id=pulse_id, trigger_pulse_id=pulse_id)
+            values.update(pulse_id=pulse_id.value)
 
         # eventCode
         sds_info = value.raw.get("sdsInfo")
@@ -33,14 +33,9 @@ class EpicsEvent(Event):
             values.update(
                 trigger_date=datetime.fromtimestamp(
                     sds_info.timeStamp.secondsPastEpoch
-                    + sds_info.timeStamp.nanoseconds * 1e-9
-                ),
-            )
-        # For the moment take the acqEvt code instead of the sds code (missing)
-        acq_evt = value.raw.get("acqEvt")
-        if acq_evt is not None:
-            values.update(
-                timing_event_code=int(acq_evt.code),
+                    + sds_info.timeStamp.nanoseconds * 1e-9),
+                trigger_pulse_id = sds_info.pulseId,
+                timing_event_code=int(sds_info.evtCode),
                 timing_event_name='test',
             )
         return values
