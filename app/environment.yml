@@ -12,8 +12,6 @@ dependencies:
   - python=3.10
   - requests
   - uvicorn
-  - gcc
-  - gxx
   - pip:
     - --index-url https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
     - p4p==4.1.1
