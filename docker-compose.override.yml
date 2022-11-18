@@ -36,7 +36,7 @@ services:
     build: "."
     image: sds
     container_name: sds_test_ioc
-    command: python test_ioc/pva_server.py
+    command: python test_ioc/pva_server.py 5 10
     volumes:
       - ./test_ioc/:/app/test_ioc/
 

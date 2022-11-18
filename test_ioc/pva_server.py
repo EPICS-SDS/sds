@@ -27,23 +27,24 @@ class TriggerHandler(object):
         op.done()
 
 
-class NPulsesHandler(object):
-    def __init__(self, n_pulses):
-        self.n_pulses = n_pulses
+class ScalarHandler(object):
+    def __init__(self, value):
+        self.value = value
 
     def put(self, pv, op):
         if op.value().raw.value > 0:
             pv.post(op.value())
-            self.n_pulses.buf[0] = op.value().raw.value
+            self.value[0] = op.value().raw.value
 
         op.done()
 
 
 class MyServer(object):
-    def __init__(self, lock, event, n_pulses):
+    def __init__(self, lock, event, n_pulses, freq):
         self.lock = lock
         self.event = event
         self.n_pulses = n_pulses
+        self.freq = freq
 
         self.pvdb = dict()
         self.process = None
@@ -107,7 +108,7 @@ class MyServer(object):
 
                 trigger_pulse_id = pulse_id
                 trigger_timestamp = time.time_ns()
-                for i in range(int(self.n_pulses.buf[0])):
+                for i in range(int(self.n_pulses[0])):
                     with self.pvdb_lock:
                         for pv in self.pvdb:
                             arr = np.random.random(self.pvdb[pv].current().shape[0])
@@ -127,6 +128,8 @@ class MyServer(object):
                                 )
                             except Exception:
                                 pass
+                            if i < int(self.n_pulses[0]) - 1:
+                                time.sleep(1 / self.freq[0])
                         pulse_id += 1
 
         print("Server stopped")
@@ -143,23 +146,23 @@ def run_server(n_pvs, n_elem, prefix):
 
     mngr = mp_ctxt.Manager()
     events = [(mngr.Lock(), mngr.Event()) for i in range(N_PROC)]
-    n_pulses = shared_memory.SharedMemory(create=True, size=sys.getsizeof(1))
-    n_pulses.buf[0] = 1
+    n_pulses = shared_memory.ShareableList([1])
+    freq = shared_memory.ShareableList([14])
 
     servers = []
     for i in range(N_PROC):
-        servers.append(MyServer(*events[i], n_pulses))
+        servers.append(MyServer(*events[i], n_pulses, freq))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
         handler=TriggerHandler(events), nt=NTScalar("?"), initial=False
     )
-    n_pulses_pv = SharedPV(
-        handler=NPulsesHandler(n_pulses), nt=NTScalar("i"), initial=1
-    )
+    n_pulses_pv = SharedPV(handler=ScalarHandler(n_pulses), nt=NTScalar("i"), initial=1)
+    freq_pv = SharedPV(handler=ScalarHandler(freq), nt=NTScalar("d"), initial=14.0)
 
     provider.add(prefix + "N_PULSES", n_pulses_pv)
     provider.add(prefix + "TRIG", trigger_pv)
+    provider.add(prefix + "FREQ", freq_pv)
 
     pvs = update_pvs(servers, n_pvs, n_elem, prefix)
 
