@@ -1,14 +1,15 @@
 import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Set
 
-from common.files import Event
-from p4p.client.asyncio import Context, Disconnected
-from pydantic import ValidationError
-
+from collector.api import collector_settings, collector_status
 from collector.collector import Collector
 from collector.config import settings
 from collector.epics_event import EpicsEvent
+from common.files import Event
+from p4p.client.asyncio import Context, Disconnected
+from pydantic import ValidationError
 
 
 class AsyncSubscription:
@@ -61,9 +62,14 @@ class CollectorManager:
     ):
         self._context = Context("pva")
         self._timeout = timeout
-        self.collectors = set(collectors)
+        self.collectors = collectors
         self.startup_event = asyncio.Event()
         self.startup_lock = asyncio.Lock()
+
+        collector_settings.collectors = self.collectors
+
+        for collector in self.collectors:
+            collector_status.add_collector(collector)
 
     async def __aenter__(self):
         self.start()
@@ -102,9 +108,14 @@ class CollectorManager:
                     async with sub.messages() as messages:
                         print(f"PV '{pv}' subscribed!")
                         async for message in messages:
-                            if isinstance(message, Exception):
+                            collector_status.set_connected(pv, True)
+                            if isinstance(message, Disconnected):
+                                print(f"PV '{pv}' disconnected")
+                                collector_status.set_connected(pv, False)
+                            elif isinstance(message, Exception):
                                 raise message
-                            self._message_handler(pv, message)
+                            else:
+                                self._message_handler(pv, message)
                 print(f"PV '{pv}' subscription ended")
             except Disconnected:
                 print(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
@@ -112,11 +123,10 @@ class CollectorManager:
                 print(f"PV '{pv}' error, closing subscription")
                 print(e)
                 return
-            finally:
-                await asyncio.sleep(self._timeout)
 
     def _message_handler(self, pv, message):
         try:
+            collector_status.pvs[pv].last_event = datetime.utcnow()
             event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError:
             print(f"PV '{pv}' event validation error")

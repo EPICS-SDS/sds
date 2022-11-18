@@ -1,22 +1,15 @@
 import asyncio
 from datetime import datetime
-from typing import Dict, FrozenSet, Set
+from typing import Dict, Set
 
 from common.files import Event
-from collector.indexable_dataset import IndexableDataset
-from pydantic import BaseModel
+from common.schemas import CollectorBase
 
 from collector.config import settings
+from collector.indexable_dataset import IndexableDataset
 
 
-class CollectorSchema(BaseModel):
-    name: str
-    event_name: str
-    event_code: int
-    pvs: FrozenSet[str]
-
-
-class Collector(CollectorSchema):
+class Collector(CollectorBase):
     id: str
     _tasks: Set[asyncio.Task] = set()
     _queues: Dict[int, asyncio.Queue] = dict()
@@ -70,8 +63,8 @@ class Collector(CollectorSchema):
         queue = self.get_queue(event.trigger_pulse_id)
         queue.put_nowait(event)
 
-    async def _collector(self, queue, dataset):
-        async def consumer(queue, dataset):
+    async def _collector(self, queue: asyncio.Queue, dataset: IndexableDataset):
+        async def consumer(queue: asyncio.Queue, dataset: IndexableDataset):
             while True:
                 event = await queue.get()
                 dataset.update(event)

@@ -22,6 +22,7 @@ services:
     command: python -m collector.main --reload
 
   sds_tests:
+    build: "./tests"
     image: sds_test
     container_name: sds_tests
     environment:
@@ -38,6 +39,7 @@ services:
     command: python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 
   sds_test_ioc:
+    build: "./tests"
     image: sds_test
     container_name: sds_test_ioc
     volumes:

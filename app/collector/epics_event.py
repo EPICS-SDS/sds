@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict
 
 from p4p import Value
 from pydantic import root_validator
@@ -13,10 +13,10 @@ def get_attribute(value: Value, name: str):
 
 class EpicsEvent(Event):
     @root_validator(pre=True)
-    def extract_values(cls, values: Value):
+    def extract_values(cls, values: Dict[str, Any]):
         if "value" not in values:
             return values
-        value = values["value"]
+        value: Value = values["value"]
         # value
         values.update(
             value=value,

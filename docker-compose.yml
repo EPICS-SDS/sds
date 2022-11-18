@@ -1,6 +1,7 @@
 version: '3'
 services:
   sds_indexer:
+    build: "."
     image: sds
     container_name: sds_indexer
     ports:
@@ -14,6 +15,7 @@ services:
       - elasticsearch
 
   sds_retriever:
+    build: "."
     image: sds
     container_name: sds_retriever
     environment:
@@ -28,14 +30,15 @@ services:
       - elasticsearch
 
   sds_collector:
+    build: "."
     image: sds
     container_name: sds_collector
-    ports:
-      - "8002:8000"
+    network_mode: "host"
     environment:
-      INDEXER_URL: "http://sds_indexer:8000"
+      INDEXER_URL: "http://127.0.0.1:8000"
       COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
       STORAGE_PATH: /data
+      COLLECTOR_API_PORT: 8003
     command: python -m collector.main
     volumes:
       - ./collectors.json:/app/config/collectors.json

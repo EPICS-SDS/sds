@@ -8,6 +8,8 @@
             "SDS:TEST:PV_10_1",
             "SDS:TEST:PV_10_2",
             "SDS:TEST:PV_100_0",
+            "SDS:TEST:PV_100000",
+            "SDS:TEST:PV_1000000",
             "SDS:TEST:PV_DOES_NOT_EXIST"
         ]
     },
