@@ -1,7 +1,7 @@
 docker_image: docker_image.lock
 
 clean_docker_image_lock:
- 	@rm -f docker_image.lock
+	@rm -f docker_image.lock
 
 docker_image.lock:
 	@echo "Building SDS Docker image"
@@ -9,8 +9,8 @@ docker_image.lock:
 	@touch docker_image.lock
 
 pull_elastic:
-	docker pull docker.elastic.co/elasticsearch/elasticsearch:8.5.0
-	docker pull docker.elastic.co/kibana/kibana:8.5.0
+	docker compose pull elasticsearch
+	docker compose pull kibana
 
 build: clean_docker_image_lock docker_image pull_elastic
 
