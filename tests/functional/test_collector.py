@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from collector.collector import CollectorSchema
+from common.schemas import CollectorBase
 from collector.collector_manager import CollectorManager
 from collector.config import settings
 from collector.main import load_collectors, main
@@ -95,7 +95,7 @@ class TestCollector:
 
         # Check files
         collectors_path = settings.collector_definitions
-        for collector in parse_file_as(List[CollectorSchema], collectors_path):
+        for collector in parse_file_as(List[CollectorBase], collectors_path):
             # Skip never triggered event
             if collector.event_code != 1:
                 continue
@@ -144,6 +144,8 @@ class TestCollector:
         async with CollectorManager(collectors) as cm:
             await cm.wait_for_startup()
 
+
+class TestCollectorServer:
     async def main_no_cancelled_error(self):
         try:
             await main()

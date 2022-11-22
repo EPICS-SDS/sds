@@ -70,7 +70,7 @@ class StatusManager:
 
 class PvStatus:
     def __init__(self, name: str):
-        self.event_timestamps: deque = deque(maxlen=5)
+        self.event_timestamps: deque[datetime] = deque(maxlen=5)
         self.pv_status = PvStatusSchema(name=name)
 
     @property
@@ -85,4 +85,4 @@ class PvStatus:
             if len(self.event_timestamps) > 1:
                 self.pv_status.event_rate = (len(self.event_timestamps) - 1) / (
                     self.event_timestamps[-1] - self.event_timestamps[0]
-                )
+                ).total_seconds()

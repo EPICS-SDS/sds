@@ -64,7 +64,7 @@ async def main():
         await cm.join()
 
     if settings.collector_api_enabled:
-        await asyncio.wait(serve_task)
+        await serve_task
 
 
 if __name__ == "__main__":
