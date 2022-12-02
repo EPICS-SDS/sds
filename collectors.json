@@ -1,45 +1,10 @@
 [
     {
-        "name": "test",
+        "name": "CSLab-Test",
         "event_name": "data-on-demand",
-        "event_code": 1,
+        "event_code": 20,
         "pvs": [
-            "SDS:TEST:PV_10_0",
-            "SDS:TEST:PV_10_1",
-            "SDS:TEST:PV_10_2",
-            "SDS:TEST:PV_100_0",
-            "SDS:TEST:PV_DOES_NOT_EXIST"
-        ]
-    },
-    {
-        "name": "eventB",
-        "event_name": "data-on-demand",
-        "event_code": 1,
-        "pvs": [
-            "SDS:TEST:PV_10_1",
-            "SDS:TEST:PV_10_2",
-            "SDS:TEST:PV_10_3",
-            "SDS:TEST:PV_100_0"
-        ]
-    },
-    {
-        "name": "eventC",
-        "event_name": "data-on-demand",
-        "event_code": 1,
-        "pvs": [
-            "SDS:TEST:PV_10_2",
-            "SDS:TEST:PV_10_3",
-            "SDS:TEST:PV_10_4",
-            "SDS:TEST:PV_100_1"
-        ]
-    },
-    {
-        "name": "not-event",
-        "event_name": "never-happens",
-        "event_code": 2,
-        "pvs": [
-            "SDS:TEST:PV_10_1",
-            "SDS:TEST:PV_10_2"
+            "LabS-ICS:Ctrl-AMC-412:CH1-SDSData"
         ]
     }
 ]

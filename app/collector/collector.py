@@ -86,7 +86,7 @@ class Collector(CollectorSchema):
         await dataset.write()
 
     def event_matches(self, event: Event):
-        if event.timing_event_name != self.event_name:
+        if event.timing_event_code != self.event_code:
             return False
         if event.pv_name not in self.pvs:
             return False
