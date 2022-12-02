@@ -11,7 +11,6 @@ class Event(BaseModel):
 
     pv_name: str
     value: Any
-    timing_event_name: str
     timing_event_code: int
     data_date: datetime
     trigger_date: datetime
