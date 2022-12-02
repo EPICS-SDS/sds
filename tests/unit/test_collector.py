@@ -15,7 +15,6 @@ collector = Collector(
 event = Event(
     pv_name="TEST:PV:3",
     value=1,
-    timing_event_name="test_event",
     timing_event_code=2,
     data_date=datetime.utcnow(),
     trigger_date=datetime.utcnow(),
@@ -41,7 +40,6 @@ class TestIndexableDataset:
             trigger_pulse_id=event.trigger_pulse_id,
             data_date=[datetime.utcnow()],
             data_pulse_id=[event.trigger_pulse_id],
-            event_name=event.timing_event_name,
             event_code=event.timing_event_code,
         )
 

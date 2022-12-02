@@ -45,7 +45,6 @@ class Dataset(DatasetSchema):
         entry = NXentry(
             attrs={
                 "collector_name": values["collector_name"],
-                "event_name": values["event_name"],
                 "event_code": values["event_code"],
             }
         )
