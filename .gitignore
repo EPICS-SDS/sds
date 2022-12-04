@@ -2,3 +2,9 @@
 .vscode
 __pycache__
 output
+data
+esdata
+.coverage
+*.lock
+junit.xml
+profile
