@@ -44,7 +44,7 @@ async def create_collector(
 ):
     filters = dict_to_filters(collector_in.dict(exclude={"created"}))
     async with collectors_lock:
-        collectors = await crud.collector.get_multi(filters=filters)
+        (_, collectors, _) = await crud.collector.get_multi(filters=filters)
         # HTTP 200 if the collector already exists
         if len(collectors) > 0:
             response.status_code = status.HTTP_200_OK

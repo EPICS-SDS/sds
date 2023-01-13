@@ -85,7 +85,7 @@ class Base(BaseModel):
         *,
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
-        sort: dict,
+        sort: Optional[dict] = None,
         search_after: Optional[int] = None,
     ) -> Tuple[int, List[Base], int]:
         if not query and filters:
@@ -102,6 +102,7 @@ class Base(BaseModel):
                     sort=sort,
                     search_after=search_after,
                 )
+
             except NotFoundError:
                 return (0, [], None)
 
@@ -112,7 +113,13 @@ class Base(BaseModel):
                 return (n_total, [], None)
 
             hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
-            return (n_total, hits, response["hits"]["hits"][-1]["sort"][0])
+
+            if sort is None:
+                search_after = None
+            else:
+                search_after = response["hits"]["hits"][-1]["sort"][0]
+
+            return (n_total, hits, search_after)
 
     @classmethod
     async def create(cls, dict):

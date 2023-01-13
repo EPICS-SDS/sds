@@ -67,9 +67,12 @@ class TestCollector:
                 params={"name": self.test_collector["name"]},
             ) as response:
                 assert response.status == 200
-                assert (await response.json())[0]["id"] == self.test_collector[
-                    "collector_id"
-                ]
+                response_json = await response.json()
+                assert response_json["total"] >= 1
+                assert (
+                    response_json["collectors"][0]["id"]
+                    == self.test_collector["collector_id"]
+                )
 
     @pytest.mark.asyncio
     async def test_query_non_existing_collector(self):
@@ -78,7 +81,7 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test2"}
             ) as response:
                 assert response.status == 200
-                assert (await response.json()) == []
+                assert (await response.json())["total"] == 0
 
     @pytest.mark.asyncio
     async def test_query_collector_all_filters(self):
@@ -94,8 +97,12 @@ class TestCollector:
             ) as response:
                 assert response.status == 200
                 json_response = await response.json()
-                assert len(json_response) == 1
-                assert json_response[0]["id"] == self.test_collector["collector_id"]
+                assert json_response["total"] == 1
+                assert len(json_response["collectors"]) == 1
+                assert (
+                    json_response["collectors"][0]["id"]
+                    == self.test_collector["collector_id"]
+                )
 
     @pytest.mark.asyncio
     async def test_query_collector_pv_filter_overlap(self):
@@ -108,7 +115,7 @@ class TestCollector:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 2
+                assert len((await response.json())["collectors"]) == 2
 
     @pytest.mark.asyncio
     async def test_query_collector_pv_filter_wildcard(self):
@@ -121,7 +128,7 @@ class TestCollector:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 1
+                assert len((await response.json())["collectors"]) == 1
 
     @pytest.mark.asyncio
     async def test_get_existing_collector(self):
@@ -152,7 +159,9 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test"}
             ) as response:
                 try:
-                    schemas.Collector.parse_obj((await response.json())[0])
+                    schemas.Collector.parse_obj(
+                        (await response.json())["collectors"][0]
+                    )
                 except ValidationError:
                     assert False
                 assert True
@@ -221,8 +230,6 @@ class TestDatasets:
                 collector_name=TestCollector.test_collector["name"],
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=datasets[0]["trigger_pulse_id"],
-                data_date=[datetime.utcnow()],
-                data_pulse_id=[datasets[0]["trigger_pulse_id"]],
                 event_name=TestCollector.test_collector["event_name"],
                 event_code=TestCollector.test_collector["event_code"],
             )
@@ -266,7 +273,7 @@ class TestDatasets:
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 3
+                assert len((await response.json())["datasets"]) == 3
 
     @pytest.mark.asyncio
     async def test_query_non_existing_dataset_by_collector_id(self):
@@ -276,7 +283,7 @@ class TestDatasets:
                 params={"collector_id": "wrong_id"},
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 0
+                assert len((await response.json())["datasets"]) == 0
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_start(self):
@@ -289,7 +296,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 3
+                assert len((await response.json())["datasets"]) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_end(self):
@@ -302,7 +309,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 1
+                assert len((await response.json())["datasets"]) == 1
 
     @pytest.mark.asyncio
     async def test_query_no_dataset_by_end(self):
@@ -315,7 +322,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 0
+                assert len((await response.json())["datasets"]) == 0
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_trigger_id_start(self):
@@ -330,7 +337,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 3
+                assert len((await response.json())["datasets"]) == 3
 
     @pytest.mark.asyncio
     async def test_query_existing_dataset_by_trigger_id_end(self):
@@ -343,7 +350,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 1
+                assert len((await response.json())["datasets"]) == 1
 
     @pytest.mark.asyncio
     async def test_query_no_dataset_by_trigger_id_end(self):
@@ -356,7 +363,7 @@ class TestDatasets:
                 },
             ) as response:
                 assert response.status == 200
-                assert len(await response.json()) == 0
+                assert len((await response.json())["datasets"]) == 0
 
     @pytest.mark.asyncio
     async def test_get_existing_dataset(self):
@@ -388,7 +395,7 @@ class TestDatasets:
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj((await response.json())[0])
+                    schemas.Dataset.parse_obj((await response.json())["datasets"][0])
                 except ValidationError:
                     assert False
                 assert True
@@ -550,3 +557,32 @@ class TestDatasets:
                 )
                 assert await f.read() == await response.read()
                 await f.close()
+
+    @pytest.mark.asyncio
+    async def test_get_zip_file_with_datasets(self):
+        async with aiohttp.ClientSession() as session:
+            datasets = []
+            for dataset in self.test_dataset_1:
+                dataset = dict(dataset)
+                dataset.pop("dataset_id")
+                datasets.append(dataset)
+            for dataset in self.test_dataset_2:
+                dataset = dict(dataset)
+                dataset.pop("dataset_id")
+                datasets.append(dataset)
+            async with session.post(
+                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                json=datasets,
+            ) as response:
+                assert response.status == 200
+                assert response.content_disposition.filename == "datasets.zip"
+                zip_io = BytesIO()
+                zip_io.write(await response.read())
+                with zipfile.ZipFile(
+                    zip_io, mode="r", compression=zipfile.ZIP_DEFLATED
+                ) as zip:
+                    print(zip.filelist)
+                    print(TestCollector.test_collector["name"] + ".h5")
+                    assert [f.filename for f in zip.filelist].count(
+                        TestCollector.test_collector["name"] + ".h5"
+                    ) == 1
