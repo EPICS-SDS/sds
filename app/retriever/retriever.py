@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 import aiofiles
 from common import crud, schemas
@@ -13,8 +13,8 @@ from common.db.connection import wait_for_connection
 from common.files import Collector
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel
 from retriever.config import settings
+from retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
 HDF5_MIME_TYPE = "application/x-hdf5"
 
@@ -31,19 +31,6 @@ app = FastAPI(title="SDS Retriever")
 class SortOrder(str, Enum):
     desc = "desc"
     asc = "asc"
-
-
-class MultiResponse(BaseModel):
-    total: int
-    search_after: Optional[int]
-
-
-class MultiResponseDataset(MultiResponse):
-    datasets: List[schemas.Dataset]
-
-
-class MultiResponseCollector(MultiResponse):
-    collectors: List[schemas.Collector]
 
 
 @app.on_event("startup")
