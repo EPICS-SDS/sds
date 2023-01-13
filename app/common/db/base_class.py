@@ -103,16 +103,16 @@ class Base(BaseModel):
                     search_after=search_after,
                 )
             except NotFoundError:
-                return (0, [], [])
+                return (0, [], None)
 
             n_total = response["hits"]["total"]["value"]
 
             # Query got 0 hits, either in total or after paginating with search_after
             if n_total == 0 or response["hits"]["hits"] == []:
-                return (n_total, [], [])
+                return (n_total, [], None)
 
             hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
-            return (n_total, hits, response["hits"]["hits"][-1]["sort"])
+            return (n_total, hits, response["hits"]["hits"][-1]["sort"][0])
 
     @classmethod
     async def create(cls, dict):
