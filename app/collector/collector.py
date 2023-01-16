@@ -53,7 +53,6 @@ class Collector(CollectorSchema):
                 collector_name=self.name,
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=event.trigger_pulse_id,
-                event_name=event.timing_event_name,
                 event_code=event.timing_event_code,
                 data_date=[event.data_date],
                 data_pulse_id=[event.pulse_id],
