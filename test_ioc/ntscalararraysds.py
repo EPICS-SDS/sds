@@ -67,7 +67,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "sdsInfo",
                     (
-                        "aS",
+                        "s",
                         None,
                         [
                             ("pulseId", "l"),
@@ -81,7 +81,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "pulseId",
                     (
-                        "aS",
+                        "s",
                         None,
                         [
                             ("value", "l"),
@@ -93,7 +93,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "acqEvt",
                     (
-                        "aS",
+                        "s",
                         None,
                         [
                             ("name", "s"),
