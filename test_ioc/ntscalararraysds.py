@@ -74,7 +74,7 @@ class NTScalarArraySDS(NTScalar):
                             ("id", "d"),
                             ("evtCode", "i"),
                             ("alarm", alarm),
-                            ("timestamp", timeStamp),
+                            ("timeStamp", timeStamp),
                         ],
                     ),
                 ),
@@ -86,7 +86,7 @@ class NTScalarArraySDS(NTScalar):
                         [
                             ("value", "l"),
                             ("alarm", alarm),
-                            ("timestamp", timeStamp),
+                            ("timeStamp", timeStamp),
                         ],
                     ),
                 ),
@@ -101,7 +101,7 @@ class NTScalarArraySDS(NTScalar):
                             ("delay", "d"),
                             ("code", "d"),
                             ("alarm", alarm),
-                            ("timestamp", timeStamp),
+                            ("timeStamp", timeStamp),
                         ],
                     ),
                 ),
@@ -126,9 +126,10 @@ class NTScalarArraySDS(NTScalar):
 
             wrapped_value["sdsInfo"]["pulseId"] = value["pulse_id"]
             wrapped_value["sdsInfo"]["evtCode"] = value["event_code"]
+            wrapped_value["sdsInfo"]["timeStamp"] = trigger_timestamp
 
             wrapped_value["pulseId"]["value"] = value["pulse_id"]
-            wrapped_value["pulseId"]["timestamp"] = trigger_timestamp
+            wrapped_value["pulseId"]["timeStamp"] = trigger_timestamp
 
         else:
             wrapped_value = super().wrap(value)
