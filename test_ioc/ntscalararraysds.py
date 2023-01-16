@@ -67,7 +67,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "sdsInfo",
                     (
-                        "s",
+                        "S",
                         None,
                         [
                             ("pulseId", "l"),
@@ -81,7 +81,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "pulseId",
                     (
-                        "s",
+                        "S",
                         None,
                         [
                             ("value", "l"),
@@ -93,7 +93,7 @@ class NTScalarArraySDS(NTScalar):
                 (
                     "acqEvt",
                     (
-                        "s",
+                        "S",
                         None,
                         [
                             ("name", "s"),
@@ -124,18 +124,12 @@ class NTScalarArraySDS(NTScalar):
             trigger_timestamp["nanoseconds"] = value["trigger_timestamp"] % 1e9
             # trigger_timestamp["userTag"] = value["trigger_pulse_id"]
 
-            wrapped_value["sdsInfo"] = [
-                {
-                    "pulseId": value["pulse_id"],
-                    "evtCode": value["event_code"],
-                },
-            ]
-            wrapped_value["pulseId"] = [
-                {
-                    "value": value["pulse_id"],
-                    "timestamp": trigger_timestamp,
-                },
-            ]
+            wrapped_value["sdsInfo"]["pulseId"] = value["pulse_id"]
+            wrapped_value["sdsInfo"]["evtCode"] = value["event_code"]
+
+            wrapped_value["pulseId"]["value"] = value["pulse_id"]
+            wrapped_value["pulseId"]["timestamp"] = trigger_timestamp
+
         else:
             wrapped_value = super().wrap(value)
             # wrapped_value["timeStamp.userTag"] = 0
