@@ -3,67 +3,22 @@
 
 
 from p4p.nt import NTScalar
+from p4p.nt.scalar import _metaHelper
 from p4p.nt.common import alarm, timeStamp
 from p4p.wrapper import Type
 
 
 class NTScalarArraySDS(NTScalar):
     @staticmethod
-    def buildType(extra=[]):
+    def buildType(valtype, extra=[], display=False, control=False, value_alarm=False):
         """Build type"""
-        return Type(
+        F = [
+            ("value", valtype),
+            ("alarm", alarm),
+            ("timeStamp", timeStamp),
+        ]
+        F.extend(
             [
-                (
-                    "value",
-                    (
-                        "U",
-                        None,
-                        [
-                            ("booleanValue", "a?"),
-                            ("byteValue", "ab"),
-                            ("shortValue", "ah"),
-                            ("intValue", "ai"),
-                            ("longValue", "al"),
-                            ("ubyteValue", "aB"),
-                            ("ushortValue", "aH"),
-                            ("uintValue", "aI"),
-                            ("ulongValue", "aL"),
-                            ("floatValue", "af"),
-                            ("doubleValue", "ad"),
-                        ],
-                    ),
-                ),
-                (
-                    "codec",
-                    (
-                        "S",
-                        "codec_t",
-                        [
-                            ("name", "s"),
-                            ("parameters", "v"),
-                        ],
-                    ),
-                ),
-                ("compressedSize", "l"),
-                ("uncompressedSize", "l"),
-                ("uniqueId", "i"),
-                ("dataTimeStamp", timeStamp),
-                ("alarm", alarm),
-                ("timeStamp", timeStamp),
-                (
-                    "dimension",
-                    (
-                        "aS",
-                        "dimension_t",
-                        [
-                            ("size", "i"),
-                            ("offset", "i"),
-                            ("fullSize", "i"),
-                            ("binning", "i"),
-                            ("reverse", "?"),
-                        ],
-                    ),
-                ),
                 (
                     "sdsInfo",
                     (
@@ -77,7 +32,11 @@ class NTScalarArraySDS(NTScalar):
                             ("timeStamp", timeStamp),
                         ],
                     ),
-                ),
+                )
+            ]
+        )
+        F.extend(
+            [
                 (
                     "pulseId",
                     (
@@ -89,7 +48,11 @@ class NTScalarArraySDS(NTScalar):
                             ("timeStamp", timeStamp),
                         ],
                     ),
-                ),
+                )
+            ]
+        )
+        F.extend(
+            [
                 (
                     "acqEvt",
                     (
@@ -104,10 +67,14 @@ class NTScalarArraySDS(NTScalar):
                             ("timeStamp", timeStamp),
                         ],
                     ),
-                ),
-            ],
-            id="epics:nt/NTScalarArray:1.0",
+                )
+            ]
         )
+        _metaHelper(
+            F, valtype, display=display, control=control, valueAlarm=value_alarm
+        )
+        F.extend(extra)
+        return Type(id="epics:nt/NTScalarArray:1.0", spec=F)
 
     def wrap(self, value):
         if type(value) is dict:
@@ -116,13 +83,11 @@ class NTScalarArraySDS(NTScalar):
             event_timestamp = timeStamp()
             event_timestamp["secondsPastEpoch"] = value["timestamp"] // 1e9
             event_timestamp["nanoseconds"] = value["timestamp"] % 1e9
-            # event_timestamp["userTag"] = value["pulse_id"]
             wrapped_value["timeStamp"] = event_timestamp
 
             trigger_timestamp = timeStamp()
             trigger_timestamp["secondsPastEpoch"] = value["trigger_timestamp"] // 1e9
             trigger_timestamp["nanoseconds"] = value["trigger_timestamp"] % 1e9
-            # trigger_timestamp["userTag"] = value["trigger_pulse_id"]
 
             wrapped_value["sdsInfo"]["pulseId"] = value["pulse_id"]
             wrapped_value["sdsInfo"]["evtCode"] = value["event_code"]
@@ -133,5 +98,4 @@ class NTScalarArraySDS(NTScalar):
 
         else:
             wrapped_value = super().wrap(value)
-            # wrapped_value["timeStamp.userTag"] = 0
         return wrapped_value

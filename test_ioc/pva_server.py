@@ -60,7 +60,7 @@ class MyServer(object):
     def _add_pv(self, pv_name, n_elem, prefix):
         with self.pvdb_lock:
             print(prefix + pv_name)
-            pv = SharedPV(nt=NTScalarArraySDS(), initial=np.zeros(n_elem))
+            pv = SharedPV(nt=NTScalarArraySDS("ad"), initial=np.zeros(n_elem))
             self.provider.add(prefix + pv_name, pv)
             self.pvdb[pv_name] = pv
 
