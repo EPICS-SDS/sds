@@ -25,7 +25,7 @@ test:
   stage: test
   image: "$CONTAINER_TEST_IMAGE"
   services:
-    - name: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    - name: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
       alias: elasticsearch
       command:
         [
@@ -36,13 +36,13 @@ test:
         ]
   variables:
     INDEXER_URL: "http://0.0.0.0:8000"
-    COLLECTOR_DEFINITIONS: "collectors.json"
+    COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
     - cp -R tests app/
     - cp -R test_ioc app/
-    - cp collectors.json app/
+    - cp tests/collectors.json app/config/
     - cd app
     - python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:
