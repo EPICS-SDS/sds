@@ -19,8 +19,6 @@ class DatasetSchema(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: Path
-    data_date: List[datetime]
-    data_pulse_id: List[int]
 
 
 class Dataset(DatasetSchema):
@@ -45,7 +43,6 @@ class Dataset(DatasetSchema):
         entry = NXentry(
             attrs={
                 "collector_name": values["collector_name"],
-                "event_name": values["event_name"],
                 "event_code": values["event_code"],
             }
         )
@@ -73,8 +70,6 @@ class Dataset(DatasetSchema):
                 }
             )
         self.entry[trigger_key][pulse_key][event.pv_name] = event.value
-        self.data_date.append(event.data_date)
-        self.data_pulse_id.append(event.pulse_id)
 
     async def write(self):
         """

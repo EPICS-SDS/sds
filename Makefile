@@ -1,12 +1,14 @@
-docker_image: docker_image.lock
-
-clean_docker_image_lock:
-	@rm -f docker_image.lock
-
-docker_image.lock:
+docker_image:
 	@echo "Building SDS Docker image"
 	@docker build -t sds . > /dev/null
 	@touch docker_image.lock
+
+docker_image.lock: docker_image
+
+clean:
+	@rm -f docker_image.lock
+	@rm -f test_image.lock
+	@rm -f test_services.lock
 
 pull_elastic:
 	docker compose pull elasticsearch
@@ -70,7 +72,6 @@ test_perf:
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml run -e EPICS_PVA_ADDR_LIST=${IOC_ADDR} --rm sds_tests python -m pytest tests/performance -s -v --no-header
 
 test_post:
-	@rm -f docker_image.lock
 	@rm -f test_image.lock
 	@rm -f test_services.lock
 	@docker compose -f docker-compose.yml -f docker-compose.tests.yml down

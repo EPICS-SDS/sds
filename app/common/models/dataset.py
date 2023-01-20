@@ -22,8 +22,6 @@ class Dataset(Base):
     trigger_pulse_id: Integer
     path: Keyword
     timestamp: Date
-    data_date: Date
-    data_pulse_id: Integer
 
     class Config:
         fields = {"timestamp": "@timestamp"}

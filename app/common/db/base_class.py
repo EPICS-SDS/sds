@@ -1,20 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 import logging
+from typing import List, Optional, Tuple
+
+from common.db import settings
+from common.db.connection import get_connection
 from elasticsearch import BadRequestError, NotFoundError
 from pydantic import BaseModel, root_validator
 
-from common.db.connection import get_connection
-from common.db import settings
-
-
 logger = logging.getLogger("sds_common")
-
-
-class TooManyHitsException(Exception):
-    """Raised when the number of hits exceeds the limit"""
 
 
 class Base(BaseModel):
@@ -91,27 +85,41 @@ class Base(BaseModel):
         *,
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
-    ) -> List[Base]:
+        sort: Optional[dict] = None,
+        search_after: Optional[int] = None,
+    ) -> Tuple[int, List[Base], int]:
         if not query and filters:
             query = {"bool": {"must": list(filters)}}
         async with get_connection() as es:
             try:
+                if search_after is not None:
+                    search_after = [search_after]
+
                 response = await es.search(
                     index=cls.get_index(),
                     query=query,
+                    size=settings.max_query_size,
+                    sort=sort,
+                    search_after=search_after,
                 )
+
             except NotFoundError:
-                return []
+                return (0, [], None)
 
             n_total = response["hits"]["total"]["value"]
 
-            if n_total == 0:
-                return []
+            # Query got 0 hits, either in total or after paginating with search_after
+            if n_total == 0 or response["hits"]["hits"] == []:
+                return (n_total, [], None)
 
-            if n_total > settings.max_query_size:
-                raise TooManyHitsException()
+            hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
 
-            return list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
+            if sort is None:
+                search_after = None
+            else:
+                search_after = response["hits"]["hits"][-1]["sort"][0]
+
+            return (n_total, hits, search_after)
 
     @classmethod
     async def create(cls, dict):

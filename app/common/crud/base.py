@@ -1,9 +1,7 @@
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
-
-from pydantic import BaseModel
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
 from common.db.base_class import Base
-
+from pydantic import BaseModel
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -20,8 +18,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         self,
         *,
         filters: Optional[List[Dict]] = None,
-    ) -> List[ModelType]:
-        return await self.model.mget(filters=filters)
+        sort: Optional[Dict] = None,
+        search_after: Optional[int] = None,
+    ) -> Tuple[int, List[ModelType], int]:
+        return await self.model.mget(
+            filters=filters, sort=sort, search_after=search_after
+        )
 
     async def create(self, obj_in: CreateSchemaType) -> ModelType:
         return await self.model.create(obj_in.dict(by_alias=True))

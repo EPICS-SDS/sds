@@ -11,7 +11,7 @@ from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
 
-from ntndarraywithevent import NTNDArrayWithEvent
+from ntscalararraysds import NTScalarArraySDS
 
 
 class TriggerHandler(object):
@@ -61,7 +61,7 @@ class MyServer(object):
     def _add_pv(self, pv_name, n_elem, prefix):
         with self.pvdb_lock:
             print(prefix + pv_name)
-            pv = SharedPV(nt=NTNDArrayWithEvent(), initial=np.zeros(n_elem))
+            pv = SharedPV(nt=NTScalarArraySDS("ad"), initial=np.zeros(n_elem))
             self.provider.add(prefix + pv_name, pv)
             self.pvdb[pv_name] = pv
 
@@ -126,11 +126,13 @@ class MyServer(object):
                                         "event_code": 1,
                                     }
                                 )
-                            except Exception:
+                            except Exception as e:
+                                print("error received", e)
                                 pass
                             if i < int(self.n_pulses[0]) - 1:
                                 time.sleep(1 / self.freq[0])
                         pulse_id += 1
+                        time.sleep(0.01)
 
         print("Server stopped")
         queue_thread.join()
@@ -229,8 +231,8 @@ if __name__ == "__main__":
         n_pvs = int(sys.argv[1])
         n_elem = int(sys.argv[2])
     else:
-        n_pvs = 1
-        n_elem = 1
+        n_pvs = 10
+        n_elem = 100
 
     prefix = "SDS:TEST:"
 

@@ -46,7 +46,6 @@ class Collector(CollectorBase):
                 collector_name=self.name,
                 trigger_date=datetime.utcnow(),
                 trigger_pulse_id=event.trigger_pulse_id,
-                event_name=event.timing_event_name,
                 event_code=event.timing_event_code,
                 data_date=[event.data_date],
                 data_pulse_id=[event.pulse_id],
@@ -79,7 +78,7 @@ class Collector(CollectorBase):
         await dataset.write()
 
     def event_matches(self, event: Event):
-        if event.timing_event_name != self.event_name:
+        if event.timing_event_code != self.event_code:
             return False
         if event.pv_name not in self.pvs:
             return False

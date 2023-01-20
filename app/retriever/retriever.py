@@ -2,6 +2,7 @@ import logging
 import os
 import zipfile
 from datetime import datetime
+from enum import Enum
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -10,11 +11,10 @@ import aiofiles
 from common import crud, schemas
 from common.db.connection import wait_for_connection
 from common.files import Collector
-from common.models import Dataset
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
-
 from retriever.config import settings
+from retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
 HDF5_MIME_TYPE = "application/x-hdf5"
 
@@ -28,6 +28,11 @@ logger.setLevel(settings.log_level)
 app = FastAPI(title="SDS Retriever")
 
 
+class SortOrder(str, Enum):
+    desc = "desc"
+    asc = "asc"
+
+
 @app.on_event("startup")
 async def startup_event():
     await wait_for_connection()
@@ -38,12 +43,14 @@ async def startup_event():
 collectors_router = APIRouter()
 
 
-@collectors_router.get("", response_model=List[schemas.Collector])
+@collectors_router.get("", response_model=MultiResponseCollector)
 async def query_collectors(
     name: Optional[str] = None,
     event_name: Optional[str] = None,
     event_code: Optional[int] = None,
     pv: Optional[List[str]] = Query(default=None),
+    sort: Optional[SortOrder] = SortOrder.desc,
+    search_after: Optional[int] = None,
 ):
     """
     Search for collectors that contain **at least** the PVs given as a parameter.
@@ -74,8 +81,15 @@ async def query_collectors(
                 }
             }
         )
-    collectors = await crud.collector.get_multi(filters=filters)
-    return collectors
+    sort = {"created": {"order": sort}}
+
+    total, collectors, search_after = await crud.collector.get_multi(
+        filters=filters, sort=sort, search_after=search_after
+    )
+
+    return MultiResponseCollector(
+        total=total, collectors=collectors, search_after=search_after
+    )
 
 
 @collectors_router.get("/{id}", response_model=schemas.Collector)
@@ -100,14 +114,16 @@ app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
 datasets_router = APIRouter()
 
 
-@datasets_router.get("", response_model=List[schemas.Dataset])
+@datasets_router.get("", response_model=MultiResponseDataset)
 async def query_datasets(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     trigger_pulse_id_start: Optional[int] = None,
     trigger_pulse_id_end: Optional[int] = None,
-) -> List[Dataset]:
+    sort: Optional[SortOrder] = SortOrder.desc,
+    search_after: Optional[int] = None,
+):
     """
     Search for datasets in the index.
     - **collector_id** (List[str], optional): list of collector IDs to
@@ -116,6 +132,8 @@ async def query_datasets(
     - **end** (int, optional): UTC timestamp for interval end
     - **trigger_pulse_id_start** (int, optional):
     - **trigger_pulse_id_end** (int, optional):
+    - **sort** (SortOrder, optional):
+    - **search_after** (int, optional):
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -139,8 +157,16 @@ async def query_datasets(
         if trigger_pulse_id_end is not None:
             pulse_id_range["lte"] = trigger_pulse_id_end
         filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
-    datasets = await crud.dataset.get_multi(filters=filters)
-    return datasets
+
+    sort = {"trigger_date": {"order": sort.value}}
+
+    total, datasets, search_after = await crud.dataset.get_multi(
+        filters=filters, sort=sort, search_after=search_after
+    )
+
+    return MultiResponseDataset(
+        total=total, datasets=datasets, search_after=search_after
+    )
 
 
 @datasets_router.get("/{id}", response_model=schemas.Dataset)
@@ -227,9 +253,24 @@ async def get_file_by_dataset_query(
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
     """
-    datasets = await query_datasets(
-        collector_id, start, end, trigger_pulse_id_start, trigger_pulse_id_end
-    )
+    datasets: List[schemas.DatasetBase] = []
+    search_after = None
+    while True:
+        dataset_respone = await query_datasets(
+            collector_id,
+            start,
+            end,
+            trigger_pulse_id_start,
+            trigger_pulse_id_end,
+            search_after=search_after,
+        )
+
+        if dataset_respone.datasets == []:
+            break
+        else:
+            datasets.extend(dataset_respone.datasets)
+            search_after = dataset_respone.search_after
+
     if datasets == []:
         raise HTTPException(status_code=404, detail="Datasets not found")
 
@@ -248,10 +289,10 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
     # If all the datasets requested and only those are stored in a single file, return that file.
     paths = list(set([ds.path for ds in datasets]))
     if len(paths) == 1:
-        response = await crud.dataset.get_multi_by_path(paths[0])
+        total, response, _ = await crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
         # No check is done on the datasets, assuming they exist an were obtained using the `/datasets` endpoint
-        if len(response) == len(datasets):
+        if total == len(datasets):
             return FileResponse(
                 settings.storage_path / paths[0],
                 filename=paths[0].name,

@@ -84,7 +84,7 @@ class TestCollector:
         await self.set_n_pulses(n)
 
         first_pulse = await self.get_count() + 1
-        last_pulse = await self.get_count() + n
+        last_pulse = first_pulse - 1 + n
         mon, queue = await self.wait_for_pv_value(last_pulse)
         await self.trigger()
         value = await asyncio.wait_for(queue.get(), 5)
@@ -103,23 +103,24 @@ class TestCollector:
                 datetime.fromtimestamp(value.timestamp).strftime("%Y"),
                 datetime.fromtimestamp(value.timestamp).strftime("%Y-%m-%d"),
             )
-            file_path = (
-                file_settings.storage_path
-                / directory
-                / (collector.name + f"_{int(first_pulse)}.h5")
-            )
-            assert file_path.exists()
-
-            nx = NXFile(file_path, "r")
-            root = nx.readfile()
-            entry = root.entries.get("entry")
-            assert entry is not None
-            trigger = entry.entries.get(f"trigger_{int(first_pulse)}")
-            assert trigger is not None
 
             pv_list = await self.get_pv_list()
 
             for n in range(n):
+                file_path = (
+                    file_settings.storage_path
+                    / directory
+                    / (collector.name + f"_{int(first_pulse)+n}.h5")
+                )
+                assert file_path.exists()
+
+                nx = NXFile(file_path, "r")
+                root = nx.readfile()
+                entry = root.entries.get("entry")
+                assert entry is not None
+                trigger = entry.entries.get(f"trigger_{int(first_pulse)+n}")
+                assert trigger is not None
+
                 pulse = trigger.entries.get(f"pulse_{int(first_pulse)+n}")
                 assert pulse is not None
 

@@ -25,7 +25,7 @@ test:
   stage: test
   image: "$CONTAINER_TEST_IMAGE"
   services:
-    - name: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    - name: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
       alias: elasticsearch
       command:
         [
@@ -42,7 +42,7 @@ test:
   script:
     - cp -R tests app/
     - cp -R test_ioc app/
-    - cp collectors.json app/
+    - cp tests/collectors.json app/
     - cd app
     - python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:

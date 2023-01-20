@@ -11,8 +11,6 @@ services:
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
     command: uvicorn indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
-    depends_on:
-      - elasticsearch
 
   sds_retriever:
     build: "."
@@ -28,8 +26,6 @@ services:
       - type: bind
         source: ${STORAGE_PATH:?}
         target: /data
-    depends_on:
-      - elasticsearch
 
   sds_collector:
     build: "."
@@ -47,11 +43,10 @@ services:
       - type: bind
         source: ${STORAGE_PATH:?}
         target: /data
-    depends_on:
-      - sds_indexer
+    network_mode: "host"
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:8.5.1"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.0"
     container_name: elasticsearch
     ports:
       - "9200:9200"

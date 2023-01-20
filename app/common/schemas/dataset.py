@@ -32,8 +32,6 @@ class DatasetBase(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: PurePosixPath
-    data_date: Set[datetime]
-    data_pulse_id: Set[int]
 
 
 class DatasetCreate(DatasetBase):
