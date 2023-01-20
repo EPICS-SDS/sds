@@ -36,13 +36,13 @@ test:
         ]
   variables:
     INDEXER_URL: "http://0.0.0.0:8000"
-    COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
+    COLLECTOR_DEFINITIONS: "collectors.json"
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
   script:
     - cp -R tests app/
     - cp -R test_ioc app/
-    - cp tests/collectors.json app/config/
+    - cp tests/collectors.json app/
     - cd app
     - python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:
