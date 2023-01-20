@@ -129,6 +129,7 @@ class MyServer(object):
                                 print("error received", e)
                                 pass
                         pulse_id += 1
+                        time.sleep(0.01)
 
         print("Server stopped")
         queue_thread.join()
