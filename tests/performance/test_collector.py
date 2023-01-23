@@ -3,16 +3,17 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import List
-import numpy as np
 
+import numpy as np
 import pytest
-from collector.collector import CollectorSchema
 from collector.config import settings
 from common.files.config import settings as file_settings
+from common.schemas import CollectorBase
 from nexusformat.nexus import NXFile
 from p4p.client.asyncio import Context, timesout
 from p4p.client.thread import Context as ThContext
 from pydantic import parse_file_as
+
 from tests.functional.service_loader import (
     configurable_collector_service,
     indexer_service,
@@ -130,7 +131,7 @@ class TestCollector:
         pv_updates_collected = 0
         collectors_path = settings.collector_definitions
         timestamps = []
-        for collector in parse_file_as(List[CollectorSchema], collectors_path):
+        for collector in parse_file_as(List[CollectorBase], collectors_path):
             for i in range(n_triggers):
                 try:
                     file_path = (
@@ -224,7 +225,7 @@ class TestCollector:
         success_rate = pv_updates_collected / (n_pvs * n_pulses * n_triggers)
         with open("output.csv", "a") as out_file:
             out_file.writelines(
-                f"{data_rate}, {data_rate_real}, {freq}, {real_freq}, {success_rate*100}, {pv_updates_collected}, {n_pvs * n_pulses * n_triggers}, {n_pvs}, {pv_len}, {n_pulses},{n_triggers}, {elapsed}\n"
+                f"{data_rate}, {data_rate_real:.3f}, {freq}, {real_freq:.3f}, {success_rate*100:.3f}, {pv_updates_collected}, {n_pvs * n_pulses * n_triggers}, {n_pvs}, {pv_len}, {n_pulses},{n_triggers}, {elapsed:.3f}\n"
             )
         # Tests won't fail, this is only to measure performance
         assert True
