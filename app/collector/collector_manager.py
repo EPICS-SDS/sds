@@ -1,9 +1,9 @@
 import asyncio
-from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Set
 
 from collector.api import collector_settings, collector_status
+from collector.async_subscription import AsyncSubscription
 from collector.collector import Collector
 from collector.config import settings
 from collector.epics_event import EpicsEvent
@@ -12,49 +12,12 @@ from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
 
-class AsyncSubscription:
-    def __init__(self, context: Context, pv):
-        self._context = context
-        self._pv = pv
-        self._on_message = None
-
-    async def __aenter__(self):
-        self.start()
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        self.close()
-
-    def start(self):
-        async def cb(value):
-            if self._on_message:
-                self._on_message(value)
-
-        self._sub = self._context.monitor(self._pv, cb)
-
-    def close(self):
-        self._sub.close()
-
-    @asynccontextmanager
-    async def messages(self):
-        cb, generator = self._cb_and_generator()
-        self._on_message = cb
-        yield generator
-
-    def _cb_and_generator(self):
-        queue = asyncio.Queue()
-
-        def _put_in_queue(message):
-            queue.put_nowait(message)
-
-        async def _message_generator():
-            while True:
-                yield await queue.get()
-
-        return _put_in_queue, _message_generator()
-
-
 class CollectorManager:
+    """
+    This class handles the subscriptions to PVs (monitors).
+    Different collectors may be connecting to the same PV and this way we only start one subscription per PV.
+    """
+
     def __init__(
         self,
         collectors: Set[Collector],
