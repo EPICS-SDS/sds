@@ -64,8 +64,11 @@ class StatusManager:
             )
         )
 
-    def set_connected(self, pv: str, connected: bool):
-        self.pvs[pv].pv_status.connected = connected
+    def set_connected(self, pv: str):
+        self.pvs[pv].pv_status.connected = True
+
+    def set_disconnected(self, pv: str):
+        self.pvs[pv].pv_status.connected = False
 
 
 class PvStatus:

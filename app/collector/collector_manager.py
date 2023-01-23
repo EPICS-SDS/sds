@@ -71,10 +71,10 @@ class CollectorManager:
                     async with sub.messages() as messages:
                         print(f"PV '{pv}' subscribed!")
                         async for message in messages:
-                            collector_status.set_connected(pv, True)
+                            collector_status.set_connected(pv)
                             if isinstance(message, Disconnected):
                                 print(f"PV '{pv}' disconnected")
-                                collector_status.set_connected(pv, False)
+                                collector_status.set_disconnected(pv)
                             elif isinstance(message, Exception):
                                 raise message
                             else:
