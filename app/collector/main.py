@@ -3,7 +3,11 @@ import logging
 from typing import List
 
 import aiohttp
-from aiohttp.client_exceptions import ClientConnectorError, ClientResponseError
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientResponseError,
+)
 from collector.api import start_api
 from collector.collector import Collector
 from collector.collector_manager import CollectorManager
@@ -41,6 +45,7 @@ async def load_collectors():
                     ClientConnectorError,
                     ClientResponseError,
                     ConnectionRefusedError,
+                    ClientOSError,
                 ):
                     if settings.wait_for_indexer:
                         print(
