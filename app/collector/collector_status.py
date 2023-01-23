@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import datetime
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from common.schemas import CollectorBase
 from pydantic import BaseModel
@@ -23,10 +23,16 @@ class CollectorBasicStatus(BaseModel):
     name: str
     running: bool = False
     last_event: Optional[datetime] = None
+    # Time it takes to collect all PVs for one event. It should sufficiently lower than the `collector_timeout` setting.
+    collection_time: float = 0
 
 
-class CollectorStatus(CollectorBasicStatus):
+class CollectorFullStatus(CollectorBasicStatus):
     pvs: List[PvStatusSchema]
+
+
+class CollectorStatus(CollectorFullStatus):
+    collection_time_queue: deque[float] = deque(maxlen=5)
 
 
 class StatusManager:
@@ -35,7 +41,7 @@ class StatusManager:
         self.pvs = dict()
 
     @property
-    def collector_status(self):
+    def collector_status(self) -> List[CollectorStatus]:
         for collector in self.__collector_status:
             for pv in collector.pvs:
                 if pv.last_event is not None and (
@@ -45,7 +51,7 @@ class StatusManager:
         return self.__collector_status
 
     @collector_status.setter
-    def collector_status(self, collector_status):
+    def collector_status(self, collector_status: List[CollectorStatus]):
         self.__collector_status = collector_status
 
     def add_collector(self, collector: CollectorBase):
@@ -69,6 +75,14 @@ class StatusManager:
 
     def set_disconnected(self, pv: str):
         self.pvs[pv].pv_status.connected = False
+
+    def set_collection_time(self, collector_name: str, collection_time: float):
+        for collector in self.__collector_status:
+            if collector.name == collector_name:
+                collector.collection_time_queue.append(collection_time)
+                collector.collection_time = sum(collector.collection_time_queue) / len(
+                    collector.collection_time_queue
+                )
 
 
 class PvStatus:

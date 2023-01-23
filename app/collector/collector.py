@@ -2,11 +2,11 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Set
 
-from common.files import Event
-from common.schemas import CollectorBase
-
+from collector.api import collector_status
 from collector.config import settings
 from collector.indexable_dataset import IndexableDataset
+from common.files import Event
+from common.schemas import CollectorBase
 
 
 class Collector(CollectorBase):
@@ -73,6 +73,10 @@ class Collector(CollectorBase):
             await asyncio.wait_for(coro, self._timeout)
         except asyncio.TimeoutError:
             pass
+
+        collector_status.set_collection_time(
+            (dataset.last_event_received - dataset.first_event_received).total_seconds()
+        )
 
         await dataset.index()
         await dataset.write()

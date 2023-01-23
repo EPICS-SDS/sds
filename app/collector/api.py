@@ -8,7 +8,7 @@ from uvicorn import Config, Server
 from collector.collector_status import (
     Settings,
     CollectorBasicStatus,
-    CollectorStatus,
+    CollectorFullStatus,
     StatusManager,
 )
 from collector.config import settings
@@ -54,12 +54,12 @@ async def get_status():
     return collector_status.collector_status
 
 
-@status_router.get("/full", response_model=List[CollectorStatus])
+@status_router.get("/full", response_model=List[CollectorFullStatus])
 async def get_full_status():
     return collector_status.collector_status
 
 
-@status_router.get("/collector/{name}", response_model=CollectorStatus)
+@status_router.get("/collector/{name}", response_model=CollectorFullStatus)
 async def get_status_with_name(*, name: str):
     for collector in collector_status.collector_status:
         if collector.name == name:
