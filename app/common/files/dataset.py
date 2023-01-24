@@ -24,8 +24,8 @@ class DatasetSchema(BaseModel):
 class Dataset(DatasetSchema):
     name: str
     entry: NXentry
-    first_event_received: datetime
-    last_event_received: datetime
+    first_update_received: datetime
+    last_update_received: datetime
 
     class Config:
         arbitrary_types_allowed = True
@@ -51,8 +51,8 @@ class Dataset(DatasetSchema):
         values.update(entry=entry)
 
         # Timestamping reception of events for monitoring
-        values.update(first_event_received=datetime.utcnow())
-        values.update(last_event_received=datetime.utcnow())
+        values.update(first_update_received=datetime.utcnow())
+        values.update(last_update_received=datetime.utcnow())
 
         return values
 
@@ -60,7 +60,7 @@ class Dataset(DatasetSchema):
         """
         Add an event to the NeXus file
         """
-        self.last_event_received = datetime.utcnow()
+        self.last_update_received = datetime.utcnow()
 
         trigger_key = f"trigger_{event.trigger_pulse_id}"
         pulse_key = f"pulse_{event.pulse_id}"

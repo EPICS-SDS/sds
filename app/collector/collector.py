@@ -75,7 +75,9 @@ class Collector(CollectorBase):
             pass
 
         collector_status.set_collection_time(
-            (dataset.last_event_received - dataset.first_event_received).total_seconds()
+            (
+                dataset.last_update_received - dataset.first_update_received
+            ).total_seconds()
         )
 
         await dataset.index()
