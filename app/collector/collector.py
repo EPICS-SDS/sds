@@ -44,7 +44,7 @@ class Collector(CollectorBase):
             dataset = IndexableDataset(
                 collector_id=self.id,
                 collector_name=self.name,
-                trigger_date=datetime.utcnow(),
+                trigger_date=event.trigger_date,
                 trigger_pulse_id=event.trigger_pulse_id,
                 event_code=event.timing_event_code,
                 data_date=[event.data_date],
