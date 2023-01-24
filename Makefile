@@ -5,6 +5,9 @@ docker_image:
 
 docker_image.lock: docker_image
 
+clean_docker_image_lock:
+	@rm -f docker_image.lock
+
 clean:
 	@rm -f docker_image.lock
 	@rm -f test_image.lock
