@@ -20,8 +20,11 @@ set_debug(logging.WARNING)
 
 
 async def load_collectors():
+    indexer_timeout = settings.indexer_timeout_min
+
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
+
     async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
         collectors = []
         for collector in parse_file_as(List[CollectorBase], path):
@@ -49,9 +52,13 @@ async def load_collectors():
                 ):
                     if settings.wait_for_indexer:
                         print(
-                            f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {settings.indexer_timeout} s."
+                            f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {indexer_timeout} s."
                         )
-                        await asyncio.sleep(settings.indexer_timeout)
+                        await asyncio.sleep(indexer_timeout)
+                        # doubling timeout for indexer until max timeout is reached
+                        indexer_timeout = min(
+                            indexer_timeout * 2, settings.indexer_timeout_max
+                        )
                     else:
                         raise
         return collectors
