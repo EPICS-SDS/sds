@@ -1,34 +1,50 @@
-import asyncio
+from asyncio import Queue, Task, TimeoutError, create_task, wait_for
 from datetime import datetime
-from typing import Dict, Set
+from threading import Lock
+from typing import Dict, List, Set
 
 from collector.api import collector_status
 from collector.config import settings
-from collector.indexable_dataset import IndexableDataset
-from common.files import Event
+from common.files import Event, NexusFile
 from common.schemas import CollectorBase
 
 
 class Collector(CollectorBase):
     id: str
-    _tasks: Set[asyncio.Task] = set()
-    _queues: Dict[int, asyncio.Queue] = dict()
+    _tasks: Set[Task] = set()
+    _queues: Dict[int, Queue] = dict()
     _timeout: int = settings.collector_timeout
+    _events_per_file: int = settings.events_per_file
+    _file_lock: Lock
+    _files: Dict[int, NexusFile] = dict()
+    _concurrent_events: Dict[str, List[Queue]] = dict()
 
     class Config:
         frozen = True
         underscore_attrs_are_private = True
 
-    def has_queue(self, id: int):
-        return id in self._queues
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._file_lock = Lock()
+
+    def get_file(self, id: int) -> NexusFile:
+        for f in self._files.keys():
+            if id >= f and id < f + self._events_per_file:
+                return self._files[f]
+        return None
+
+    def discard_file(self, f: NexusFile):
+        for key, value in dict(self._files).items():
+            if value == f:
+                del self._files[key]
 
     def get_queue(self, id: int):
-        if self.has_queue(id):
-            return self._queues[id]
-        else:
-            queue = asyncio.Queue()
-            self._queues[id] = queue
-            return queue
+        return self._queues.get(id)
+
+    def create_queue(self, id: int):
+        queue = Queue()
+        self._queues[id] = queue
+        return queue
 
     def discard_queue(self, id: int):
         del self._queues[id]
@@ -39,49 +55,69 @@ class Collector(CollectorBase):
             print(repr(self), f"received bad event {repr(event)}")
             return
 
-        if not self.has_queue(event.trigger_pulse_id):
-            queue = self.get_queue(event.trigger_pulse_id)
-            dataset = IndexableDataset(
-                collector_id=self.id,
-                collector_name=self.name,
-                trigger_date=event.trigger_date,
-                trigger_pulse_id=event.trigger_pulse_id,
-                event_code=event.timing_event_code,
-                data_date=[event.data_date],
-                data_pulse_id=[event.pulse_id],
-            )
-            task = asyncio.create_task(self._collector(queue, dataset))
-            self._tasks.add(task)
+        with self._file_lock:
+            nexus_file = self.get_file(event.trigger_pulse_id)
 
-            def task_done_cb(task):
-                self._tasks.discard(task)
-                self.discard_queue(event.trigger_pulse_id)
+            if nexus_file is None:
+                # First create a new file
+                nexus_file = NexusFile(
+                    collector_id=self.id,
+                    collector_name=self.name,
+                    trigger_date=event.trigger_date,
+                    trigger_pulse_id=event.trigger_pulse_id,
+                    event_code=event.timing_event_code,
+                )
+                self._files[event.trigger_pulse_id] = nexus_file
+                self._concurrent_events[nexus_file.name] = []
 
-            task.add_done_callback(task_done_cb)
+        # One queue per trigger_id
+        with self._file_lock:
+            queue = self._queues.get(event.trigger_pulse_id)
+            if queue is None:
+                queue = self.create_queue(event.trigger_pulse_id)
 
-        queue = self.get_queue(event.trigger_pulse_id)
+                self._concurrent_events[nexus_file.name].append(queue)
+
+                task = create_task(self._collector(queue, nexus_file))
+                self._tasks.add(task)
+
+                def task_done_cb(task):
+                    self._tasks.discard(task)
+                    self.discard_queue(event.trigger_pulse_id)
+
+                task.add_done_callback(task_done_cb)
+
         queue.put_nowait(event)
 
-    async def _collector(self, queue: asyncio.Queue, dataset: IndexableDataset):
-        async def consumer(queue: asyncio.Queue, dataset: IndexableDataset):
+    async def _collector(self, queue: Queue, nexus_file: NexusFile):
+        first_update_received = datetime.utcnow()
+        last_update_received = [datetime.utcnow()]
+
+        async def consumer(queue: Queue, nexus_file: NexusFile):
             while True:
                 event = await queue.get()
-                dataset.update(event)
+                nexus_file.update(event)
+                last_update_received[0] = datetime.utcnow()
 
-        coro = consumer(queue, dataset)
+        coro = consumer(queue, nexus_file)
         try:
-            await asyncio.wait_for(coro, self._timeout)
-        except asyncio.TimeoutError:
+            await wait_for(coro, self._timeout)
+        except TimeoutError:
             pass
 
         collector_status.set_collection_time(
-            (
-                dataset.last_update_received - dataset.first_update_received
-            ).total_seconds()
+            self.name, (last_update_received[0] - first_update_received).total_seconds()
         )
 
-        await dataset.index()
-        await dataset.write()
+        # When all tasks are done, write the file and send metadata to indexer
+        with self._file_lock:
+            self._concurrent_events[nexus_file.name].remove(queue)
+
+            if self._concurrent_events[nexus_file.name] == []:
+                await nexus_file.index(settings.indexer_url)
+                await nexus_file.write()
+                self._concurrent_events.pop(nexus_file.name)
+                self.discard_file(nexus_file)
 
     def event_matches(self, event: Event):
         if event.timing_event_code != self.event_code:
