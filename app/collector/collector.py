@@ -70,8 +70,7 @@ class Collector(CollectorBase):
                 self._files[event.trigger_pulse_id] = nexus_file
                 self._concurrent_events[nexus_file.name] = []
 
-        # One queue per trigger_id
-        with self._file_lock:
+            # One queue per trigger_id
             queue = self._queues.get(event.trigger_pulse_id)
             if queue is None:
                 queue = self.create_queue(event.trigger_pulse_id)
@@ -110,14 +109,18 @@ class Collector(CollectorBase):
         )
 
         # When all tasks are done, write the file and send metadata to indexer
-        with self._file_lock:
-            self._concurrent_events[nexus_file.name].remove(queue)
+        self._file_lock.acquire()
+        self._concurrent_events[nexus_file.name].remove(queue)
 
-            if self._concurrent_events[nexus_file.name] == []:
-                await nexus_file.index(settings.indexer_url)
-                await nexus_file.write()
-                self._concurrent_events.pop(nexus_file.name)
-                self.discard_file(nexus_file)
+        if self._concurrent_events[nexus_file.name] == []:
+            self._concurrent_events.pop(nexus_file.name)
+            self.discard_file(nexus_file)
+            self._file_lock.release()
+
+            await nexus_file.index(settings.indexer_url)
+            await nexus_file.write()
+        else:
+            self._file_lock.release()
 
     def event_matches(self, event: Event):
         if event.timing_event_code != self.event_code:
