@@ -25,7 +25,17 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.setLevel(settings.log_level)
 
-app = FastAPI(title="SDS Retriever")
+description = """
+This API can be used for:
+- get collectors configuration by query or by ID
+- get datasets by a search query or by ID
+- get files by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
+"""
+app = FastAPI(
+    title="SDS Retriever Service API",
+    description=description,
+    version="0.1",
+)
 
 
 class SortOrder(str, Enum):

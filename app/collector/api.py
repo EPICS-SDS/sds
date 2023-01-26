@@ -22,7 +22,7 @@ This API can be used for:
 - monitor the collectors' status and performance
 """
 app = FastAPI(
-    title="Collector Service API",
+    title="SDS Collector Service API",
     description=description,
     version="0.1",
 )

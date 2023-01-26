@@ -17,7 +17,16 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.setLevel(settings.log_level)
 
-app = FastAPI()
+description = """
+This API can be used for:
+- add/update collector definitions
+- add new datasets for indexing
+"""
+app = FastAPI(
+    title="SDS Indexer Service API",
+    description=description,
+    version="0.1",
+)
 
 
 @app.on_event("startup")
