@@ -129,10 +129,12 @@ class MyServer(object):
                             except Exception as e:
                                 print("error received", e)
                                 pass
-                            if i < int(self.n_pulses[0]) - 1:
-                                time.sleep(1 / self.freq[0])
+                        # Wait to process the next pulse at the right frequency
+                        if i < int(self.n_pulses[0]) - 1:
+                            time.sleep(1 / self.freq[0])
+                        else:
+                            time.sleep(0.001)
                         pulse_id += 1
-                        time.sleep(0.01)
 
         print("Server stopped")
         queue_thread.join()
