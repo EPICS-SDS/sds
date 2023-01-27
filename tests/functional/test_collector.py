@@ -110,7 +110,9 @@ class TestCollector:
                 file_path = (
                     file_settings.storage_path
                     / directory
-                    / (collector.name + f"_{int(first_pulse)+n}.h5")
+                    / (
+                        f"{collector.name}_{collector.event_code}_{int(first_pulse)+n}.h5"
+                    )
                 )
                 assert file_path.exists()
 

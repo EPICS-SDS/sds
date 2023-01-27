@@ -2,8 +2,7 @@ import pytest
 from datetime import datetime
 
 from collector.collector import Collector
-from collector.indexable_dataset import IndexableDataset
-from common.files import Event
+from common.files import Dataset, Event
 
 collector = Collector(
     name="test_collector",
@@ -30,17 +29,14 @@ class TestCollector:
         assert len(collector._tasks) == 0
 
 
-class TestIndexableDataset:
+class TestDataset:
     @pytest.mark.asyncio
     async def test_dataset_index_fail(self):
-        dataset = IndexableDataset(
+        dataset = Dataset(
             collector_id=collector.id,
-            collector_name=collector.name,
             trigger_date=datetime.utcnow(),
             trigger_pulse_id=event.trigger_pulse_id,
-            data_date=[datetime.utcnow()],
-            data_pulse_id=[event.trigger_pulse_id],
-            event_code=event.timing_event_code,
+            path=f"{collector.name}_{event.timing_event_code}_{event.trigger_pulse_id}",
         )
 
-        await dataset.index()
+        await dataset.index("")

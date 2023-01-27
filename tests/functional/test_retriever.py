@@ -11,8 +11,7 @@ import pytest
 import pytest_asyncio
 import requests
 from common import schemas
-from common.files.dataset import Dataset
-from common.files.event import Event
+from common.files import Dataset, Event, NexusFile
 from pydantic import ValidationError
 from retriever.config import settings
 from tests.functional.service_loader import (
@@ -225,31 +224,30 @@ class TestDatasets:
 
         # Create the NeXus files
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
-            dataset_nexus = Dataset(
+            nexus = NexusFile(
                 collector_id=datasets[0]["collector_id"],
                 collector_name=TestCollector.test_collector["name"],
-                trigger_date=datetime.utcnow(),
-                trigger_pulse_id=datasets[0]["trigger_pulse_id"],
-                event_name=TestCollector.test_collector["event_name"],
                 event_code=TestCollector.test_collector["event_code"],
+                trigger_pulse_id=datasets[0]["trigger_pulse_id"],
+                trigger_date=datetime.utcnow(),
             )
+
             for dataset in datasets:
                 for i, pv in enumerate(TestCollector.test_collector["pvs"]):
                     new_event = Event(
                         pv_name=pv,
                         value=i,
-                        timing_event_name=TestCollector.test_collector["event_name"],
                         timing_event_code=TestCollector.test_collector["event_code"],
                         data_date=datetime.utcnow(),
                         trigger_date=datetime.utcnow(),
                         pulse_id=dataset["trigger_pulse_id"],
                         trigger_pulse_id=dataset["trigger_pulse_id"],
                     )
-                    dataset_nexus.update(new_event)
+                    nexus.update(new_event)
 
-            await dataset_nexus.write()
+            nexus.write()
             for dataset in datasets:
-                dataset["path"] = str(dataset_nexus.path)
+                dataset["path"] = str(nexus.path)
 
         # Create datasets to test queries
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
