@@ -1,5 +1,7 @@
 import asyncio
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+from multiprocessing import cpu_count
 from typing import Set
 
 from collector.api import collector_settings, collector_status
@@ -28,10 +30,14 @@ class CollectorManager:
         self.collectors = collectors
         self.startup_event = asyncio.Event()
         self.startup_lock = asyncio.Lock()
+        self._pool: ProcessPoolExecutor = ProcessPoolExecutor(
+            max_workers=max(1, cpu_count() - 1)
+        )
 
         collector_settings.collectors = self.collectors
 
         for collector in self.collectors:
+            collector._pool = self._pool
             collector_status.add_collector(collector)
 
     async def __aenter__(self):
@@ -56,6 +62,7 @@ class CollectorManager:
         self._context.close()
         for task in self._tasks:
             task.cancel()
+        self._pool.shutdown()
 
     async def _subscribe(self, pv):
         while True:

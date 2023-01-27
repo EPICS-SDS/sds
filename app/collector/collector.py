@@ -1,7 +1,6 @@
 from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
-from multiprocessing import cpu_count
 from threading import Lock
 from typing import Dict, List, Set
 
@@ -9,10 +8,6 @@ from collector.api import collector_status
 from collector.config import settings
 from common.files import Event, NexusFile, write_file
 from common.schemas import CollectorBase
-
-_pool: ProcessPoolExecutor = ProcessPoolExecutor(
-    max_workers=max(1, cpu_count() - 1)
-)  # , max_tasks_per_child=2)
 
 
 class Collector(CollectorBase):
@@ -24,6 +19,7 @@ class Collector(CollectorBase):
     _file_lock: Lock
     _files: Dict[int, NexusFile] = dict()
     _concurrent_events: Dict[str, List[Queue]] = dict()
+    _pool: ProcessPoolExecutor
 
     class Config:
         frozen = True
@@ -125,7 +121,7 @@ class Collector(CollectorBase):
 
         if file_ready:
 
-            await get_running_loop().run_in_executor(_pool, write_file, nexus_file)
+            await get_running_loop().run_in_executor(self._pool, write_file, nexus_file)
             await nexus_file.index(settings.indexer_url)
 
     def event_matches(self, event: Event):
