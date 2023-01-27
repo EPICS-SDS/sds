@@ -1,12 +1,18 @@
-from asyncio import Queue, Task, TimeoutError, create_task, wait_for
+from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+from multiprocessing import cpu_count
 from threading import Lock
 from typing import Dict, List, Set
 
 from collector.api import collector_status
 from collector.config import settings
-from common.files import Event, NexusFile
+from common.files import Event, NexusFile, write_file
 from common.schemas import CollectorBase
+
+_pool: ProcessPoolExecutor = ProcessPoolExecutor(
+    max_workers=max(1, cpu_count() - 1)
+)  # , max_tasks_per_child=2)
 
 
 class Collector(CollectorBase):
@@ -25,7 +31,7 @@ class Collector(CollectorBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._file_lock = Lock()
+        self._file_lock: Lock = Lock()
 
     def get_file(self, id: int) -> NexusFile:
         for f in self._files.keys():
@@ -109,18 +115,18 @@ class Collector(CollectorBase):
         )
 
         # When all tasks are done, write the file and send metadata to indexer
-        self._file_lock.acquire()
-        self._concurrent_events[nexus_file.name].remove(queue)
+        with self._file_lock:
+            self._concurrent_events[nexus_file.name].remove(queue)
 
-        if self._concurrent_events[nexus_file.name] == []:
-            self._concurrent_events.pop(nexus_file.name)
-            self.discard_file(nexus_file)
-            self._file_lock.release()
+            file_ready = self._concurrent_events[nexus_file.name] == []
+            if file_ready:
+                self._concurrent_events.pop(nexus_file.name)
+                self.discard_file(nexus_file)
 
+        if file_ready:
+
+            await get_running_loop().run_in_executor(_pool, write_file, nexus_file)
             await nexus_file.index(settings.indexer_url)
-            await nexus_file.write()
-        else:
-            self._file_lock.release()
 
     def event_matches(self, event: Event):
         if event.timing_event_code != self.event_code:

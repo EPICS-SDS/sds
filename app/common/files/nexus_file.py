@@ -93,7 +93,7 @@ class NexusFile(BaseModel):
             )
         self.entry[trigger_key][pulse_key][event.pv_name] = event.value
 
-    async def write(self):
+    def write(self):
         """
         Write NeXus file into storage
         """
@@ -109,3 +109,8 @@ class NexusFile(BaseModel):
 
     def __repr__(self):
         return f"Dataset({self.name})"
+
+
+def write_file(nexus_file: NexusFile):
+    """Convenience method to write the NeXus files from a ProcessPoolExecutor"""
+    nexus_file.write()
