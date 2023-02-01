@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from common.files.config import settings
 from common.files.dataset import Dataset
 from common.files.event import Event
-from nexusformat.nexus import NXdata, NXentry
 from pydantic import BaseModel, root_validator
+from h5py import File
 
 
 class NexusFile(BaseModel):
@@ -17,7 +17,7 @@ class NexusFile(BaseModel):
     collector_id: str
     path: Path
     name: str
-    entry: NXentry
+    events: List[Event]
     datasets: Dict[int, Dataset]
 
     class Config:
@@ -45,13 +45,7 @@ class NexusFile(BaseModel):
 
         values.update(datasets=dict())
 
-        entry = NXentry(
-            attrs={
-                "collector_name": values["collector_name"],
-                "event_code": values["event_code"],
-            }
-        )
-        values.update(entry=entry)
+        values.update(events=[])
 
         return values
 
@@ -75,23 +69,7 @@ class NexusFile(BaseModel):
             )
             self.datasets.update({event.trigger_pulse_id: dataset})
 
-        trigger_key = f"trigger_{event.trigger_pulse_id}"
-        pulse_key = f"pulse_{event.pulse_id}"
-        if trigger_key not in self.entry:
-            self.entry[trigger_key] = NXentry(
-                attrs={
-                    "trigger_pulse_id": event.trigger_pulse_id,
-                    "trigger_timestamp": event.trigger_date.isoformat(),
-                }
-            )
-        if pulse_key not in self.entry[trigger_key]:
-            self.entry[trigger_key][pulse_key] = NXdata(
-                attrs={
-                    "pulse_id": event.pulse_id,
-                    "timestamp": event.data_date.isoformat(),
-                }
-            )
-        self.entry[trigger_key][pulse_key][event.pv_name] = event.value
+        self.events.append(event)
 
     def write(self):
         """
@@ -101,7 +79,29 @@ class NexusFile(BaseModel):
             print(repr(self), f"writing to '{self.path}'")
             absolute_path = settings.storage_path / self.path
             absolute_path.parent.mkdir(parents=True, exist_ok=True)
-            self.entry.save(absolute_path, mode="w")
+            h5file = File(absolute_path, "w")
+            entry = h5file.create_group(name="entry")
+            entry.attrs["NX_class"] = "NXentry"
+
+            for event in self.events:
+                trigger_key = f"trigger_{event.trigger_pulse_id}"
+                pulse_key = f"pulse_{event.pulse_id}"
+                if trigger_key not in entry:
+                    trigger_group = entry.create_group(name=trigger_key)
+                    trigger_group.attrs["trigger_pulse_id"] = event.trigger_pulse_id
+                    trigger_group.attrs[
+                        "trigger_timestamp"
+                    ] = event.trigger_date.isoformat()
+                if pulse_key not in entry[trigger_key]:
+                    entry[trigger_key].create_group(name=pulse_key)
+                    entry[trigger_key][pulse_key].attrs["pulse_id"] = event.pulse_id
+                    entry[trigger_key][pulse_key].attrs[
+                        "timestamp"
+                    ] = event.data_date.isoformat()
+
+                entry[trigger_key][pulse_key][event.pv_name] = event.value
+
+            h5file.close()
             print(repr(self), "writing done.")
         except Exception as e:
             print(repr(self), "writing failed!")
