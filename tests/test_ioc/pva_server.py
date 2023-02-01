@@ -48,12 +48,10 @@ class MyServer(object):
 
         self.pvdb = dict()
         self.process = None
-        self.mp_ctxt = get_context("fork")
+        self.mp_ctxt = get_context("spawn")
         self.stop_flag = self.mp_ctxt.Event()
         self.queue = self.mp_ctxt.Queue()
         self.pvdb_lock = self.mp_ctxt.Lock()
-
-        self.provider = StaticProvider()
 
     def add_pv(self, pv_name, n_elem, prefix):
         self.queue.put(("add", pv_name, n_elem, prefix))
@@ -92,6 +90,7 @@ class MyServer(object):
 
     def _start_server(self):
         pulse_id = 0
+        self.provider = StaticProvider()
 
         server = Server(providers=[self.provider])
 
