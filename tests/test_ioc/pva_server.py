@@ -20,9 +20,8 @@ class TriggerHandler(object):
 
     def put(self, pv, op):
         if op.value().raw.value is True:
-            for (lock, event) in self.events:
-                with lock:
-                    event.set()
+            for event in self.events:
+                event.set()
 
         op.done()
 
@@ -40,8 +39,7 @@ class ScalarHandler(object):
 
 
 class MyServer(object):
-    def __init__(self, lock, event, n_pulses, freq):
-        self.lock = lock
+    def __init__(self, event, n_pulses, freq):
         self.event = event
         self.n_pulses = n_pulses
         self.freq = freq
@@ -100,8 +98,7 @@ class MyServer(object):
         with server:
             while not self.stop_flag.is_set():
                 self.event.wait()
-                with self.lock:
-                    self.event.clear()
+                self.event.clear()
                 if self.stop_flag.is_set():
                     break
 
@@ -144,17 +141,17 @@ class MyServer(object):
 
 
 def run_server(n_pvs, n_elem, prefix):
-    mp_ctxt = get_context("fork")
+    mp_ctxt = get_context("spawn")
     N_PROC = cpu_count()
 
     mngr = mp_ctxt.Manager()
-    events = [(mngr.Lock(), mngr.Event()) for i in range(N_PROC)]
+    events = [mngr.Event() for i in range(N_PROC)]
     n_pulses = shared_memory.ShareableList([1])
     freq = shared_memory.ShareableList([14])
 
     servers = []
     for i in range(N_PROC):
-        servers.append(MyServer(*events[i], n_pulses, freq))
+        servers.append(MyServer(events[i], n_pulses, freq))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
@@ -193,9 +190,8 @@ def run_server(n_pvs, n_elem, prefix):
         server.start_server()
 
     # Set the event to load meaningful data from the start
-    for (lock, event) in events:
-        with lock:
-            event.set()
+    for event in events:
+        event.set()
 
     with Server(providers=[provider]):
         for server in servers:
@@ -221,8 +217,7 @@ def update_pvs(servers, n_pvs, n_elem, prefix):
         pvs.append(prefix + pv_name)
 
     for server in servers:
-        with server.lock:
-            server.event.set()
+        server.event.set()
 
     return pvs
 
