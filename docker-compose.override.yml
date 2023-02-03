@@ -14,6 +14,7 @@ services:
     volumes:
       - ./app:/app/
     command: python -m collector.main --reload
+    network_mode: "host"
 
   elasticsearch:
     volumes:
@@ -37,6 +38,7 @@ services:
     command: python test_ioc/pva_server.py 5 10
     volumes:
       - ./tests/test_ioc/:/app/test_ioc/
+    network_mode: "host"
 
 volumes:
   esdata:
