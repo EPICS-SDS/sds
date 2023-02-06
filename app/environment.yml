@@ -9,7 +9,7 @@ dependencies:
   - fastapi   
   - nexusformat
   - pip
-  - python=3.11
+  - python=3.10
   - requests
   - uvicorn
   - gcc
