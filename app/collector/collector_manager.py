@@ -78,14 +78,7 @@ class CollectorManager:
                     async with sub.messages() as messages:
                         print(f"PV '{pv}' subscribed!")
                         async for message in messages:
-                            collector_status.set_connected(pv)
-                            if isinstance(message, Disconnected):
-                                print(f"PV '{pv}' disconnected")
-                                collector_status.set_disconnected(pv)
-                            elif isinstance(message, Exception):
-                                raise message
-                            else:
-                                self._message_handler(pv, message)
+                            self._message_handler(pv, message)
                 print(f"PV '{pv}' subscription ended")
             except Disconnected:
                 print(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
@@ -96,11 +89,11 @@ class CollectorManager:
 
     def _message_handler(self, pv, message):
         try:
-            collector_status.pvs[pv].last_event = datetime.utcnow()
             event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError:
             print(f"PV '{pv}' event validation error")
             return
+
         self._event_handler(event)
 
     # Finds the event and updates it with the value

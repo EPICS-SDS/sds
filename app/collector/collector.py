@@ -120,7 +120,6 @@ class Collector(CollectorBase):
                 self.discard_file(nexus_file)
 
         if file_ready:
-
             await get_running_loop().run_in_executor(self._pool, write_file, nexus_file)
             await nexus_file.index(settings.indexer_url)
 
