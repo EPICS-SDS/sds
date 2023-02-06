@@ -1,3 +1,4 @@
+from multiprocessing import Queue
 from pathlib import Path
 from typing import Dict, List
 
@@ -17,7 +18,7 @@ class NexusFile(BaseModel):
     collector_id: str
     path: Path
     name: str
-    events: List[Event]
+    events: Queue
     datasets: Dict[int, Dataset]
 
     class Config:
@@ -45,7 +46,7 @@ class NexusFile(BaseModel):
 
         values.update(datasets=dict())
 
-        values.update(events=[])
+        values.update(events=Queue())
 
         return values
 
@@ -69,7 +70,7 @@ class NexusFile(BaseModel):
             )
             self.datasets.update({event.trigger_pulse_id: dataset})
 
-        self.events.append(event)
+        self.events.put(event)
 
     def write(self):
         """
@@ -83,7 +84,9 @@ class NexusFile(BaseModel):
             entry = h5file.create_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
 
-            for event in self.events:
+            while not self.events.empty():
+                event = self.events.get()
+
                 trigger_key = f"trigger_{event.trigger_pulse_id}"
                 pulse_key = f"pulse_{event.pulse_id}"
                 if trigger_key not in entry:
