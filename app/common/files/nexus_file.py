@@ -1,54 +1,42 @@
-from multiprocessing import Queue
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
 from common.files.config import settings
 from common.files.dataset import Dataset
 from common.files.event import Event
-from pydantic import BaseModel, root_validator
 from h5py import File
 
 
-class NexusFile(BaseModel):
+class NexusFile:
     """
     Model for a file containing Dataset objects from one or more timing
     event that share the same collector.
     """
 
-    collector_id: str
-    path: Path
-    name: str
-    events: Queue
-    datasets: Dict[int, Dataset]
+    def __init__(
+        self,
+        collector_id: str,
+        collector_name: str,
+        event_code: int,
+        trigger_pulse_id: int,
+        trigger_date: datetime,
+    ):
+        self.collector_id: str = collector_id
+        self.collector_name: str = collector_name
 
-    class Config:
-        arbitrary_types_allowed = True
-
-    @root_validator(pre=True)
-    def extract_path(cls, values):
         # File name is build from the collector name, the event code, and the pulse ID of the first event
-        name = (
-            values["collector_name"]
-            + "_"
-            + str(values["event_code"])
-            + "_"
-            + str(values["trigger_pulse_id"])
+        self.name: str = (
+            collector_name + "_" + str(event_code) + "_" + str(trigger_pulse_id)
         )
-        values.update(name=name)
 
         # Path is generated from date
-        directory = Path(
-            values["trigger_date"].strftime("%Y"),
-            values["trigger_date"].strftime("%Y-%m-%d"),
-        )
-        path = directory / f"{name}.h5"
-        values.update(path=path)
+        directory = Path(trigger_date.strftime("%Y"), trigger_date.strftime("%Y-%m-%d"))
+        self.path: Path = directory / f"{self.name}.h5"
 
-        values.update(datasets=dict())
+        self.datasets: Dict[int, Dataset] = dict()
 
-        values.update(events=Queue())
-
-        return values
+        self.events: List[Event] = list()
 
     async def index(self, indexer_url):
         """Send metadata from all dataset to the indexer"""
@@ -70,7 +58,7 @@ class NexusFile(BaseModel):
             )
             self.datasets.update({event.trigger_pulse_id: dataset})
 
-        self.events.put(event)
+        self.events.append(event)
 
     def write(self):
         """
@@ -83,10 +71,14 @@ class NexusFile(BaseModel):
             h5file = File(absolute_path, "w")
             entry = h5file.create_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
+            entry.attrs["collector_name"] = self.collector_name
 
-            while not self.events.empty():
-                event = self.events.get()
-
+            while True:
+                # Pop elements from the list
+                try:
+                    event = self.events.pop(0)
+                except IndexError:
+                    break
                 trigger_key = f"trigger_{event.trigger_pulse_id}"
                 pulse_key = f"pulse_{event.pulse_id}"
                 if trigger_key not in entry:
