@@ -1,6 +1,7 @@
 from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Set
 
@@ -61,23 +62,30 @@ class Collector(CollectorBase):
             nexus_file = self.get_file(event.trigger_pulse_id)
 
             if nexus_file is None:
+                # File name is build from the collector name, the event code, and the pulse ID of the first event
+                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.trigger_pulse_id)}"
+                # Path is generated from date
+                directory = Path(
+                    event.trigger_date.strftime("%Y"),
+                    event.trigger_date.strftime("%Y-%m-%d"),
+                )
+
                 # First create a new file
                 nexus_file = NexusFile(
                     collector_id=self.id,
                     collector_name=self.name,
-                    trigger_date=event.trigger_date,
-                    trigger_pulse_id=event.trigger_pulse_id,
-                    event_code=event.timing_event_code,
+                    file_name=file_name,
+                    directory=directory,
                 )
                 self._files[event.trigger_pulse_id] = nexus_file
-                self._concurrent_events[nexus_file.name] = []
+                self._concurrent_events[nexus_file.file_name] = []
 
             # One queue per trigger_id
             queue = self._queues.get(event.trigger_pulse_id)
             if queue is None:
                 queue = self.create_queue(event.trigger_pulse_id)
 
-                self._concurrent_events[nexus_file.name].append(queue)
+                self._concurrent_events[nexus_file.file_name].append(queue)
 
                 task = create_task(self._collector(queue, nexus_file))
                 self._tasks.add(task)
@@ -97,7 +105,7 @@ class Collector(CollectorBase):
         async def consumer(queue: Queue, nexus_file: NexusFile):
             while True:
                 event = await queue.get()
-                nexus_file.update(event)
+                nexus_file.add_event(event)
                 last_update_received[0] = datetime.utcnow()
 
         coro = consumer(queue, nexus_file)
@@ -112,11 +120,11 @@ class Collector(CollectorBase):
 
         # When all tasks are done, write the file and send metadata to indexer
         with self._file_lock:
-            self._concurrent_events[nexus_file.name].remove(queue)
+            self._concurrent_events[nexus_file.file_name].remove(queue)
 
-            file_ready = self._concurrent_events[nexus_file.name] == []
+            file_ready = self._concurrent_events[nexus_file.file_name] == []
             if file_ready:
-                self._concurrent_events.pop(nexus_file.name)
+                self._concurrent_events.pop(nexus_file.file_name)
                 self.discard_file(nexus_file)
 
         if file_ready:

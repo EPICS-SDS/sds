@@ -224,12 +224,18 @@ class TestDatasets:
 
         # Create the NeXus files
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
+            file_name: str = f'{TestCollector.test_collector["name"]}_{str(TestCollector.test_collector["event_code"])}_{str(datasets[0]["trigger_pulse_id"])}'
+            # Path is generated from date
+            directory = Path(
+                datetime.utcnow().strftime("%Y"),
+                datetime.utcnow().strftime("%Y-%m-%d"),
+            )
+
             nexus = NexusFile(
                 collector_id=datasets[0]["collector_id"],
                 collector_name=TestCollector.test_collector["name"],
-                event_code=TestCollector.test_collector["event_code"],
-                trigger_pulse_id=datasets[0]["trigger_pulse_id"],
-                trigger_date=datetime.utcnow(),
+                file_name=file_name,
+                directory=settings.storage_path / directory,
             )
 
             for dataset in datasets:
@@ -243,9 +249,9 @@ class TestDatasets:
                         pulse_id=dataset["trigger_pulse_id"],
                         trigger_pulse_id=dataset["trigger_pulse_id"],
                     )
-                    nexus.update(new_event)
+                    nexus.add_event(new_event)
 
-            nexus.write()
+            nexus.write_from_events()
             for dataset in datasets:
                 dataset["path"] = str(nexus.path)
 

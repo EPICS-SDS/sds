@@ -18,24 +18,15 @@ class NexusFile:
         self,
         collector_id: str,
         collector_name: str,
-        event_code: int,
-        trigger_pulse_id: int,
-        trigger_date: datetime,
+        file_name: str,
+        directory: Path,
     ):
         self.collector_id: str = collector_id
         self.collector_name: str = collector_name
-
-        # File name is build from the collector name, the event code, and the pulse ID of the first event
-        self.name: str = (
-            collector_name + "_" + str(event_code) + "_" + str(trigger_pulse_id)
-        )
-
-        # Path is generated from date
-        directory = Path(trigger_date.strftime("%Y"), trigger_date.strftime("%Y-%m-%d"))
-        self.path: Path = directory / f"{self.name}.h5"
+        self.file_name: str = file_name
+        self.path: Path = directory / f"{self.file_name}.h5"
 
         self.datasets: Dict[int, Dataset] = dict()
-
         self.events: List[Event] = list()
 
     async def index(self, indexer_url):
@@ -43,7 +34,7 @@ class NexusFile:
         for dataset in self.datasets.values():
             await dataset.index(indexer_url)
 
-    def update(self, event: Event):
+    def add_event(self, event: Event):
         """
         Add an event to the NeXus file
         """
@@ -60,9 +51,12 @@ class NexusFile:
 
         self.events.append(event)
 
-    def write(self):
+    def add_dataset(self, dataset: Dataset):
+        self.datasets.update({dataset.trigger_pulse_id: dataset})
+
+    def write_from_events(self):
         """
-        Write NeXus file into storage
+        Write NeXus file from a list of Event objects (for collector)
         """
         try:
             print(repr(self), f"writing to '{self.path}'")
@@ -102,10 +96,33 @@ class NexusFile:
             print(repr(self), "writing failed!")
             print(e)
 
+    def write_from_datasets(self):
+        """
+        Write a combined NeXus file from a list of files (for retriever)
+        """
+        try:
+            print(repr(self), f"writing to '{self.path}'")
+            h5file = File(self.path, "w")
+            entry = h5file.create_group(name="entry")
+            entry.attrs["NX_class"] = "NXentry"
+            entry.attrs["collector_name"] = self.collector_name
+
+            for dataset in self.datasets.values():
+                origin = File(dataset.path, "r")
+                data = origin["entry"][f"trigger_{dataset.trigger_pulse_id}"]
+
+                h5file.copy(data, entry)
+
+            h5file.close()
+            print(repr(self), "writing done.")
+        except Exception as e:
+            print(repr(self), "writing failed!")
+            print(e)
+
     def __repr__(self):
-        return f"Dataset({self.name})"
+        return f"Dataset({self.file_name})"
 
 
 def write_file(nexus_file: NexusFile):
     """Convenience method to write the NeXus files from a ProcessPoolExecutor"""
-    nexus_file.write()
+    nexus_file.write_from_events()

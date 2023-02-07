@@ -10,9 +10,10 @@ from typing import Any, Dict, List, Optional
 import aiofiles
 from common import crud, schemas
 from common.db.connection import wait_for_connection
-from common.files import Collector
+from common.files import NexusFile
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
+from h5py import File
 from retriever.config import settings
 from retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
@@ -309,23 +310,35 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
                 media_type=HDF5_MIME_TYPE,
             )
 
-    collectors: Dict[str, Collector] = dict()
-    for dataset in datasets:
-        collector = collectors.get(dataset.collector_id)
-        if collector is None:
-            collectors[dataset.collector_id] = Collector.create(dataset)
-        else:
-            collector.update(dataset)
+    nexus_files: Dict[str, NexusFile] = dict()
 
     # Create a temporary zip file to collect the data before transferring it
     async with aiofiles.tempfile.TemporaryDirectory() as d:
+        for dataset in datasets:
+            nexus_file = nexus_files.get(dataset.collector_id)
+
+            if nexus_file is None:
+                origin = File(settings.storage_path / dataset.path, "r")
+                collector_name = origin["entry"].attrs["collector_name"]
+                origin.close()
+
+                # First create a new file
+                nexus_file = NexusFile(
+                    collector_id=dataset.collector_id,
+                    collector_name=collector_name,
+                    file_name=collector_name + ".h5",
+                    directory=Path(d),
+                )
+                nexus_files[dataset.collector_id] = nexus_file
+
+            nexus_file.add_dataset(dataset)
+
         zip_filename = "datasets.zip"
         zip_io = BytesIO()
         with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
-            for collector in collectors.values():
-                await collector.write(d)
-
-                zip.write(os.path.join(d, collector.path), collector.path)
+            for nexus_file in nexus_files.values():
+                nexus_file.write_from_datasets()
+                zip.write(os.path.join(d, nexus_file.path), nexus_file.file_name)
 
     return StreamingResponse(
         iter([zip_io.getvalue()]),
