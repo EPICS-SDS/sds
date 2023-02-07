@@ -35,6 +35,26 @@ class CollectorStatus(CollectorFullStatus):
     collection_time_queue: deque[float] = deque(maxlen=5)
 
 
+class PvStatus:
+    def __init__(self, name: str):
+        self.event_timestamps: deque[datetime] = deque(maxlen=5)
+        self.pv_status = PvStatusSchema(name=name)
+
+    @property
+    def last_event(self):
+        return self.pv_status.last_event
+
+    @last_event.setter
+    def last_event(self, last_event: datetime):
+        self.pv_status.last_event = last_event
+        if last_event is not None:
+            self.event_timestamps.append(last_event)
+            if len(self.event_timestamps) > 1:
+                self.pv_status.event_rate = (len(self.event_timestamps) - 1) / (
+                    self.event_timestamps[-1] - self.event_timestamps[0]
+                ).total_seconds()
+
+
 class StatusManager:
     def __init__(self):
         self.collector_status: List[CollectorStatus] = []
@@ -70,11 +90,11 @@ class StatusManager:
             )
         )
 
-    def set_connected(self, pv: str):
-        self.pvs[pv].pv_status.connected = True
+    def get_pv_status(self, pv: str) -> PvStatus:
+        return self.pvs[pv].pv_status
 
-    def set_disconnected(self, pv: str):
-        self.pvs[pv].pv_status.connected = False
+    def set_update_event(self, pv: str):
+        self.pvs[pv].last_event = datetime.utcnow()
 
     def set_collection_time(self, collector_name: str, collection_time: float):
         for collector in self.__collector_status:
@@ -83,23 +103,3 @@ class StatusManager:
                 collector.collection_time = sum(collector.collection_time_queue) / len(
                     collector.collection_time_queue
                 )
-
-
-class PvStatus:
-    def __init__(self, name: str):
-        self.event_timestamps: deque[datetime] = deque(maxlen=5)
-        self.pv_status = PvStatusSchema(name=name)
-
-    @property
-    def last_event(self):
-        return self.pv_status.last_event
-
-    @last_event.setter
-    def last_event(self, last_event: datetime):
-        self.pv_status.last_event = last_event
-        if last_event is not None:
-            self.event_timestamps.append(last_event)
-            if len(self.event_timestamps) > 1:
-                self.pv_status.event_rate = (len(self.event_timestamps) - 1) / (
-                    self.event_timestamps[-1] - self.event_timestamps[0]
-                ).total_seconds()

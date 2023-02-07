@@ -1,5 +1,7 @@
 import asyncio
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+from multiprocessing import cpu_count
 from typing import Set
 
 from collector.api import collector_settings, collector_status
@@ -28,10 +30,14 @@ class CollectorManager:
         self.collectors = collectors
         self.startup_event = asyncio.Event()
         self.startup_lock = asyncio.Lock()
+        self._pool: ProcessPoolExecutor = ProcessPoolExecutor(
+            max_workers=max(1, cpu_count() - 1)
+        )
 
         collector_settings.collectors = self.collectors
 
         for collector in self.collectors:
+            collector._pool = self._pool
             collector_status.add_collector(collector)
 
     async def __aenter__(self):
@@ -56,6 +62,7 @@ class CollectorManager:
         self._context.close()
         for task in self._tasks:
             task.cancel()
+        self._pool.shutdown()
 
     async def _subscribe(self, pv):
         while True:
@@ -71,14 +78,7 @@ class CollectorManager:
                     async with sub.messages() as messages:
                         print(f"PV '{pv}' subscribed!")
                         async for message in messages:
-                            collector_status.set_connected(pv)
-                            if isinstance(message, Disconnected):
-                                print(f"PV '{pv}' disconnected")
-                                collector_status.set_disconnected(pv)
-                            elif isinstance(message, Exception):
-                                raise message
-                            else:
-                                self._message_handler(pv, message)
+                            self._message_handler(pv, message)
                 print(f"PV '{pv}' subscription ended")
             except Disconnected:
                 print(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
@@ -89,11 +89,11 @@ class CollectorManager:
 
     def _message_handler(self, pv, message):
         try:
-            collector_status.pvs[pv].last_event = datetime.utcnow()
             event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError:
             print(f"PV '{pv}' event validation error")
             return
+
         self._event_handler(event)
 
     # Finds the event and updates it with the value

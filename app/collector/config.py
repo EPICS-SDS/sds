@@ -4,6 +4,7 @@ from pydantic import BaseSettings, FilePath, AnyHttpUrl
 class Settings(BaseSettings):
     collector_definitions: FilePath
     collector_timeout: int = 2
+    events_per_file: int = 1
     indexer_url: AnyHttpUrl
     wait_for_indexer: bool = True
     indexer_timeout_min: int = 1

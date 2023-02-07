@@ -9,6 +9,8 @@ RUN pip install pytest \
     && pip install aiofiles
 
 
+COPY --chown=csi:csi test_ioc /app/test_ioc
+
 RUN mkdir /data 
 
 

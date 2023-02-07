@@ -5,15 +5,17 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from common.schemas import CollectorBase
 from collector.collector_manager import CollectorManager
 from collector.config import settings
 from collector.main import load_collectors, main
 from common.files.config import settings as file_settings
-from nexusformat.nexus import NXFile
+from common.schemas import CollectorBase
+
+from h5py import File
 from p4p.client.asyncio import Context, timesout
 from p4p.client.thread import Context as ThContext
 from pydantic import parse_file_as
+
 from tests.functional.service_loader import collector_service, indexer_service
 
 
@@ -110,26 +112,27 @@ class TestCollector:
                 file_path = (
                     file_settings.storage_path
                     / directory
-                    / (collector.name + f"_{int(first_pulse)+n}.h5")
+                    / (
+                        f"{collector.name}_{collector.event_code}_{int(first_pulse)+n}.h5"
+                    )
                 )
                 assert file_path.exists()
 
-                nx = NXFile(file_path, "r")
-                root = nx.readfile()
-                entry = root.entries.get("entry")
+                h5file = File(file_path, "r")
+                entry = h5file.get("entry", None)
                 assert entry is not None
-                trigger = entry.entries.get(f"trigger_{int(first_pulse)+n}")
+                trigger = entry.get(f"trigger_{int(first_pulse)+n}", None)
                 assert trigger is not None
 
-                pulse = trigger.entries.get(f"pulse_{int(first_pulse)+n}")
+                pulse = trigger.get(f"pulse_{int(first_pulse)+n}", None)
                 assert pulse is not None
 
                 for pv in collector.pvs:
                     if pv in pv_list:
-                        pv_field = pulse.entries.get(pv)
+                        pv_field = pulse.get(pv, None)
                         assert pv_field is not None
 
-            nx.close()
+            h5file.close()
 
     @pytest.mark.asyncio
     async def test_trigger_1_pulse(self):

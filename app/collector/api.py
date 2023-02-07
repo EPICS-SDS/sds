@@ -1,23 +1,31 @@
 import asyncio
 from typing import List
 
-from common import schemas
-from fastapi import APIRouter, FastAPI, HTTPException
-from uvicorn import Config, Server
-
 from collector.collector_status import (
-    Settings,
     CollectorBasicStatus,
     CollectorFullStatus,
+    Settings,
     StatusManager,
 )
 from collector.config import settings
+from common import schemas
+from fastapi import APIRouter, FastAPI, HTTPException
+from uvicorn import Config, Server
 
 # Initialising the status object used by the API
 collector_status = StatusManager()
 collector_settings = Settings()
 
-app = FastAPI()
+description = """
+This API can be used for:
+- read and update the collector service configuration
+- monitor the collectors' status and performance
+"""
+app = FastAPI(
+    title="SDS Collector Service API",
+    description=description,
+    version="0.1",
+)
 
 # Settings
 settings_router = APIRouter()

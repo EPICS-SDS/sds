@@ -1,15 +1,11 @@
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
-from common.files.event import Event
-from nexusformat.nexus import NXdata, NXentry
-from pydantic import BaseModel, root_validator
-
-from common.files.config import settings
+import aiohttp
+from pydantic import BaseModel
 
 
-class DatasetSchema(BaseModel):
+class Dataset(BaseModel):
     """
     Model for a file containing Event objects that belong to the same timing
     event (same trigger_pulse_id) and share the same collector.
@@ -20,79 +16,17 @@ class DatasetSchema(BaseModel):
     trigger_pulse_id: int
     path: Path
 
-
-class Dataset(DatasetSchema):
-    name: str
-    entry: NXentry
-    first_update_received: datetime
-    last_update_received: datetime
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    @root_validator(pre=True)
-    def extract_path(cls, values):
-        name = values["collector_name"] + "_" + str(values["trigger_pulse_id"])
-        values.update(name=name)
-
-        directory = Path(
-            values["trigger_date"].strftime("%Y"),
-            values["trigger_date"].strftime("%Y-%m-%d"),
-        )
-        path = directory / f"{name}.h5"
-        values.update(path=path)
-
-        entry = NXentry(
-            attrs={
-                "collector_name": values["collector_name"],
-                "event_code": values["event_code"],
-            }
-        )
-        values.update(entry=entry)
-
-        # Timestamping reception of events for monitoring
-        values.update(first_update_received=datetime.utcnow())
-        values.update(last_update_received=datetime.utcnow())
-
-        return values
-
-    def update(self, event: Event):
+    async def index(self, indexer_url):
         """
-        Add an event to the NeXus file
-        """
-        self.last_update_received = datetime.utcnow()
-
-        trigger_key = f"trigger_{event.trigger_pulse_id}"
-        pulse_key = f"pulse_{event.pulse_id}"
-        if trigger_key not in self.entry:
-            self.entry[trigger_key] = NXentry(
-                attrs={
-                    "trigger_pulse_id": event.trigger_pulse_id,
-                    "trigger_timestamp": event.trigger_date.isoformat(),
-                }
-            )
-        if pulse_key not in self.entry[trigger_key]:
-            self.entry[trigger_key][pulse_key] = NXdata(
-                attrs={
-                    "pulse_id": event.pulse_id,
-                    "timestamp": event.data_date.isoformat(),
-                }
-            )
-        self.entry[trigger_key][pulse_key][event.pv_name] = event.value
-
-    async def write(self):
-        """
-        Write NeXus file into storage
+        Publish metadata into the indexer service
         """
         try:
-            print(repr(self), f"writing to '{self.path}'")
-            absolute_path = settings.storage_path / self.path
-            absolute_path.parent.mkdir(parents=True, exist_ok=True)
-            self.entry.save(absolute_path, mode="w")
-            print(repr(self), "writing done.")
+            url = indexer_url + "/datasets"
+            data = Dataset.parse_obj(self).json()
+            headers = {"Content-Type": "application/json"}
+            async with aiohttp.ClientSession(headers=headers) as client:
+                async with client.post(url, data=data) as response:
+                    response.raise_for_status()
         except Exception as e:
-            print(repr(self), "writing failed!")
+            print(repr(self), "indexing failed!")
             print(e)
-
-    def __repr__(self):
-        return f"Dataset({self.name})"
