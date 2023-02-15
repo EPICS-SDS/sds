@@ -7,6 +7,7 @@ from aiohttp.client_exceptions import (
     ClientConnectorError,
     ClientOSError,
     ClientResponseError,
+    ServerDisconnectedError,
 )
 from collector.api import start_api
 from collector.collector import Collector
@@ -20,8 +21,6 @@ set_debug(logging.WARNING)
 
 
 async def load_collectors():
-    indexer_timeout = settings.indexer_timeout_min
-
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
 
@@ -29,42 +28,66 @@ async def load_collectors():
         collectors = []
         for collector in parse_file_as(List[CollectorBase], path):
             print(f"Collector '{collector.name}' loaded from file")
-            indexer_connected = False
-            while not indexer_connected:
+            try:
+                async with session.post(
+                    settings.indexer_url + "/collectors",
+                    json=collector,
+                ) as response:
+                    response.raise_for_status()
+                    if response.status == 201:
+                        print(f"Collector '{collector.name}' created in DB")
+                    elif response.status == 200:
+                        print(f"Collector '{collector.name}' already in DB")
+
+                    obj = await response.json()
+                    collectors.append(Collector.parse_obj(obj))
+            except (
+                ClientConnectorError,
+                ClientResponseError,
+                ConnectionRefusedError,
+                ClientOSError,
+                ServerDisconnectedError,
+            ):
+                print(
+                    f"Error submitting collector {collector.name} to the indexer. Please check the indexer service status."
+                )
+                raise
+        return collectors
+
+
+async def wait_for_indexer():
+    if settings.wait_for_indexer:
+        indexer_timeout = settings.indexer_timeout_min
+        async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
+            while True:
                 try:
-                    async with session.post(
-                        settings.indexer_url + "/collectors",
-                        json=collector,
+                    async with session.get(
+                        settings.indexer_url + "/health"
                     ) as response:
                         response.raise_for_status()
-                        if response.status == 201:
-                            print(f"Collector '{collector.name}' created in DB")
-                        elif response.status == 200:
-                            print(f"Collector '{collector.name}' already in DB")
-                        indexer_connected = True
-                        obj = await response.json()
-                        collectors.append(Collector.parse_obj(obj))
+                        if response.status == 200:
+                            print("Indexer ready")
+                            return
                 except (
                     ClientConnectorError,
                     ClientResponseError,
                     ConnectionRefusedError,
                     ClientOSError,
+                    ServerDisconnectedError,
                 ):
-                    if settings.wait_for_indexer:
-                        print(
-                            f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {indexer_timeout} s."
-                        )
-                        await asyncio.sleep(indexer_timeout)
-                        # doubling timeout for indexer until max timeout is reached
-                        indexer_timeout = min(
-                            indexer_timeout * 2, settings.indexer_timeout_max
-                        )
-                    else:
-                        raise
-        return collectors
+                    pass
+
+                print(
+                    f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {indexer_timeout} s."
+                )
+                await asyncio.sleep(indexer_timeout)
+                # doubling timeout for indexer until max timeout is reached
+                indexer_timeout = min(indexer_timeout * 2, settings.indexer_timeout_max)
 
 
 async def main():
+    await wait_for_indexer()
+
     print("SDS Collector service\n")
     collectors = await load_collectors()
 
