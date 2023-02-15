@@ -63,7 +63,7 @@ async def create_collector(
     return collector
 
 
-app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
+app.include_router(collectors_router, prefix="/collectors", tags=["Collectors"])
 
 
 # Datasets
@@ -89,4 +89,18 @@ async def create_dataset(
     return dataset
 
 
-app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])
+app.include_router(datasets_router, prefix="/datasets", tags=["Datasets"])
+
+
+status_router = APIRouter()
+
+
+@status_router.get("", status_code=status.HTTP_200_OK)
+def healthcheck():
+    """
+    Simple health check that returns 200 OK when service is running.
+    """
+    return {"health": "Everything OK!"}
+
+
+app.include_router(status_router, prefix="/health", tags=["Status"])
