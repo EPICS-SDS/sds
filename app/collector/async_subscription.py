@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from collector.api import collector_status
+from collector import collector_status
 from collector.collector_status import PvStatus
 from p4p.client.asyncio import Context, Disconnected
 
@@ -46,11 +46,11 @@ class AsyncSubscription:
     def _first_cb(self, value):
         """Ignore the first update that ocurred in the past"""
         if isinstance(value, Disconnected):
-            print(f"PV '{self._pv}' disconnected")
             self.pv_status.connected = False
         elif isinstance(value, Exception):
             raise value
         else:
+            print(f"PV '{self._pv}' connected")
             self.cb = self._cb
             self.pv_status.connected = True
 

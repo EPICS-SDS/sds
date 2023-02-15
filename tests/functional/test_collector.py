@@ -7,7 +7,7 @@ from typing import List
 import pytest
 from collector.collector_manager import CollectorManager
 from collector.config import settings
-from collector.main import load_collectors, main
+from collector.main import load_collectors, main, wait_for_indexer
 from common.files.config import settings as file_settings
 from common.schemas import CollectorBase
 
@@ -144,8 +144,9 @@ class TestCollector:
 
     @pytest.mark.asyncio
     async def test_collector_manager_as_context_manager(self):
+        await wait_for_indexer()
         collectors = await load_collectors()
-        async with CollectorManager(collectors) as cm:
+        async with await CollectorManager.create(collectors) as cm:
             await cm.wait_for_startup()
 
 

@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import datetime
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from common.schemas import CollectorBase
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 class Settings:
     def __init__(self):
-        self.collectors: Set[CollectorBase] = set()
+        self.collectors: Dict[str, CollectorBase] = dict()
 
 
 class PvStatusSchema(BaseModel):
@@ -57,49 +57,55 @@ class PvStatus:
 
 class StatusManager:
     def __init__(self):
-        self.collector_status: List[CollectorStatus] = []
-        self.pvs = dict()
+        self.collector_status_dict: Dict[str, CollectorStatus] = dict()
+        self.pv_status_dict = dict()
 
     @property
-    def collector_status(self) -> List[CollectorStatus]:
-        for collector in self.__collector_status:
+    def collector_status_dict(self) -> Dict[str, CollectorStatus]:
+        # Update last event timestamp on the fly
+        for collector in self.__collector_status_dict.values():
             for pv in collector.pvs:
                 if pv.last_event is not None and (
                     collector.last_event is None or pv.last_event > collector.last_event
                 ):
                     collector.last_event = pv.last_event
-        return self.__collector_status
+        return self.__collector_status_dict
 
-    @collector_status.setter
-    def collector_status(self, collector_status: List[CollectorStatus]):
-        self.__collector_status = collector_status
+    @collector_status_dict.setter
+    def collector_status_dict(self, collector_status: Dict[str, CollectorStatus]):
+        self.__collector_status_dict = collector_status
 
     def add_collector(self, collector: CollectorBase):
         for pv in collector.pvs:
-            if pv not in self.pvs.keys():
-                self.pvs[pv] = PvStatus(name=pv)
-        self.__collector_status.append(
-            CollectorStatus(
-                name=collector.name,
-                running=True,
-                pvs=[
-                    pvstatus.pv_status
-                    for pvname, pvstatus in self.pvs.items()
-                    if pvname in collector.pvs
-                ],
-            )
+            if pv not in self.pv_status_dict.keys():
+                self.pv_status_dict[pv] = PvStatus(name=pv)
+        self.__collector_status_dict.update(
+            {
+                collector.name: CollectorStatus(
+                    name=collector.name,
+                    running=False,
+                    pvs=[
+                        pvstatus.pv_status
+                        for pvname, pvstatus in self.pv_status_dict.items()
+                        if pvname in collector.pvs
+                    ],
+                )
+            }
         )
 
     def get_pv_status(self, pv: str) -> PvStatus:
-        return self.pvs[pv].pv_status
+        return self.pv_status_dict[pv].pv_status
 
     def set_update_event(self, pv: str):
-        self.pvs[pv].last_event = datetime.utcnow()
+        self.pv_status_dict[pv].last_event = datetime.utcnow()
+
+    def set_collector_running(self, collector_name: str, running: bool):
+        collector = self.__collector_status_dict.get(collector_name)
+        collector.running = running
 
     def set_collection_time(self, collector_name: str, collection_time: float):
-        for collector in self.__collector_status:
-            if collector.name == collector_name:
-                collector.collection_time_queue.append(collection_time)
-                collector.collection_time = sum(collector.collection_time_queue) / len(
-                    collector.collection_time_queue
-                )
+        collector = self.__collector_status_dict.get(collector_name)
+        collector.collection_time_queue.append(collection_time)
+        collector.collection_time = sum(collector.collection_time_queue) / len(
+            collector.collection_time_queue
+        )

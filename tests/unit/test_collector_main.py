@@ -4,12 +4,13 @@ from asyncio import CancelledError
 import pytest
 from aiohttp.client_exceptions import ClientConnectorError
 from collector.config import settings
-from collector.main import load_collectors, main
+from collector.main import load_collectors, main, wait_for_indexer
 
 
 class TestCollectorMain:
     async def load_collector_no_cancelled_error(self):
         try:
+            await wait_for_indexer()
             await load_collectors()
         except CancelledError:
             pass

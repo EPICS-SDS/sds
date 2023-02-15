@@ -1,20 +1,20 @@
 import asyncio
 from typing import List
 
+from collector.collector_manager import CollectorManager, CollectorNotFoundException
 from collector.collector_status import (
     CollectorBasicStatus,
     CollectorFullStatus,
-    Settings,
-    StatusManager,
+)
+from collector import (
+    collector_settings,
+    collector_status,
 )
 from collector.config import settings
 from common import schemas
 from fastapi import APIRouter, FastAPI, HTTPException
 from uvicorn import Config, Server
 
-# Initialising the status object used by the API
-collector_status = StatusManager()
-collector_settings = Settings()
 
 description = """
 This API can be used for:
@@ -36,7 +36,7 @@ async def get_collectors():
     """
     Get the collectors configuration currently loaded.
     """
-    return collector_settings.collectors
+    return set(collector_settings.collectors.values())
 
 
 @settings_router.get("/{name}", response_model=schemas.collector.CollectorBase)
@@ -44,9 +44,9 @@ async def get_collector_with_name(*, name: str):
     """
     Get the settings for a given collector.
     """
-    for collector in collector_settings.collectors:
-        if collector.name == name:
-            return collector
+    collector = collector_settings.collectors.get(name, None)
+    if collector is not None:
+        return collector
     raise HTTPException(status_code=404, detail="Collector not found")
 
 
@@ -59,20 +59,50 @@ status_router = APIRouter()
 
 @status_router.get("/basic", response_model=List[CollectorBasicStatus])
 async def get_status():
-    return collector_status.collector_status
+    return list(collector_status.collector_status_dict.values())
 
 
 @status_router.get("/full", response_model=List[CollectorFullStatus])
 async def get_full_status():
-    return collector_status.collector_status
+    return list(collector_status.collector_status_dict.values())
 
 
 @status_router.get("/collector/{name}", response_model=CollectorFullStatus)
 async def get_status_with_name(*, name: str):
-    for collector in collector_status.collector_status:
-        if collector.name == name:
-            return collector
+    collector = collector_status.collector_status_dict.get(name, None)
+    if collector is not None:
+        return collector
     raise HTTPException(status_code=404, detail="Collector not found")
+
+
+@status_router.put("/collectors/start")
+async def start_all_collector():
+    cm = CollectorManager.get_instance()
+    await cm.start_all_collectors()
+
+
+@status_router.put("/collectors/stop")
+async def stop_all_collector():
+    cm = CollectorManager.get_instance()
+    await cm.stop_all_collectors()
+
+
+@status_router.put("/collector/{name}/start")
+async def start_collector(*, name: str):
+    cm = CollectorManager.get_instance()
+    try:
+        await cm.start_collector(name)
+    except CollectorNotFoundException:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+
+@status_router.put("/collector/{name}/stop")
+async def stop_collector(*, name: str):
+    cm = CollectorManager.get_instance()
+    try:
+        await cm.stop_collector(name)
+    except CollectorNotFoundException:
+        raise HTTPException(status_code=404, detail="Collector not found")
 
 
 app.include_router(status_router, prefix="/status", tags=["status"])

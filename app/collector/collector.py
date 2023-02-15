@@ -5,7 +5,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Set
 
-from collector.api import collector_status
+from collector import collector_status
 from collector.config import settings
 from common.files import Event, NexusFile, write_file
 from common.schemas import CollectorBase

@@ -1,14 +1,10 @@
 import asyncio
 import logging
+import os
 from typing import List
 
 import aiohttp
-from aiohttp.client_exceptions import (
-    ClientConnectorError,
-    ClientOSError,
-    ClientResponseError,
-    ServerDisconnectedError,
-)
+from aiohttp.client_exceptions import ClientError
 from collector.api import start_api
 from collector.collector import Collector
 from collector.collector_manager import CollectorManager
@@ -23,6 +19,11 @@ set_debug(logging.WARNING)
 async def load_collectors():
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
+
+    if not os.access(path, os.W_OK):
+        print(
+            "Collector definition file not writable. Any configuration change won't be saved."
+        )
 
     async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
         collectors = []
@@ -42,11 +43,8 @@ async def load_collectors():
                     obj = await response.json()
                     collectors.append(Collector.parse_obj(obj))
             except (
-                ClientConnectorError,
-                ClientResponseError,
-                ConnectionRefusedError,
-                ClientOSError,
-                ServerDisconnectedError,
+                ClientError,
+                OSError,
             ):
                 print(
                     f"Error submitting collector {collector.name} to the indexer. Please check the indexer service status."
@@ -69,11 +67,8 @@ async def wait_for_indexer():
                             print("Indexer ready")
                             return
                 except (
-                    ClientConnectorError,
-                    ClientResponseError,
-                    ConnectionRefusedError,
-                    ClientOSError,
-                    ServerDisconnectedError,
+                    ClientError,
+                    OSError,
                 ):
                     pass
 
@@ -95,7 +90,7 @@ async def main():
         serve_task = start_api()
 
     print("Starting collectors...")
-    async with CollectorManager(collectors) as cm:
+    async with await CollectorManager.create(collectors) as cm:
         await cm.join()
 
     if settings.collector_api_enabled:
