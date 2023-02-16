@@ -1,9 +1,11 @@
 import asyncio
+import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 from typing import Dict, List
 
+import aiofiles
 import aiohttp
 from aiohttp.client_exceptions import ClientError
 from collector import collector_settings, collector_status
@@ -12,7 +14,7 @@ from collector.collector import Collector
 from collector.config import settings
 from collector.epics_event import EpicsEvent
 from common.files import Event
-from common.schemas.collector import CollectorBase
+from common.schemas.collector import CollectorBase, CollectorList
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
@@ -75,6 +77,28 @@ class CollectorManager:
     @classmethod
     def get_instance(cls):
         return cls.instance
+
+    async def save_configuration(self):
+        path = settings.collector_definitions
+
+        if not os.access(path, os.W_OK):
+            print(
+                "Collector definition file not writable. Configuration changes could not be saved."
+            )
+            return
+
+        async with aiofiles.open(path, mode="w") as json_file:
+            cl = CollectorList.parse_obj(
+                [CollectorBase.parse_obj(coll) for coll in self.collectors.values()]
+            )
+            await json_file.write(
+                cl.json(
+                    exclude={
+                        "id",
+                    },
+                    indent=4,
+                )
+            )
 
     async def add_collector(self, collector_base: CollectorBase):
         # First register the collector in the indexer service

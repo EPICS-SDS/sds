@@ -25,32 +25,8 @@ async def load_collectors():
             "Collector definition file not writable. Any configuration change won't be saved."
         )
 
-    async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
-        collectors = []
-        for collector in parse_file_as(List[CollectorBase], path):
-            print(f"Collector '{collector.name}' loaded from file")
-            try:
-                async with session.post(
-                    settings.indexer_url + "/collectors",
-                    json=collector,
-                ) as response:
-                    response.raise_for_status()
-                    if response.status == 201:
-                        print(f"Collector '{collector.name}' created in DB")
-                    elif response.status == 200:
-                        print(f"Collector '{collector.name}' already in DB")
-
-                    obj = await response.json()
-                    collectors.append(Collector.parse_obj(obj))
-            except (
-                ClientError,
-                OSError,
-            ):
-                print(
-                    f"Error submitting collector {collector.name} to the indexer. Please check the indexer service status."
-                )
-                raise
-        return collectors
+    collectors = parse_file_as(List[CollectorBase], path)
+    return collectors
 
 
 async def wait_for_indexer():

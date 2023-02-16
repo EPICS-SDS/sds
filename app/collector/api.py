@@ -52,6 +52,22 @@ async def get_collector_with_name(*, name: str):
     raise HTTPException(status_code=404, detail="Collector not found")
 
 
+@settings_router.put(
+    "/collectors/save",
+    status_code=status.HTTP_200_OK,
+)
+async def save_collectors_definition():
+    """
+    Overwrite the collectors definition file with the current configuration.
+    If autosave is enabled, this method does nothing.
+    """
+    if settings.autosave_collectors_definition:
+        return "Autosave is enabled. Collectors definition file already up-to-date."
+    else:
+        cm = CollectorManager.get_instance()
+        await cm.save_configuration()
+
+
 @settings_router.post(
     "/collector",
     response_model=schemas.CollectorBase,
@@ -73,6 +89,10 @@ async def add_collector(
     collector = await cm.add_collector(collector_in)
     if start_collector:
         await cm.start_collector(collector_in.name)
+
+    if settings.autosave_collectors_definition:
+        await cm.save_configuration()
+
     return collector
 
 
@@ -84,13 +104,16 @@ async def remove_collector(*, name: str, response: Response):
     """
     Remove a collector from the service.
     If the collector is running, it is first stopped.
-    Returns a 204 message if the collector is not loaded.
+    Returns a 404 message if the collector is not loaded.
     """
     cm = CollectorManager.get_instance()
     if name not in cm.collectors.keys():
-        response.status_code = status.HTTP_204_NO_CONTENT
+        response.status_code = status.HTTP_404_NOT_FOUND
         return
     await cm.remove_collector(name)
+
+    if settings.autosave_collectors_definition:
+        await cm.save_configuration()
 
 
 app.include_router(settings_router, prefix="/settings", tags=["settings"])
