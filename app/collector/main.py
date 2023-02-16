@@ -16,7 +16,7 @@ from pydantic import parse_file_as
 set_debug(logging.WARNING)
 
 
-async def load_collectors():
+async def load_collectors() -> List[CollectorBase]:
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
 
