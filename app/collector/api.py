@@ -37,6 +37,7 @@ async def get_collectors():
 async def get_collector_with_name(*, name: str):
     """
     Get the settings for a given collector.
+    Returns a 404 error if the collector is not loaded.
     """
     collector = collector_settings.collectors.get(name, None)
     if collector is not None:
@@ -52,6 +53,10 @@ async def get_collector_with_name(*, name: str):
 async def add_collector(
     *, start_collector: bool = True, collector_in: schemas.CollectorBase
 ):
+    """
+    Load a collector to the service. Optionally, select if the collector should be started or not after adding it.
+    Returns a 409 error if a collector with the same name is already loaded.
+    """
     cm = CollectorManager.get_instance()
     if collector_in.name in cm.collectors.keys():
         raise HTTPException(
@@ -69,6 +74,11 @@ async def add_collector(
     status_code=status.HTTP_200_OK,
 )
 async def remove_collector(*, name: str, response: Response):
+    """
+    Remove a collector from the service.
+    If the collector is running, it is first stopped.
+    Returns a 204 message if the collector is not loaded.
+    """
     cm = CollectorManager.get_instance()
     if name not in cm.collectors.keys():
         response.status_code = status.HTTP_204_NO_CONTENT
@@ -85,16 +95,27 @@ status_router = APIRouter()
 
 @status_router.get("/basic", response_model=List[CollectorBasicStatus])
 async def get_status():
+    """
+    Get status from all collectors. This view only shows if collectors are running or not,
+    when was the last event received, and the time it takes to collect a dataset.
+    """
     return list(collector_status.collector_status_dict.values())
 
 
 @status_router.get("/full", response_model=List[CollectorFullStatus])
 async def get_full_status():
+    """
+    Get extended status from all collectors. This view shows information about all PVs monitored by each collector.
+    """
     return list(collector_status.collector_status_dict.values())
 
 
 @status_router.get("/collector/{name}", response_model=CollectorFullStatus)
 async def get_status_with_name(*, name: str):
+    """
+    Get the extended status for one collector.
+    Returns a 404 error if the collector is not loaded.
+    """
     collector = collector_status.collector_status_dict.get(name, None)
     if collector is not None:
         return collector
@@ -102,19 +123,29 @@ async def get_status_with_name(*, name: str):
 
 
 @status_router.put("/collectors/start")
-async def start_all_collector():
+async def start_all_collectors():
+    """
+    Start all the collectors loaded in the service.
+    """
     cm = CollectorManager.get_instance()
     await cm.start_all_collectors()
 
 
 @status_router.put("/collectors/stop")
-async def stop_all_collector():
+async def stop_all_collectors():
+    """
+    Stop all the collectors loaded in the service.
+    """
     cm = CollectorManager.get_instance()
     await cm.stop_all_collectors()
 
 
 @status_router.put("/collector/{name}/start")
 async def start_collector(*, name: str):
+    """
+    Start a collector from the ones loaded in the service by specifying its name.
+    Returns a 404 error if the collector is not loaded.
+    """
     cm = CollectorManager.get_instance()
     try:
         await cm.start_collector(name)
@@ -124,6 +155,11 @@ async def start_collector(*, name: str):
 
 @status_router.put("/collector/{name}/stop")
 async def stop_collector(*, name: str):
+    """
+    Stop a collector from the ones loaded in the service by specifying its name.
+    If the collector is not running, it does nothing.
+    Returns a 404 error if the collector is not loaded.
+    """
     cm = CollectorManager.get_instance()
     try:
         await cm.stop_collector(name)
