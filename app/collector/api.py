@@ -7,6 +7,7 @@ from collector.collector_status import CollectorBasicStatus, CollectorFullStatus
 from collector.config import settings
 from common import schemas
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import Config, Server
 
 description = """
@@ -20,12 +21,18 @@ app = FastAPI(
     description=description,
     version="0.1",
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Settings
 settings_router = APIRouter()
 
 
-@settings_router.get("", response_model=List[schemas.collector.CollectorBase])
+@settings_router.get("", response_model=List[schemas.CollectorBase])
 async def get_collectors():
     """
     Get the collectors configuration currently loaded.
@@ -33,7 +40,7 @@ async def get_collectors():
     return list(collector_settings.collectors.values())
 
 
-@settings_router.get("/{name}", response_model=schemas.collector.CollectorBase)
+@settings_router.get("/{name}", response_model=schemas.CollectorBase)
 async def get_collector_with_name(*, name: str):
     """
     Get the settings for a given collector.
