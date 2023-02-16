@@ -1,25 +1,19 @@
 import asyncio
 from typing import List
 
+from collector import collector_settings, collector_status
 from collector.collector_manager import CollectorManager, CollectorNotFoundException
-from collector.collector_status import (
-    CollectorBasicStatus,
-    CollectorFullStatus,
-)
-from collector import (
-    collector_settings,
-    collector_status,
-)
+from collector.collector_status import CollectorBasicStatus, CollectorFullStatus
 from collector.config import settings
 from common import schemas
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 from uvicorn import Config, Server
-
 
 description = """
 This API can be used for:
 - read and update the collector service configuration
 - monitor the collectors' status and performance
+- start/stop collectors
 """
 app = FastAPI(
     title="SDS Collector Service API",
@@ -36,7 +30,7 @@ async def get_collectors():
     """
     Get the collectors configuration currently loaded.
     """
-    return set(collector_settings.collectors.values())
+    return list(collector_settings.collectors.values())
 
 
 @settings_router.get("/{name}", response_model=schemas.collector.CollectorBase)
@@ -48,6 +42,38 @@ async def get_collector_with_name(*, name: str):
     if collector is not None:
         return collector
     raise HTTPException(status_code=404, detail="Collector not found")
+
+
+@settings_router.post(
+    "/collector",
+    response_model=schemas.CollectorBase,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_collector(
+    *, start_collector: bool = True, collector_in: schemas.CollectorBase
+):
+    cm = CollectorManager.get_instance()
+    if collector_in.name in cm.collectors.keys():
+        raise HTTPException(
+            status_code=409,
+            detail="The service already contains a collector with the requested name.",
+        )
+    collector = await cm.add_collector(collector_in)
+    if start_collector:
+        await cm.start_collector(collector_in.name)
+    return collector
+
+
+@settings_router.delete(
+    "/collector/{name}",
+    status_code=status.HTTP_200_OK,
+)
+async def remove_collector(*, name: str, response: Response):
+    cm = CollectorManager.get_instance()
+    if name not in cm.collectors.keys():
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return
+    await cm.remove_collector(name)
 
 
 app.include_router(settings_router, prefix="/settings", tags=["settings"])

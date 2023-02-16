@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     collector_api_port: int = 8000
     collector_api_host: str = "0.0.0.0"
     collector_ioc_enabled: bool = False
+    autostart_collectors: bool = True
 
 
 settings = Settings()

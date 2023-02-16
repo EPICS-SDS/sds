@@ -93,6 +93,18 @@ class StatusManager:
             }
         )
 
+    def remove_collector(self, collector_name: str):
+        collector_rm = self.__collector_status_dict.pop(collector_name)
+
+        pvs_to_remove = [pv.name for pv in collector_rm.pvs]
+        for pv in collector_rm.pvs:
+            for collector in self.__collector_status_dict.values():
+                if pv in collector.pvs:
+                    pvs_to_remove.remove(pv.name)
+
+        for pv in pvs_to_remove:
+            self.pv_status_dict.pop(pv)
+
     def get_pv_status(self, pv: str) -> PvStatus:
         return self.pv_status_dict[pv].pv_status
 

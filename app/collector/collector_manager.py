@@ -65,7 +65,8 @@ class CollectorManager:
         return cls.instance
 
     async def __aenter__(self):
-        await self.start_all_collectors()
+        if settings.autostart_collectors:
+            await self.start_all_collectors()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -104,6 +105,13 @@ class CollectorManager:
         collector._pool = self._pool
         collector_status.add_collector(collector)
         self.collectors.update({collector.name: collector})
+        return collector
+
+    async def remove_collector(self, collector_name: str):
+        await self.stop_collector(collector_name)
+
+        self.collectors.pop(collector_name)
+        collector_status.remove_collector(collector_name)
 
     async def start_collector(self, name: str):
         async with self.collector_lock:
