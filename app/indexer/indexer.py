@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from multiprocessing import Lock
+from threading import Lock
 from typing import Optional
 
 from common import crud, schemas
@@ -40,6 +40,7 @@ async def startup_event():
 
 collectors_router = APIRouter()
 collectors_lock = Lock()
+requested_collectors = []
 
 
 @collectors_router.post(
@@ -52,22 +53,29 @@ async def create_collector(
     response: Response,
     collector_in: schemas.CollectorCreate,
 ):
-    filters = dict_to_filters(collector_in.dict(exclude={"created"}))
-    # Workaround to acquire a multithreading lock without blocking the event loop
-    while not collectors_lock.acquire(block=False):
+
+    # Make sure the creation of a collector is an atomic operation.
+    while True:
+        with collectors_lock:
+            if collector_in.name not in requested_collectors:
+                requested_collectors.append(collector_in.name)
+                break
         await asyncio.sleep(0)
+
+    filters = dict_to_filters(collector_in.dict(exclude={"created"}))
 
     (_, collectors, _) = await crud.collector.get_multi(filters=filters)
     # HTTP 200 if the collector already exists
     if len(collectors) > 0:
         response.status_code = status.HTTP_200_OK
-        collectors_lock.release()
-        return collectors[0]
+        collector = collectors[0]
+    else:
+        collector = await crud.collector.create(obj_in=collector_in)
+        await crud.collector.refresh_index()
 
-    collector = await crud.collector.create(obj_in=collector_in)
-    await crud.collector.refresh_index()
+    with collectors_lock:
+        requested_collectors.remove(collector_in.name)
 
-    collectors_lock.release()
     return collector
 
 
