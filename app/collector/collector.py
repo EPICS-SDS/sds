@@ -114,6 +114,7 @@ class Collector(CollectorBase):
         except TimeoutError:
             pass
 
+        collector_status.set_last_collection(self.name)
         collector_status.set_collection_time(
             self.name, (last_update_received[0] - first_update_received).total_seconds()
         )
