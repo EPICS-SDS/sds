@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from threading import Thread
 import time
 from multiprocessing import cpu_count, get_context, shared_memory
+from threading import Thread
 
 import numpy as np
+from ntscalararraysds import NTScalarArraySDS
 from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
-
-from ntscalararraysds import NTScalarArraySDS
+from sds_pv import SdsPV
 
 
 class TriggerHandler(object):
@@ -111,17 +111,29 @@ class MyServer(object):
                             arr[0] = pulse_id
 
                             try:
-                                self.pvdb[pv].post(
-                                    {
-                                        "value": arr,
-                                        "trigger_pulse_id": trigger_pulse_id,
-                                        "trigger_timestamp": trigger_timestamp,
-                                        "timestamp": time.time_ns(),
-                                        "pulse_id": pulse_id,
-                                        "event_name": "data-on-demand",
-                                        "event_code": 1,
-                                    }
+                                sds_pv = SdsPV(
+                                    pv_ts=time.time_ns(),
+                                    pv_value=arr,
+                                    pv_type="ad",
+                                    pv_name=pv,
+                                    start_event_pulse_id=trigger_pulse_id,
+                                    start_event_ts=trigger_timestamp,
+                                    main_event_pulse_id=pulse_id,
+                                    main_event_ts=time.time_ns(),
+                                    acq_event_name="TestAcqEvent",
+                                    acq_event_code=0,
+                                    acq_event_delay=0,
+                                    beam_mode="TestMode",
+                                    beam_state="ON",
+                                    beam_present="YES",
+                                    beam_len=3.86,
+                                    beam_energy=2e9,
+                                    beam_dest="Target",
+                                    beam_curr=62.5,
+                                    sds_evt_code=1,
+                                    sds_ts=trigger_timestamp,
                                 )
+                                self.pvdb[pv].post(sds_pv)
                             except Exception as e:
                                 print("error received", e)
                                 pass
