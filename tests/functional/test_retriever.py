@@ -196,25 +196,25 @@ class TestDatasets:
 
     test_dataset_1 = [
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
+            "trigger_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "trigger_pulse_id": 1,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
             "data_pulse_id": [1],
             "beam_info": beam_info_dict,
         }
     ]
     test_dataset_2 = [
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
+            "trigger_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
             "trigger_pulse_id": 2,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
             "data_pulse_id": [2],
             "beam_info": beam_info_dict,
         },
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
+            "trigger_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "trigger_pulse_id": 3,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
             "data_pulse_id": [3],
             "beam_info": beam_info_dict,
         },
@@ -260,8 +260,8 @@ class TestDatasets:
                         pv_name=pv,
                         value=i,
                         timing_event_code=TestCollector.test_collector["event_code"],
-                        data_date=datetime.utcnow(),
-                        trigger_date=datetime.utcnow(),
+                        data_timestamp=datetime.utcnow(),
+                        trigger_timestamp=datetime.utcnow(),
                         pulse_id=dataset["trigger_pulse_id"],
                         trigger_pulse_id=dataset["trigger_pulse_id"],
                         beam_info=beam_info,
@@ -313,7 +313,7 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "start": self.test_dataset_1[0]["trigger_date"],
+                    "start": self.test_dataset_1[0]["trigger_timestamp"],
                 },
             ) as response:
                 assert response.status == 200
@@ -326,7 +326,7 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "end": self.test_dataset_1[0]["trigger_date"],
+                    "end": self.test_dataset_1[0]["trigger_timestamp"],
                 },
             ) as response:
                 assert response.status == 200

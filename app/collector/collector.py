@@ -66,8 +66,8 @@ class Collector(CollectorBase):
                 file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.trigger_pulse_id)}"
                 # Path is generated from date
                 directory = Path(
-                    event.trigger_date.strftime("%Y"),
-                    event.trigger_date.strftime("%Y-%m-%d"),
+                    event.trigger_timestamp.strftime("%Y"),
+                    event.trigger_timestamp.strftime("%Y-%m-%d"),
                 )
 
                 # First create a new file

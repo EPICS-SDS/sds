@@ -43,7 +43,7 @@ class NexusFile:
         if dataset is None:
             dataset = Dataset(
                 collector_id=self.collector_id,
-                trigger_date=event.trigger_date,
+                trigger_timestamp=event.trigger_timestamp,
                 trigger_pulse_id=event.trigger_pulse_id,
                 path=self.path,
                 beam_info=event.beam_info,
@@ -81,35 +81,20 @@ class NexusFile:
                     trigger_group.attrs["trigger_pulse_id"] = event.trigger_pulse_id
                     trigger_group.attrs[
                         "trigger_timestamp"
-                    ] = event.trigger_date.isoformat()
+                    ] = event.trigger_timestamp.isoformat()
                 if pulse_key not in entry[trigger_key]:
                     entry[trigger_key].create_group(name=pulse_key)
                     # Adding attributes about pulse (should be the same for all events)
-                    entry[trigger_key][pulse_key].attrs["pulse_id"] = event.pulse_id
-                    entry[trigger_key][pulse_key].attrs[
-                        "timestamp"
-                    ] = event.data_date.isoformat()
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.curr"
-                    ] = event.beam_info.curr
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.dest"
-                    ] = event.beam_info.dest
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.energy"
-                    ] = event.beam_info.energy
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.len"
-                    ] = event.beam_info.len
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.mode"
-                    ] = event.beam_info.mode
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.present"
-                    ] = event.beam_info.present
-                    entry[trigger_key][pulse_key].attrs[
-                        "beam_info.state"
-                    ] = event.beam_info.state
+                    pulse_attributes = entry[trigger_key][pulse_key].attrs
+                    pulse_attributes["pulse_id"] = event.pulse_id
+                    pulse_attributes["timestamp"] = event.data_timestamp.isoformat()
+                    pulse_attributes["beam_info.curr"] = event.beam_info.curr
+                    pulse_attributes["beam_info.dest"] = event.beam_info.dest
+                    pulse_attributes["beam_info.energy"] = event.beam_info.energy
+                    pulse_attributes["beam_info.len"] = event.beam_info.len
+                    pulse_attributes["beam_info.mode"] = event.beam_info.mode
+                    pulse_attributes["beam_info.present"] = event.beam_info.present
+                    pulse_attributes["beam_info.state"] = event.beam_info.state
 
                 entry[trigger_key][pulse_key][event.pv_name] = event.value
 

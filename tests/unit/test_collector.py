@@ -27,8 +27,8 @@ event = Event(
     pv_name="TEST:PV:3",
     value=1,
     timing_event_code=2,
-    data_date=datetime.utcnow(),
-    trigger_date=datetime.utcnow(),
+    data_timestamp=datetime.utcnow(),
+    trigger_timestamp=datetime.utcnow(),
     pulse_id=1,
     trigger_pulse_id=1,
     beam_info=beam_info,
@@ -47,7 +47,7 @@ class TestDataset:
     async def test_dataset_index_fail(self):
         dataset = Dataset(
             collector_id=collector.id,
-            trigger_date=datetime.utcnow(),
+            trigger_timestamp=datetime.utcnow(),
             trigger_pulse_id=event.trigger_pulse_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.trigger_pulse_id}",
             beam_info=beam_info,

@@ -15,7 +15,7 @@ class Dataset(BaseModel):
     """
 
     collector_id: str
-    trigger_date: datetime
+    trigger_timestamp: datetime
     trigger_pulse_id: int
     path: Path
     beam_info: BeamInfo

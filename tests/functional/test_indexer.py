@@ -82,9 +82,9 @@ class TestCollector:
 
 class TestDatasets:
     test_dataset = {
-        "trigger_date": datetime.utcnow().isoformat(),
+        "trigger_timestamp": datetime.utcnow().isoformat(),
         "trigger_pulse_id": 0,
-        "data_date": [datetime.utcnow().isoformat()],
+        "data_timestamp": [datetime.utcnow().isoformat()],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
         "beam_info": {
@@ -98,9 +98,9 @@ class TestDatasets:
         },
     }
     test_dataset_bad_schema = {
-        "trigger_date": "not a timestamp",
+        "trigger_timestamp": "not a timestamp",
         "trigger_pulse_id": 0,
-        "data_date": ["not a timestamp"],
+        "data_timestamp": ["not a timestamp"],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
     }

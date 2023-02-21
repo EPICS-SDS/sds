@@ -160,7 +160,7 @@ async def query_datasets(
         if end:
             timestamp_range["lte"] = end
 
-        filters.append({"range": {"trigger_date": timestamp_range}})
+        filters.append({"range": {"trigger_timestamp": timestamp_range}})
     if trigger_pulse_id_start is not None or trigger_pulse_id_end is not None:
         pulse_id_range = {}
         if trigger_pulse_id_start is not None:
@@ -169,7 +169,7 @@ async def query_datasets(
             pulse_id_range["lte"] = trigger_pulse_id_end
         filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
 
-    sort = {"trigger_date": {"order": sort.value}}
+    sort = {"trigger_timestamp": {"order": sort.value}}
 
     total, datasets, search_after = await crud.dataset.get_multi(
         filters=filters, sort=sort, search_after=search_after

@@ -16,7 +16,7 @@ class EpicsEvent(Event):
         # value
         values.update(
             value=value,
-            data_date=datetime.fromtimestamp(
+            data_timestamp=datetime.fromtimestamp(
                 value.raw.timeStamp.secondsPastEpoch
                 + value.raw.timeStamp.nanoseconds * 1e-9
             ),
@@ -31,7 +31,7 @@ class EpicsEvent(Event):
         sds_info = value.raw.get("sdsInfo")
         if sds_info is not None:
             values.update(
-                trigger_date=datetime.fromtimestamp(
+                trigger_timestamp=datetime.fromtimestamp(
                     sds_info.timeStamp.secondsPastEpoch
                     + sds_info.timeStamp.nanoseconds * 1e-9
                 ),

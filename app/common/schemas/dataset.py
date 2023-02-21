@@ -39,7 +39,7 @@ class BeamInfo(BaseModel):
 
 class DatasetBase(BaseModel):
     collector_id: str
-    trigger_date: datetime
+    trigger_timestamp: datetime
     trigger_pulse_id: int
     path: PurePosixPath
     beam_info: BeamInfo
