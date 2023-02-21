@@ -9,6 +9,7 @@ class CollectorBase(BaseModel):
     event_name: str
     event_code: int
     pvs: Set[str]
+    host: str
 
 
 class CollectorCreate(CollectorBase):

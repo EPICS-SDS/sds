@@ -14,7 +14,8 @@ from collector.collector import Collector
 from collector.config import settings
 from collector.epics_event import EpicsEvent
 from common.files import Event
-from common.schemas.collector import CollectorBase, CollectorList
+from common.files import CollectorDefinition
+from common.schemas import CollectorBase, CollectorList
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
@@ -89,7 +90,10 @@ class CollectorManager:
 
         async with aiofiles.open(path, mode="w") as json_file:
             cl = CollectorList.parse_obj(
-                [CollectorBase.parse_obj(coll) for coll in self.collectors.values()]
+                [
+                    CollectorDefinition.parse_obj(coll)
+                    for coll in self.collectors.values()
+                ]
             )
             await json_file.write(
                 cl.json(
@@ -100,20 +104,24 @@ class CollectorManager:
                 )
             )
 
-    async def add_collector(self, collector_base: CollectorBase):
+    async def add_collector(self, collector_definition: CollectorDefinition):
         # First register the collector in the indexer service
         async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
-            print(f"Adding collector '{collector_base.name}'")
+            print(f"Adding collector '{collector_definition.name}'")
             try:
+                new_collector = CollectorBase(
+                    **collector_definition.dict(), host=settings.collector_host
+                )
+                print(new_collector)
                 async with session.post(
                     settings.indexer_url + "/collectors",
-                    json=collector_base,
+                    json=new_collector,
                 ) as response:
                     response.raise_for_status()
                     if response.status == 201:
-                        print(f"Collector '{collector_base.name}' created in DB")
+                        print(f"Collector '{new_collector.name}' created in DB")
                     elif response.status == 200:
-                        print(f"Collector '{collector_base.name}' already in DB")
+                        print(f"Collector '{new_collector.name}' already in DB")
 
                     obj = await response.json()
                     collector = Collector.parse_obj(obj)
@@ -122,7 +130,7 @@ class CollectorManager:
                 OSError,
             ):
                 print(
-                    f"Error submitting collector {collector_base.name} to the indexer. Please check the indexer service status."
+                    f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status."
                 )
                 raise
 

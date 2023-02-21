@@ -22,6 +22,7 @@ class TestCollector:
         "event_name": "test_event",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
+        "host": "0.0.0.0",
     }
     test_collector_bad_schema = {
         "name": "indexer_test_2",

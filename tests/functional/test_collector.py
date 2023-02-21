@@ -9,7 +9,7 @@ from collector.collector_manager import CollectorManager
 from collector.config import settings
 from collector.main import load_collectors, main, wait_for_indexer
 from common.files.config import settings as file_settings
-from common.schemas import CollectorBase
+from common.files import CollectorDefinition
 
 from h5py import File
 from p4p.client.asyncio import Context, timesout
@@ -97,7 +97,7 @@ class TestCollector:
 
         # Check files
         collectors_path = settings.collector_definitions
-        for collector in parse_file_as(List[CollectorBase], collectors_path):
+        for collector in parse_file_as(List[CollectorDefinition], collectors_path):
             # Skip never triggered event
             if collector.event_code != 1:
                 continue

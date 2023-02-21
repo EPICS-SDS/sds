@@ -6,17 +6,16 @@ from typing import List
 import aiohttp
 from aiohttp.client_exceptions import ClientError
 from collector.api import start_api
-from collector.collector import Collector
 from collector.collector_manager import CollectorManager
 from collector.config import settings
-from common.schemas import CollectorBase
+from common.files import CollectorDefinition
 from p4p import set_debug
 from pydantic import parse_file_as
 
 set_debug(logging.WARNING)
 
 
-async def load_collectors() -> List[CollectorBase]:
+async def load_collectors() -> List[CollectorDefinition]:
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
 
@@ -25,14 +24,14 @@ async def load_collectors() -> List[CollectorBase]:
             "Collector definition file not writable. Any configuration change won't be saved."
         )
 
-    collectors = parse_file_as(List[CollectorBase], path)
+    collectors = parse_file_as(List[CollectorDefinition], path)
     return collectors
 
 
 async def wait_for_indexer():
     if settings.wait_for_indexer:
         indexer_timeout = settings.indexer_timeout_min
-        async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
+        async with aiohttp.ClientSession() as session:
             while True:
                 try:
                     async with session.get(

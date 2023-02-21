@@ -36,6 +36,7 @@ class TestCollector:
         "event_name": "test_event",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
+        "host": "0.0.0.0",
     }
 
     test_collector_2 = {
@@ -43,6 +44,7 @@ class TestCollector:
         "event_name": "test_event_2",
         "event_code": 2,
         "pvs": ["PV:TEST:3", "PV:TEST:4"],
+        "host": "0.0.0.0",
     }
 
     @pytest_asyncio.fixture(autouse=True)
@@ -253,7 +255,7 @@ class TestDatasets:
 
             nexus.write_from_events()
             for dataset in datasets:
-                dataset["path"] = str(nexus.path)
+                dataset["path"] = str(directory / f"{nexus.file_name}.h5")
 
         # Create datasets to test queries
         for datasets in [self.test_dataset_1, self.test_dataset_2]:

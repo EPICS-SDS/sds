@@ -10,6 +10,7 @@ collector = Collector(
     event_code=1,
     pvs=["TEST:PV:1", "TEST:PV:2"],
     id="test_id",
+    host="0.0.0.0",
 )
 event = Event(
     pv_name="TEST:PV:3",
