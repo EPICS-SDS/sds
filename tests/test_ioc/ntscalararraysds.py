@@ -76,6 +76,21 @@ class NTScalarArraySDS(NTScalar):
         F.extend(
             [
                 (
+                    "acqInfo",
+                    (
+                        "S",
+                        None,
+                        [
+                            ("type", "s"),
+                            ("id", "i"),
+                        ],
+                    ),
+                )
+            ]
+        )
+        F.extend(
+            [
+                (
                     "acqEvt",
                     (
                         "S",
@@ -118,7 +133,7 @@ class NTScalarArraySDS(NTScalar):
 
             # Acq info comes from start acq. event
             start_event_ts = timeStamp()
-            start_event_ts["secondsPastEpoch"] = sds_pv.main_event_pulse_id // 1e9
+            start_event_ts["secondsPastEpoch"] = sds_pv.start_event_ts // 1e9
             start_event_ts["nanoseconds"] = sds_pv.start_event_ts % 1e9
 
             wrapped_value["acqEvt"]["timeStamp"] = start_event_ts
