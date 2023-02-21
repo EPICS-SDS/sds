@@ -1,8 +1,11 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import aiohttp
 from pydantic import BaseModel
+
+from common.files import BeamInfo
 
 
 class Dataset(BaseModel):
@@ -15,6 +18,7 @@ class Dataset(BaseModel):
     trigger_date: datetime
     trigger_pulse_id: int
     path: Path
+    beam_info: BeamInfo
 
     async def index(self, indexer_url):
         """

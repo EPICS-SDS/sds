@@ -87,6 +87,15 @@ class TestDatasets:
         "data_date": [datetime.utcnow().isoformat()],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
+        "beam_info": {
+            "mode": "TestMode",
+            "state": "ON",
+            "present": "YES",
+            "len": 2.84e-3,
+            "energy": 2e9,
+            "dest": "Target",
+            "curr": 62.5e-3,
+        },
     }
     test_dataset_bad_schema = {
         "trigger_date": "not a timestamp",

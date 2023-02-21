@@ -27,11 +27,22 @@ class PurePosixPath(UnvalidatedPurePosixPath):
         field_schema.update(type="string", example="/directory/file.h5")
 
 
+class BeamInfo(BaseModel):
+    mode: str
+    state: str
+    present: str
+    len: float
+    energy: float
+    dest: str
+    curr: float
+
+
 class DatasetBase(BaseModel):
     collector_id: str
     trigger_date: datetime
     trigger_pulse_id: int
     path: PurePosixPath
+    beam_info: BeamInfo
 
 
 class DatasetCreate(DatasetBase):

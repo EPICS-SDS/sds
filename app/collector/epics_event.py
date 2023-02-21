@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from p4p import Value
 from pydantic import root_validator
+from common.files.beam_info import BeamInfo
 from common.files import Event
 
 
@@ -36,5 +37,20 @@ class EpicsEvent(Event):
                 ),
                 trigger_pulse_id=sds_info.pulseId,
                 timing_event_code=int(sds_info.evtCode),
+            )
+
+        # beamInfo
+        beam_info = value.raw.get("beamInfo")
+        if beam_info is not None:
+            values.update(
+                beam_info=BeamInfo(
+                    mode=beam_info.mode,
+                    state=beam_info.state,
+                    present=beam_info.present,
+                    len=beam_info.len,
+                    energy=beam_info.energy,
+                    dest=beam_info.dest,
+                    curr=beam_info.curr,
+                )
             )
         return values

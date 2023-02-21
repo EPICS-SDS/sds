@@ -11,7 +11,7 @@ import pytest
 import pytest_asyncio
 import requests
 from common import schemas
-from common.files import Dataset, Event, NexusFile
+from common.files import BeamInfo, Dataset, Event, NexusFile
 from pydantic import ValidationError
 from retriever.config import settings
 from tests.functional.service_loader import (
@@ -184,12 +184,23 @@ class TestCollector:
 
 
 class TestDatasets:
+    beam_info_dict = {
+        "mode": "TestMode",
+        "state": "ON",
+        "present": "YES",
+        "len": 2.84e-3,
+        "energy": 2e9,
+        "dest": "Target",
+        "curr": 62.5e-3,
+    }
+
     test_dataset_1 = [
         {
             "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "trigger_pulse_id": 1,
             "data_date": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
             "data_pulse_id": [1],
+            "beam_info": beam_info_dict,
         }
     ]
     test_dataset_2 = [
@@ -198,12 +209,14 @@ class TestDatasets:
             "trigger_pulse_id": 2,
             "data_date": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
             "data_pulse_id": [2],
+            "beam_info": beam_info_dict,
         },
         {
             "trigger_date": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "trigger_pulse_id": 3,
             "data_date": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
             "data_pulse_id": [3],
+            "beam_info": beam_info_dict,
         },
     ]
 
@@ -240,6 +253,7 @@ class TestDatasets:
                 directory=settings.storage_path / directory,
             )
 
+            beam_info = BeamInfo(**self.beam_info_dict)
             for dataset in datasets:
                 for i, pv in enumerate(TestCollector.test_collector["pvs"]):
                     new_event = Event(
@@ -250,6 +264,7 @@ class TestDatasets:
                         trigger_date=datetime.utcnow(),
                         pulse_id=dataset["trigger_pulse_id"],
                         trigger_pulse_id=dataset["trigger_pulse_id"],
+                        beam_info=beam_info,
                     )
                     nexus.add_event(new_event)
 

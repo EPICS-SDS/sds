@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 
 from collector.collector import Collector
-from common.files import Dataset, Event
+from common.files import Dataset, Event, BeamInfo
 
 collector = Collector(
     name="test_collector",
@@ -12,6 +12,17 @@ collector = Collector(
     id="test_id",
     host="0.0.0.0",
 )
+
+beam_info = BeamInfo(
+    mode="TestMode",
+    state="ON",
+    present="YES",
+    len=2.84e-3,
+    energy=2e9,
+    dest="Target",
+    curr=62.5e-3,
+)
+
 event = Event(
     pv_name="TEST:PV:3",
     value=1,
@@ -20,6 +31,7 @@ event = Event(
     trigger_date=datetime.utcnow(),
     pulse_id=1,
     trigger_pulse_id=1,
+    beam_info=beam_info,
 )
 
 
@@ -38,6 +50,7 @@ class TestDataset:
             trigger_date=datetime.utcnow(),
             trigger_pulse_id=event.trigger_pulse_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.trigger_pulse_id}",
+            beam_info=beam_info,
         )
 
         await dataset.index("")

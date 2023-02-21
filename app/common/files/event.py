@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from common.files import BeamInfo
 from pydantic import BaseModel
 
 
@@ -16,3 +17,5 @@ class Event(BaseModel):
     trigger_date: datetime
     pulse_id: int
     trigger_pulse_id: int
+
+    beam_info: BeamInfo
