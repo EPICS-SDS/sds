@@ -1,8 +1,8 @@
-import pytest
 from datetime import datetime
 
+import pytest
 from collector.collector import Collector
-from common.files import Dataset, Event, BeamInfo
+from common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event
 
 collector = Collector(
     name="test_collector",
@@ -11,6 +11,19 @@ collector = Collector(
     pvs=["TEST:PV:1", "TEST:PV:2"],
     id="test_id",
     host="0.0.0.0",
+)
+
+acq_info = AcqInfo(
+    acq_type="",
+    id=0,
+)
+
+acq_event = AcqEvent(
+    timestamp=datetime.utcnow(),
+    name="TestEvent",
+    delay=0.0,
+    code=0,
+    evr="TestEVR",
 )
 
 beam_info = BeamInfo(
@@ -31,6 +44,8 @@ event = Event(
     trigger_timestamp=datetime.utcnow(),
     pulse_id=1,
     trigger_pulse_id=1,
+    acq_info=acq_info,
+    acq_event=acq_event,
     beam_info=beam_info,
 )
 

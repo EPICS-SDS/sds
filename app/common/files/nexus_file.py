@@ -78,10 +78,11 @@ class NexusFile:
                 pulse_key = f"pulse_{event.pulse_id}"
                 if trigger_key not in entry:
                     trigger_group = entry.create_group(name=trigger_key)
-                    trigger_group.attrs["trigger_pulse_id"] = event.trigger_pulse_id
+                    trigger_group.attrs["pulse_id"] = event.trigger_pulse_id
                     trigger_group.attrs[
-                        "trigger_timestamp"
+                        "timestamp"
                     ] = event.trigger_timestamp.isoformat()
+                    trigger_group.attrs["event_code"] = event.timing_event_code
                 if pulse_key not in entry[trigger_key]:
                     entry[trigger_key].create_group(name=pulse_key)
                     # Adding attributes about pulse (should be the same for all events)
@@ -97,6 +98,19 @@ class NexusFile:
                     pulse_attributes["beam_info.state"] = event.beam_info.state
 
                 entry[trigger_key][pulse_key][event.pv_name] = event.value
+                # Acq info and event metadata
+                acquisition_attributes = entry[trigger_key][pulse_key][
+                    event.pv_name
+                ].attrs
+                acquisition_attributes[
+                    "acq_event.timestamp"
+                ] = event.acq_event.timestamp.isoformat()
+                acquisition_attributes["acq_info.type"] = event.acq_info.acq_type
+                acquisition_attributes["acq_info.id"] = event.acq_info.id
+                acquisition_attributes["acq_event.name"] = event.acq_event.name
+                acquisition_attributes["acq_event.delay"] = event.acq_event.delay
+                acquisition_attributes["acq_event.code"] = event.acq_event.code
+                acquisition_attributes["acq_event.evr"] = event.acq_event.evr
 
             h5file.close()
             print(repr(self), "writing done.")

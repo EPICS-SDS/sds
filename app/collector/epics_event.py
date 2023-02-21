@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from p4p import Value
 from pydantic import root_validator
-from common.files.beam_info import BeamInfo
+from common.files import AcqEvent, AcqInfo, BeamInfo
 from common.files import Event
 
 
@@ -12,6 +12,7 @@ class EpicsEvent(Event):
     def extract_values(cls, values: Dict[str, Any]):
         if "value" not in values:
             return values
+
         value: Value = values["value"]
         # value
         values.update(
@@ -53,4 +54,29 @@ class EpicsEvent(Event):
                     curr=beam_info.curr,
                 )
             )
+        # acqInfo
+        acq_info = value.raw.get("acqInfo")
+        if acq_info is not None:
+            values.update(
+                acq_info=AcqInfo(
+                    acq_type=acq_info["type"],
+                    id=acq_info.id,
+                )
+            )
+        # acqInfo
+        acq_event = value.raw.get("acqEvt")
+        if acq_event is not None:
+            values.update(
+                acq_event=AcqEvent(
+                    timestamp=datetime.fromtimestamp(
+                        acq_event.timeStamp.secondsPastEpoch
+                        + acq_event.timeStamp.nanoseconds * 1e-9
+                    ),
+                    name=acq_event.name,
+                    delay=acq_event.delay,
+                    code=acq_event.code,
+                    evr=acq_event.evr,
+                )
+            )
+
         return values

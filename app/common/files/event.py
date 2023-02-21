@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from common.files import BeamInfo
+from common.files import AcqEvent, AcqInfo, BeamInfo
 from pydantic import BaseModel
 
 
@@ -18,4 +18,6 @@ class Event(BaseModel):
     pulse_id: int
     trigger_pulse_id: int
 
+    acq_info: AcqInfo
+    acq_event: AcqEvent
     beam_info: BeamInfo

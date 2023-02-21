@@ -50,7 +50,6 @@ class Base(BaseModel):
     def _recursive_mappings(cls, items):
         properties = {}
         for key, es_type in items:
-            print(key, es_type, issubclass(es_type, cls))
             if issubclass(es_type, Base):
                 properties[key] = cls._recursive_mappings(
                     es_type.__annotations__.items()

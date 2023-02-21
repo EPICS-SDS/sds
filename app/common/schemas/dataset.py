@@ -27,6 +27,19 @@ class PurePosixPath(UnvalidatedPurePosixPath):
         field_schema.update(type="string", example="/directory/file.h5")
 
 
+class AcqInfo(BaseModel):
+    type: str
+    id: int
+
+
+class AcqEvent(BaseModel):
+    name: str
+    evr: str
+    delay: float
+    code: int
+    timestamp: datetime
+
+
 class BeamInfo(BaseModel):
     mode: str
     state: str
