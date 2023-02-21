@@ -146,9 +146,7 @@ class NTScalarArraySDS(NTScalar):
             sds_timestamp["secondsPastEpoch"] = sds_pv.sds_ts // 1e9
             sds_timestamp["nanoseconds"] = sds_pv.sds_ts % 1e9
 
-            wrapped_value["sdsInfo"][
-                "pulseId"
-            ] = sds_pv.main_event_pulse_id  # long int (64b)
+            wrapped_value["sdsInfo"]["pulseId"] = sds_pv.sds_pulse_id  # long int (64b)
             wrapped_value["sdsInfo"]["evtCode"] = sds_pv.sds_evt_code
             wrapped_value["sdsInfo"]["timeStamp"] = sds_timestamp
 

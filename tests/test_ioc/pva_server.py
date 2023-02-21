@@ -118,7 +118,7 @@ class MyServer(object):
                                     pv_name=pv,
                                     start_event_pulse_id=pulse_id,
                                     start_event_ts=time.time_ns(),
-                                    main_event_pulse_id=trigger_pulse_id,
+                                    main_event_pulse_id=pulse_id,
                                     main_event_ts=time.time_ns(),
                                     acq_event_name="TestAcqEvent",
                                     acq_event_code=0,
@@ -132,6 +132,7 @@ class MyServer(object):
                                     beam_curr=62.5,
                                     sds_evt_code=1,
                                     sds_ts=trigger_timestamp,
+                                    sds_pulse_id=trigger_pulse_id,
                                 )
                                 self.pvdb[pv].post(sds_pv)
                             except Exception as e:

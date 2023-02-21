@@ -65,6 +65,8 @@ class TestDataset:
             trigger_timestamp=datetime.utcnow(),
             trigger_pulse_id=event.trigger_pulse_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.trigger_pulse_id}",
+            acq_info=acq_info,
+            acq_event=acq_event,
             beam_info=beam_info,
         )
 

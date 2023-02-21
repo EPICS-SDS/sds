@@ -42,3 +42,4 @@ class SdsPV(SdsPVBase):
 
     sds_evt_code: int
     sds_ts: float
+    sds_pulse_id: float

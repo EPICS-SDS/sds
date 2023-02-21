@@ -82,13 +82,16 @@ class TestCollector:
         mon = ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
 
-    async def trigger_n_pulses(self, n: int):
-        await self.set_n_pulses(n)
+    async def trigger_n_pulses(self, n: int, same_event: bool = True):
+        n_pulses = n if same_event else 1
+        await self.set_n_pulses(n_pulses)
 
         first_pulse = await self.get_count() + 1
         last_pulse = first_pulse - 1 + n
         mon, queue = await self.wait_for_pv_value(last_pulse)
-        await self.trigger()
+        n_files = 1 if same_event else n
+        for _i in range(n_files):
+            await self.trigger()
         value = await asyncio.wait_for(queue.get(), 5)
         assert value[0] == last_pulse
         mon.close()
@@ -108,7 +111,7 @@ class TestCollector:
 
             pv_list = await self.get_pv_list()
 
-            for n in range(n):
+            for n in range(n_files):
                 file_path = (
                     file_settings.storage_path
                     / directory
@@ -124,23 +127,28 @@ class TestCollector:
                 trigger = entry.get(f"trigger_{int(first_pulse)+n}", None)
                 assert trigger is not None
 
-                pulse = trigger.get(f"pulse_{int(first_pulse)+n}", None)
-                assert pulse is not None
+                for i in range(n_pulses):
+                    pulse = trigger.get(f"pulse_{int(first_pulse)+n+i}", None)
+                    assert pulse is not None
 
                 for pv in collector.pvs:
                     if pv in pv_list:
                         pv_field = pulse.get(pv, None)
                         assert pv_field is not None
 
-            h5file.close()
+                h5file.close()
 
     @pytest.mark.asyncio
     async def test_trigger_1_pulse(self):
         await self.trigger_n_pulses(1)
 
     @pytest.mark.asyncio
-    async def test_trigger_3_pulse(self):
+    async def test_trigger_3_pulses(self):
         await self.trigger_n_pulses(3)
+
+    @pytest.mark.asyncio
+    async def test_trigger_3_independent_pulses(self):
+        await self.trigger_n_pulses(3, same_event=False)
 
     @pytest.mark.asyncio
     async def test_collector_manager_as_context_manager(self):
