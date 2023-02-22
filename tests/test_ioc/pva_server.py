@@ -102,8 +102,8 @@ class MyServer(object):
                 if self.stop_flag.is_set():
                     break
 
-                trigger_pulse_id = pulse_id
-                trigger_timestamp = time.time_ns()
+                sds_event_pulse_id = pulse_id
+                sds_event_timestamp = time.time_ns()
                 for i in range(int(self.n_pulses[0])):
                     with self.pvdb_lock:
                         for pv in self.pvdb:
@@ -131,8 +131,8 @@ class MyServer(object):
                                     beam_dest="Target",
                                     beam_curr=62.5,
                                     sds_evt_code=1,
-                                    sds_ts=trigger_timestamp,
-                                    sds_pulse_id=trigger_pulse_id,
+                                    sds_ts=sds_event_timestamp,
+                                    sds_pulse_id=sds_event_pulse_id,
                                 )
                                 self.pvdb[pv].post(sds_pv)
                             except Exception as e:

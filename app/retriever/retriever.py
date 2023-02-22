@@ -130,8 +130,8 @@ async def query_datasets(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    trigger_pulse_id_start: Optional[int] = None,
-    trigger_pulse_id_end: Optional[int] = None,
+    sds_event_pulse_id_start: Optional[int] = None,
+    sds_event_pulse_id_end: Optional[int] = None,
     sort: Optional[SortOrder] = SortOrder.desc,
     search_after: Optional[int] = None,
 ):
@@ -141,10 +141,10 @@ async def query_datasets(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **trigger_pulse_id_start** (int, optional):
-    - **trigger_pulse_id_end** (int, optional):
-    - **sort** (SortOrder, optional):
-    - **search_after** (int, optional):
+    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
+    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time
+    - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -160,16 +160,16 @@ async def query_datasets(
         if end:
             timestamp_range["lte"] = end
 
-        filters.append({"range": {"trigger_timestamp": timestamp_range}})
-    if trigger_pulse_id_start is not None or trigger_pulse_id_end is not None:
+        filters.append({"range": {"sds_event_timestamp": timestamp_range}})
+    if sds_event_pulse_id_start is not None or sds_event_pulse_id_end is not None:
         pulse_id_range = {}
-        if trigger_pulse_id_start is not None:
-            pulse_id_range["gte"] = trigger_pulse_id_start
-        if trigger_pulse_id_end is not None:
-            pulse_id_range["lte"] = trigger_pulse_id_end
-        filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
+        if sds_event_pulse_id_start is not None:
+            pulse_id_range["gte"] = sds_event_pulse_id_start
+        if sds_event_pulse_id_end is not None:
+            pulse_id_range["lte"] = sds_event_pulse_id_end
+        filters.append({"range": {"sds_event_pulse_id": pulse_id_range}})
 
-    sort = {"trigger_timestamp": {"order": sort.value}}
+    sort = {"sds_event_timestamp": {"order": sort.value}}
 
     total, datasets, search_after = await crud.dataset.get_multi(
         filters=filters, sort=sort, search_after=search_after
@@ -249,8 +249,8 @@ async def get_file_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    trigger_pulse_id_start: Optional[int] = None,
-    trigger_pulse_id_end: Optional[int] = None,
+    sds_event_pulse_id_start: Optional[int] = None,
+    sds_event_pulse_id_end: Optional[int] = None,
 ):
     """
     Search for datasets in the index and returns a file containing all hits.
@@ -258,8 +258,9 @@ async def get_file_by_dataset_query(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **trigger_pulse_id_start** (int, optional):
-    - **trigger_pulse_id_end** (int, optional):
+    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
+    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -271,8 +272,8 @@ async def get_file_by_dataset_query(
             collector_id,
             start,
             end,
-            trigger_pulse_id_start,
-            trigger_pulse_id_end,
+            sds_event_pulse_id_start,
+            sds_event_pulse_id_end,
             search_after=search_after,
         )
 

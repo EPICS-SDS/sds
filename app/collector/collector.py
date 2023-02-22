@@ -59,15 +59,15 @@ class Collector(CollectorBase):
             return
 
         with self._file_lock:
-            nexus_file = self.get_file(event.trigger_pulse_id)
+            nexus_file = self.get_file(event.sds_event_pulse_id)
 
             if nexus_file is None:
                 # File name is build from the collector name, the event code, and the pulse ID of the first event
-                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.trigger_pulse_id)}"
+                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_pulse_id)}"
                 # Path is generated from date
                 directory = Path(
-                    event.trigger_timestamp.strftime("%Y"),
-                    event.trigger_timestamp.strftime("%Y-%m-%d"),
+                    event.sds_event_timestamp.strftime("%Y"),
+                    event.sds_event_timestamp.strftime("%Y-%m-%d"),
                 )
 
                 # First create a new file
@@ -77,13 +77,13 @@ class Collector(CollectorBase):
                     file_name=file_name,
                     directory=directory,
                 )
-                self._files[event.trigger_pulse_id] = nexus_file
+                self._files[event.sds_event_pulse_id] = nexus_file
                 self._concurrent_events[nexus_file.file_name] = []
 
-            # One queue per trigger_id
-            queue = self._queues.get(event.trigger_pulse_id)
+            # One queue per sds_event_id
+            queue = self._queues.get(event.sds_event_pulse_id)
             if queue is None:
-                queue = self.create_queue(event.trigger_pulse_id)
+                queue = self.create_queue(event.sds_event_pulse_id)
 
                 self._concurrent_events[nexus_file.file_name].append(queue)
 
@@ -92,7 +92,7 @@ class Collector(CollectorBase):
 
                 def task_done_cb(task):
                     self._tasks.discard(task)
-                    self.discard_queue(event.trigger_pulse_id)
+                    self.discard_queue(event.sds_event_pulse_id)
 
                 task.add_done_callback(task_done_cb)
 

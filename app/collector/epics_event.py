@@ -32,11 +32,11 @@ class EpicsEvent(Event):
         sds_info = value.raw.get("sdsInfo")
         if sds_info is not None:
             values.update(
-                trigger_timestamp=datetime.fromtimestamp(
+                sds_event_timestamp=datetime.fromtimestamp(
                     sds_info.timeStamp.secondsPastEpoch
                     + sds_info.timeStamp.nanoseconds * 1e-9
                 ),
-                trigger_pulse_id=sds_info.pulseId,
+                sds_event_pulse_id=sds_info.pulseId,
                 timing_event_code=int(sds_info.evtCode),
             )
 

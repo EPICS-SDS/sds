@@ -38,22 +38,22 @@ class NexusFile:
         """
         Add an event to the NeXus file
         """
-        dataset = self.datasets.get(event.trigger_pulse_id)
-        # If the event belongs to a different dataset (different trigger_pulse_id), create a new Dataset
+        dataset = self.datasets.get(event.sds_event_pulse_id)
+        # If the event belongs to a different dataset (different sds_event_pulse_id), create a new Dataset
         if dataset is None:
             dataset = Dataset(
                 collector_id=self.collector_id,
-                trigger_timestamp=event.trigger_timestamp,
-                trigger_pulse_id=event.trigger_pulse_id,
+                sds_event_timestamp=event.sds_event_timestamp,
+                sds_event_pulse_id=event.sds_event_pulse_id,
                 path=self.path,
                 beam_info=event.beam_info,
             )
-            self.datasets.update({event.trigger_pulse_id: dataset})
+            self.datasets.update({event.sds_event_pulse_id: dataset})
 
         self.events.append(event)
 
     def add_dataset(self, dataset: Dataset):
-        self.datasets.update({dataset.trigger_pulse_id: dataset})
+        self.datasets.update({dataset.sds_event_pulse_id: dataset})
 
     def write_from_events(self):
         """
@@ -74,19 +74,19 @@ class NexusFile:
                     event = self.events.pop(0)
                 except IndexError:
                     break
-                trigger_key = f"trigger_{event.trigger_pulse_id}"
+                sds_event_key = f"sds_event_{event.sds_event_pulse_id}"
                 pulse_key = f"pulse_{event.pulse_id}"
-                if trigger_key not in entry:
-                    trigger_group = entry.create_group(name=trigger_key)
-                    trigger_group.attrs["pulse_id"] = event.trigger_pulse_id
-                    trigger_group.attrs[
+                if sds_event_key not in entry:
+                    sds_event_group = entry.create_group(name=sds_event_key)
+                    sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
+                    sds_event_group.attrs[
                         "timestamp"
-                    ] = event.trigger_timestamp.isoformat()
-                    trigger_group.attrs["event_code"] = event.timing_event_code
-                if pulse_key not in entry[trigger_key]:
-                    entry[trigger_key].create_group(name=pulse_key)
+                    ] = event.sds_event_timestamp.isoformat()
+                    sds_event_group.attrs["event_code"] = event.timing_event_code
+                if pulse_key not in entry[sds_event_key]:
+                    entry[sds_event_key].create_group(name=pulse_key)
                     # Adding attributes about pulse (should be the same for all events)
-                    pulse_attributes = entry[trigger_key][pulse_key].attrs
+                    pulse_attributes = entry[sds_event_key][pulse_key].attrs
                     pulse_attributes["pulse_id"] = event.pulse_id
                     pulse_attributes["timestamp"] = event.data_timestamp.isoformat()
                     pulse_attributes["beam_info.curr"] = event.beam_info.curr
@@ -97,9 +97,9 @@ class NexusFile:
                     pulse_attributes["beam_info.present"] = event.beam_info.present
                     pulse_attributes["beam_info.state"] = event.beam_info.state
 
-                entry[trigger_key][pulse_key][event.pv_name] = event.value
+                entry[sds_event_key][pulse_key][event.pv_name] = event.value
                 # Acq info and event metadata
-                acquisition_attributes = entry[trigger_key][pulse_key][
+                acquisition_attributes = entry[sds_event_key][pulse_key][
                     event.pv_name
                 ].attrs
                 acquisition_attributes[
@@ -131,7 +131,7 @@ class NexusFile:
 
             for dataset in self.datasets.values():
                 origin = File(dataset.path, "r")
-                data = origin["entry"][f"trigger_{dataset.trigger_pulse_id}"]
+                data = origin["entry"][f"sds_event_{dataset.sds_event_pulse_id}"]
 
                 h5file.copy(data, entry)
 

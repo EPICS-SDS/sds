@@ -19,11 +19,11 @@
 - `/datasets` GET operation to retrieve a list of datasets matching the parameters
   - Parameters
     - `collector_id` (optional): a list of collector IDs
-    - `end` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) to filter out any `trigger_timestamp`s after this.
-    - `start` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date to filter out any `trigger_timestamp`s before this.
-    - `end` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date to filter out any `trigger_timestamp`s after this.
-    - `trigger_pulse_id_start` (optional): a minimum integer pulse ID.
-    - `trigger_pulse_id_end` (optional): a maximum integer pulse ID.
+    - `end` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) to filter out any `sds_event_timestamp`s after this.
+    - `start` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date to filter out any `sds_event_timestamp`s before this.
+    - `end` (optional): an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date to filter out any `sds_event_timestamp`s after this.
+    - `sds_event_pulse_id_start` (optional): a minimum integer pulse ID.
+    - `sds_event_pulse_id_end` (optional): a maximum integer pulse ID.
   - Response
     
     Array of JSON documents of the datasets that match the parameters (HTTP 200)

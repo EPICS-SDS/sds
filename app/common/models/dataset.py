@@ -29,8 +29,8 @@ class BeamInfo(Base):
 
 class Dataset(Base):
     collector_id: Keyword
-    trigger_timestamp: Date
-    trigger_pulse_id: Long
+    sds_event_timestamp: Date
+    sds_event_pulse_id: Long
     path: Keyword
     timestamp: Date
     beam_info: BeamInfo

@@ -82,7 +82,7 @@ class TestCollector:
         mon = ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
 
-    async def trigger_n_pulses(self, n: int, same_event: bool = True):
+    async def sds_event_n_pulses(self, n: int, same_event: bool = True):
         n_pulses = n if same_event else 1
         await self.set_n_pulses(n_pulses)
 
@@ -124,11 +124,11 @@ class TestCollector:
                 h5file = File(file_path, "r")
                 entry = h5file.get("entry", None)
                 assert entry is not None
-                trigger = entry.get(f"trigger_{int(first_pulse)+n}", None)
-                assert trigger is not None
+                sds_event = entry.get(f"sds_event_{int(first_pulse)+n}", None)
+                assert sds_event is not None
 
                 for i in range(n_pulses):
-                    pulse = trigger.get(f"pulse_{int(first_pulse)+n+i}", None)
+                    pulse = sds_event.get(f"pulse_{int(first_pulse)+n+i}", None)
                     assert pulse is not None
 
                 for pv in collector.pvs:
@@ -139,16 +139,16 @@ class TestCollector:
                 h5file.close()
 
     @pytest.mark.asyncio
-    async def test_trigger_1_pulse(self):
-        await self.trigger_n_pulses(1)
+    async def test_sds_event_1_pulse(self):
+        await self.sds_event_n_pulses(1)
 
     @pytest.mark.asyncio
-    async def test_trigger_3_pulses(self):
-        await self.trigger_n_pulses(3)
+    async def test_sds_event_3_pulses(self):
+        await self.sds_event_n_pulses(3)
 
     @pytest.mark.asyncio
-    async def test_trigger_3_independent_pulses(self):
-        await self.trigger_n_pulses(3, same_event=False)
+    async def test_sds_event_3_independent_pulses(self):
+        await self.sds_event_n_pulses(3, same_event=False)
 
     @pytest.mark.asyncio
     async def test_collector_manager_as_context_manager(self):

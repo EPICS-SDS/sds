@@ -146,12 +146,12 @@ class TestCollector:
                     entry = root.entries.get("entry")
                     assert entry is not None
                     trigger = entry.entries.get(
-                        f"trigger_{int(first_pulse + i * n_pulses)}"
+                        f"sds_event_{int(first_pulse + i * n_pulses)}"
                     )
                     assert trigger is not None
 
                     timestamps.append(
-                        datetime.fromisoformat(trigger.attrs["trigger_timestamp"])
+                        datetime.fromisoformat(trigger.attrs["sds_event_timestamp"])
                     )
 
                     pv_list = await self.get_pv_list()

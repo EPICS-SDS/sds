@@ -82,8 +82,8 @@ class TestCollector:
 
 class TestDatasets:
     test_dataset = {
-        "trigger_timestamp": datetime.utcnow().isoformat(),
-        "trigger_pulse_id": 0,
+        "sds_event_timestamp": datetime.utcnow().isoformat(),
+        "sds_event_pulse_id": 0,
         "data_timestamp": [datetime.utcnow().isoformat()],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
@@ -98,8 +98,8 @@ class TestDatasets:
         },
     }
     test_dataset_bad_schema = {
-        "trigger_timestamp": "not a timestamp",
-        "trigger_pulse_id": 0,
+        "sds_event_timestamp": "not a timestamp",
+        "sds_event_pulse_id": 0,
         "data_timestamp": ["not a timestamp"],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",

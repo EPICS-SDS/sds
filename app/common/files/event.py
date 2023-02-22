@@ -14,9 +14,9 @@ class Event(BaseModel):
     value: Any
     timing_event_code: int
     data_timestamp: datetime
-    trigger_timestamp: datetime
+    sds_event_timestamp: datetime
     pulse_id: int
-    trigger_pulse_id: int
+    sds_event_pulse_id: int
 
     acq_info: AcqInfo
     acq_event: AcqEvent
