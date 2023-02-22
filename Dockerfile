@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:4.12.0
+FROM continuumio/miniconda3:22.11.1
 
 RUN groupadd -r -g 1000 csi \
   && useradd --no-log-init -r -g csi -u 1000 csi
@@ -7,7 +7,6 @@ COPY app/environment.yml /app/environment.yml
 
 RUN conda update -n base conda \
   && conda config --system --set channel_alias https://artifactory.esss.lu.se/artifactory/api/conda \
-  && conda config --system --set use_only_tar_bz2 true \
   && conda env create -n sds -f /app/environment.yml \
   && conda clean -ay
 

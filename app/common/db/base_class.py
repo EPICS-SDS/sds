@@ -47,11 +47,21 @@ class Base(BaseModel):
         )
 
     @classmethod
-    def mappings(cls):
+    def _recursive_mappings(cls, items):
         properties = {}
-        for key, es_type in cls.__annotations__.items():
-            properties[key] = {"type": es_type.es_type}
+        for key, es_type in items:
+            if issubclass(es_type, Base):
+                properties[key] = cls._recursive_mappings(
+                    es_type.__annotations__.items()
+                )
+            else:
+                properties[key] = {"type": es_type.es_type}
+
         return {"properties": properties}
+
+    @classmethod
+    def mappings(cls):
+        return cls._recursive_mappings(cls.__annotations__.items())
 
     @classmethod
     async def init(cls):

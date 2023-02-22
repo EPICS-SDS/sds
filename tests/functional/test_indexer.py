@@ -22,6 +22,7 @@ class TestCollector:
         "event_name": "test_event",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
+        "host": "0.0.0.0",
     }
     test_collector_bad_schema = {
         "name": "indexer_test_2",
@@ -81,16 +82,25 @@ class TestCollector:
 
 class TestDatasets:
     test_dataset = {
-        "trigger_date": datetime.utcnow().isoformat(),
-        "trigger_pulse_id": 0,
-        "data_date": [datetime.utcnow().isoformat()],
+        "sds_event_timestamp": datetime.utcnow().isoformat(),
+        "sds_event_pulse_id": 0,
+        "data_timestamp": [datetime.utcnow().isoformat()],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
+        "beam_info": {
+            "mode": "TestMode",
+            "state": "ON",
+            "present": "YES",
+            "len": 2.84e-3,
+            "energy": 2e9,
+            "dest": "Target",
+            "curr": 62.5e-3,
+        },
     }
     test_dataset_bad_schema = {
-        "trigger_date": "not a timestamp",
-        "trigger_pulse_id": 0,
-        "data_date": ["not a timestamp"],
+        "sds_event_timestamp": "not a timestamp",
+        "sds_event_pulse_id": 0,
+        "data_timestamp": ["not a timestamp"],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
     }

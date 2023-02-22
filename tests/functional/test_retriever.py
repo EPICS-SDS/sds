@@ -11,8 +11,7 @@ import pytest
 import pytest_asyncio
 import requests
 from common import schemas
-from common.files.dataset import Dataset
-from common.files.event import Event
+from common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event, NexusFile
 from pydantic import ValidationError
 from retriever.config import settings
 from tests.functional.service_loader import (
@@ -37,6 +36,7 @@ class TestCollector:
         "event_name": "test_event",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
+        "host": "0.0.0.0",
     }
 
     test_collector_2 = {
@@ -44,6 +44,7 @@ class TestCollector:
         "event_name": "test_event_2",
         "event_code": 2,
         "pvs": ["PV:TEST:3", "PV:TEST:4"],
+        "host": "0.0.0.0",
     }
 
     @pytest_asyncio.fixture(autouse=True)
@@ -183,26 +184,58 @@ class TestCollector:
 
 
 class TestDatasets:
+    beam_info_dict = {
+        "mode": "TestMode",
+        "state": "ON",
+        "present": "YES",
+        "len": 2.84e-3,
+        "energy": 2e9,
+        "dest": "Target",
+        "curr": 62.5e-3,
+    }
+
+    acq_info_dict = {
+        "acq_type": "",
+        "id": 0,
+    }
+
+    acq_event_dict = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "name": "TestEvent",
+        "delay": 0.0,
+        "code": 0,
+        "evr": "TestEVR",
+    }
+
     test_dataset_1 = [
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
-            "trigger_pulse_id": 1,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
+            "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
+            "sds_event_pulse_id": 1,
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
             "data_pulse_id": [1],
+            "acq_info": acq_info_dict,
+            "acq_event": acq_event_dict,
+            "beam_info": beam_info_dict,
         }
     ]
     test_dataset_2 = [
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
-            "trigger_pulse_id": 2,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
+            "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
+            "sds_event_pulse_id": 2,
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
             "data_pulse_id": [2],
+            "acq_info": acq_info_dict,
+            "acq_event": acq_event_dict,
+            "beam_info": beam_info_dict,
         },
         {
-            "trigger_date": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
-            "trigger_pulse_id": 3,
-            "data_date": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
+            "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
+            "sds_event_pulse_id": 3,
+            "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
             "data_pulse_id": [3],
+            "acq_info": acq_info_dict,
+            "acq_event": acq_event_dict,
+            "beam_info": beam_info_dict,
         },
     ]
 
@@ -225,31 +258,42 @@ class TestDatasets:
 
         # Create the NeXus files
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
-            dataset_nexus = Dataset(
+            file_name: str = f'{TestCollector.test_collector["name"]}_{str(TestCollector.test_collector["event_code"])}_{str(datasets[0]["sds_event_pulse_id"])}'
+            # Path is generated from date
+            directory = Path(
+                datetime.utcnow().strftime("%Y"),
+                datetime.utcnow().strftime("%Y-%m-%d"),
+            )
+
+            nexus = NexusFile(
                 collector_id=datasets[0]["collector_id"],
                 collector_name=TestCollector.test_collector["name"],
-                trigger_date=datetime.utcnow(),
-                trigger_pulse_id=datasets[0]["trigger_pulse_id"],
-                event_name=TestCollector.test_collector["event_name"],
-                event_code=TestCollector.test_collector["event_code"],
+                file_name=file_name,
+                directory=settings.storage_path / directory,
             )
+
+            acq_info = AcqInfo(**self.acq_info_dict)
+            acq_event = AcqEvent(**self.acq_event_dict)
+            beam_info = BeamInfo(**self.beam_info_dict)
             for dataset in datasets:
                 for i, pv in enumerate(TestCollector.test_collector["pvs"]):
                     new_event = Event(
                         pv_name=pv,
                         value=i,
-                        timing_event_name=TestCollector.test_collector["event_name"],
                         timing_event_code=TestCollector.test_collector["event_code"],
-                        data_date=datetime.utcnow(),
-                        trigger_date=datetime.utcnow(),
-                        pulse_id=dataset["trigger_pulse_id"],
-                        trigger_pulse_id=dataset["trigger_pulse_id"],
+                        data_timestamp=datetime.utcnow(),
+                        sds_event_timestamp=datetime.utcnow(),
+                        pulse_id=dataset["sds_event_pulse_id"],
+                        sds_event_pulse_id=dataset["sds_event_pulse_id"],
+                        acq_info=acq_info,
+                        acq_event=acq_event,
+                        beam_info=beam_info,
                     )
-                    dataset_nexus.update(new_event)
+                    nexus.add_event(new_event)
 
-            await dataset_nexus.write()
+            nexus.write_from_events()
             for dataset in datasets:
-                dataset["path"] = str(dataset_nexus.path)
+                dataset["path"] = str(directory / f"{nexus.file_name}.h5")
 
         # Create datasets to test queries
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
@@ -292,7 +336,7 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "start": self.test_dataset_1[0]["trigger_date"],
+                    "start": self.test_dataset_1[0]["sds_event_timestamp"],
                 },
             ) as response:
                 assert response.status == 200
@@ -305,7 +349,7 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "end": self.test_dataset_1[0]["trigger_date"],
+                    "end": self.test_dataset_1[0]["sds_event_timestamp"],
                 },
             ) as response:
                 assert response.status == 200
@@ -325,14 +369,14 @@ class TestDatasets:
                 assert len((await response.json())["datasets"]) == 0
 
     @pytest.mark.asyncio
-    async def test_query_existing_dataset_by_trigger_id_start(self):
+    async def test_query_existing_dataset_by_sds_event_id_start(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "trigger_pulse_id_start": self.test_dataset_1[0][
-                        "trigger_pulse_id"
+                    "sds_event_pulse_id_start": self.test_dataset_1[0][
+                        "sds_event_pulse_id"
                     ],
                 },
             ) as response:
@@ -340,26 +384,28 @@ class TestDatasets:
                 assert len((await response.json())["datasets"]) == 3
 
     @pytest.mark.asyncio
-    async def test_query_existing_dataset_by_trigger_id_end(self):
+    async def test_query_existing_dataset_by_sds_event_id_end(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "trigger_pulse_id_end": self.test_dataset_1[0]["trigger_pulse_id"],
+                    "sds_event_pulse_id_end": self.test_dataset_1[0][
+                        "sds_event_pulse_id"
+                    ],
                 },
             ) as response:
                 assert response.status == 200
                 assert len((await response.json())["datasets"]) == 1
 
     @pytest.mark.asyncio
-    async def test_query_no_dataset_by_trigger_id_end(self):
+    async def test_query_no_dataset_by_sds_event_id_end(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "trigger_pulse_id_end": 0,
+                    "sds_event_pulse_id_end": 0,
                 },
             ) as response:
                 assert response.status == 200

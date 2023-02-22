@@ -6,8 +6,6 @@ services:
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
-    ports:
-      - "8001:8000"
     volumes:
       - ./app:/app/
     command: uvicorn retriever:app --host 0.0.0.0 --port 8000 --reload
@@ -16,6 +14,7 @@ services:
     volumes:
       - ./app:/app/
     command: python -m collector.main --reload
+    network_mode: "host"
 
   elasticsearch:
     volumes:
@@ -36,9 +35,10 @@ services:
     build: "."
     image: sds
     container_name: sds_test_ioc
-    command: python test_ioc/pva_server.py
+    command: python test_ioc/pva_server.py 5 10
     volumes:
-      - ./test_ioc/:/app/test_ioc/
+      - ./tests/test_ioc/:/app/test_ioc/
+    network_mode: "host"
 
 volumes:
   esdata:

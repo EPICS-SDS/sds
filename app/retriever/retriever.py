@@ -10,9 +10,10 @@ from typing import Any, Dict, List, Optional
 import aiofiles
 from common import crud, schemas
 from common.db.connection import wait_for_connection
-from common.files import Collector
+from common.files import NexusFile
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
+from h5py import File
 from retriever.config import settings
 from retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
@@ -25,7 +26,17 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.setLevel(settings.log_level)
 
-app = FastAPI(title="SDS Retriever")
+description = """
+This API can be used for:
+- get collectors configuration by query or by ID
+- get datasets by a search query or by ID
+- get files by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
+"""
+app = FastAPI(
+    title="SDS Retriever Service API",
+    description=description,
+    version="0.1",
+)
 
 
 class SortOrder(str, Enum):
@@ -119,8 +130,8 @@ async def query_datasets(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    trigger_pulse_id_start: Optional[int] = None,
-    trigger_pulse_id_end: Optional[int] = None,
+    sds_event_pulse_id_start: Optional[int] = None,
+    sds_event_pulse_id_end: Optional[int] = None,
     sort: Optional[SortOrder] = SortOrder.desc,
     search_after: Optional[int] = None,
 ):
@@ -130,10 +141,10 @@ async def query_datasets(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **trigger_pulse_id_start** (int, optional):
-    - **trigger_pulse_id_end** (int, optional):
-    - **sort** (SortOrder, optional):
-    - **search_after** (int, optional):
+    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
+    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time
+    - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -149,16 +160,16 @@ async def query_datasets(
         if end:
             timestamp_range["lte"] = end
 
-        filters.append({"range": {"trigger_date": timestamp_range}})
-    if trigger_pulse_id_start is not None or trigger_pulse_id_end is not None:
+        filters.append({"range": {"sds_event_timestamp": timestamp_range}})
+    if sds_event_pulse_id_start is not None or sds_event_pulse_id_end is not None:
         pulse_id_range = {}
-        if trigger_pulse_id_start is not None:
-            pulse_id_range["gte"] = trigger_pulse_id_start
-        if trigger_pulse_id_end is not None:
-            pulse_id_range["lte"] = trigger_pulse_id_end
-        filters.append({"range": {"trigger_pulse_id": pulse_id_range}})
+        if sds_event_pulse_id_start is not None:
+            pulse_id_range["gte"] = sds_event_pulse_id_start
+        if sds_event_pulse_id_end is not None:
+            pulse_id_range["lte"] = sds_event_pulse_id_end
+        filters.append({"range": {"sds_event_pulse_id": pulse_id_range}})
 
-    sort = {"trigger_date": {"order": sort.value}}
+    sort = {"sds_event_timestamp": {"order": sort.value}}
 
     total, datasets, search_after = await crud.dataset.get_multi(
         filters=filters, sort=sort, search_after=search_after
@@ -238,8 +249,8 @@ async def get_file_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    trigger_pulse_id_start: Optional[int] = None,
-    trigger_pulse_id_end: Optional[int] = None,
+    sds_event_pulse_id_start: Optional[int] = None,
+    sds_event_pulse_id_end: Optional[int] = None,
 ):
     """
     Search for datasets in the index and returns a file containing all hits.
@@ -247,8 +258,9 @@ async def get_file_by_dataset_query(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **trigger_pulse_id_start** (int, optional):
-    - **trigger_pulse_id_end** (int, optional):
+    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
+    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -260,8 +272,8 @@ async def get_file_by_dataset_query(
             collector_id,
             start,
             end,
-            trigger_pulse_id_start,
-            trigger_pulse_id_end,
+            sds_event_pulse_id_start,
+            sds_event_pulse_id_end,
             search_after=search_after,
         )
 
@@ -299,23 +311,35 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DatasetBase]):
                 media_type=HDF5_MIME_TYPE,
             )
 
-    collectors: Dict[str, Collector] = dict()
-    for dataset in datasets:
-        collector = collectors.get(dataset.collector_id)
-        if collector is None:
-            collectors[dataset.collector_id] = Collector.create(dataset)
-        else:
-            collector.update(dataset)
+    nexus_files: Dict[str, NexusFile] = dict()
 
     # Create a temporary zip file to collect the data before transferring it
     async with aiofiles.tempfile.TemporaryDirectory() as d:
+        for dataset in datasets:
+            nexus_file = nexus_files.get(dataset.collector_id)
+
+            if nexus_file is None:
+                origin = File(settings.storage_path / dataset.path, "r")
+                collector_name = origin["entry"].attrs["collector_name"]
+                origin.close()
+
+                # First create a new file
+                nexus_file = NexusFile(
+                    collector_id=dataset.collector_id,
+                    collector_name=collector_name,
+                    file_name=collector_name + ".h5",
+                    directory=Path(d),
+                )
+                nexus_files[dataset.collector_id] = nexus_file
+
+            nexus_file.add_dataset(dataset)
+
         zip_filename = "datasets.zip"
         zip_io = BytesIO()
         with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
-            for collector in collectors.values():
-                await collector.write(d)
-
-                zip.write(os.path.join(d, collector.path), collector.path)
+            for nexus_file in nexus_files.values():
+                nexus_file.write_from_datasets()
+                zip.write(os.path.join(d, nexus_file.path), nexus_file.file_name)
 
     return StreamingResponse(
         iter([zip_io.getvalue()]),

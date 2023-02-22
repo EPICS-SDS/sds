@@ -7,14 +7,10 @@ services:
     command: uvicorn indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
-    ports:
-      - "8001:8001"
-    expose:
-      - "8001"
     volumes:
       - ./app:/app/
       - ./test:/test/
-    command: uvicorn retriever:app --host 0.0.0.0 --port 8001 --reload
+    command: uvicorn retriever:app --host 0.0.0.0 --port 8000 --reload
 
   sds_collector:
     volumes:
@@ -35,7 +31,7 @@ services:
       - ./data:/data/
       - ./app:/app/
       - ./tests:/app/tests/
-      - ./test_ioc/:/app/test_ioc/
+      - ./tests/test_ioc/:/app/test_ioc/
       - ./tests/collectors.json:/app/config/collectors.json
     command: python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report html --cov '.'
 

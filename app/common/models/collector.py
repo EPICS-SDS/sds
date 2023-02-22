@@ -7,6 +7,7 @@ class Collector(Base):
     pvs: Keyword
     event_name: Keyword
     event_code: Integer
+    host: Keyword
     created: Date
 
     class Index:

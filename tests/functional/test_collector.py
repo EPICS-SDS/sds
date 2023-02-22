@@ -5,15 +5,17 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from collector.collector import CollectorSchema
 from collector.collector_manager import CollectorManager
 from collector.config import settings
-from collector.main import load_collectors, main
+from collector.main import load_collectors, main, wait_for_indexer
 from common.files.config import settings as file_settings
-from nexusformat.nexus import NXFile
+from common.files import CollectorDefinition
+
+from h5py import File
 from p4p.client.asyncio import Context, timesout
 from p4p.client.thread import Context as ThContext
 from pydantic import parse_file_as
+
 from tests.functional.service_loader import collector_service, indexer_service
 
 
@@ -80,13 +82,16 @@ class TestCollector:
         mon = ctxt.monitor(self.test_pv, cb=cb)
         return mon, queue
 
-    async def trigger_n_pulses(self, n: int):
-        await self.set_n_pulses(n)
+    async def sds_event_n_pulses(self, n: int, same_event: bool = True):
+        n_pulses = n if same_event else 1
+        await self.set_n_pulses(n_pulses)
 
         first_pulse = await self.get_count() + 1
         last_pulse = first_pulse - 1 + n
         mon, queue = await self.wait_for_pv_value(last_pulse)
-        await self.trigger()
+        n_files = 1 if same_event else n
+        for _i in range(n_files):
+            await self.trigger()
         value = await asyncio.wait_for(queue.get(), 5)
         assert value[0] == last_pulse
         mon.close()
@@ -95,7 +100,7 @@ class TestCollector:
 
         # Check files
         collectors_path = settings.collector_definitions
-        for collector in parse_file_as(List[CollectorSchema], collectors_path):
+        for collector in parse_file_as(List[CollectorDefinition], collectors_path):
             # Skip never triggered event
             if collector.event_code != 1:
                 continue
@@ -106,45 +111,54 @@ class TestCollector:
 
             pv_list = await self.get_pv_list()
 
-            for n in range(n):
+            for n in range(n_files):
                 file_path = (
                     file_settings.storage_path
                     / directory
-                    / (collector.name + f"_{int(first_pulse)+n}.h5")
+                    / (
+                        f"{collector.name}_{collector.event_code}_{int(first_pulse)+n}.h5"
+                    )
                 )
                 assert file_path.exists()
 
-                nx = NXFile(file_path, "r")
-                root = nx.readfile()
-                entry = root.entries.get("entry")
+                h5file = File(file_path, "r")
+                entry = h5file.get("entry", None)
                 assert entry is not None
-                trigger = entry.entries.get(f"trigger_{int(first_pulse)+n}")
-                assert trigger is not None
+                sds_event = entry.get(f"sds_event_{int(first_pulse)+n}", None)
+                assert sds_event is not None
 
-                pulse = trigger.entries.get(f"pulse_{int(first_pulse)+n}")
-                assert pulse is not None
+                for i in range(n_pulses):
+                    pulse = sds_event.get(f"pulse_{int(first_pulse)+n+i}", None)
+                    assert pulse is not None
 
                 for pv in collector.pvs:
                     if pv in pv_list:
-                        pv_field = pulse.entries.get(pv)
+                        pv_field = pulse.get(pv, None)
                         assert pv_field is not None
 
-            nx.close()
+                h5file.close()
 
     @pytest.mark.asyncio
-    async def test_trigger_1_pulse(self):
-        await self.trigger_n_pulses(1)
+    async def test_sds_event_1_pulse(self):
+        await self.sds_event_n_pulses(1)
 
     @pytest.mark.asyncio
-    async def test_trigger_3_pulse(self):
-        await self.trigger_n_pulses(3)
+    async def test_sds_event_3_pulses(self):
+        await self.sds_event_n_pulses(3)
+
+    @pytest.mark.asyncio
+    async def test_sds_event_3_independent_pulses(self):
+        await self.sds_event_n_pulses(3, same_event=False)
 
     @pytest.mark.asyncio
     async def test_collector_manager_as_context_manager(self):
+        await wait_for_indexer()
         collectors = await load_collectors()
-        async with CollectorManager(collectors) as cm:
+        async with await CollectorManager.create(collectors) as cm:
             await cm.wait_for_startup()
 
+
+class TestCollectorServer:
     async def main_no_cancelled_error(self):
         try:
             await main()

@@ -1,9 +1,10 @@
 import logging
+from typing import Optional
 
 from common.db import settings
 from common.db.base_class import Base
 from common.db.connection import get_connection
-from common.db.fields import Date, Integer, Keyword
+from common.db.fields import Date, Double, Long, Keyword
 from common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 from elasticsearch import AsyncElasticsearch, NotFoundError
 
@@ -16,12 +17,23 @@ COMPONENT_TEMPLATE_STR = "component_templates"
 DATASET_INDEX_TEMPLATE = "dataset_template"
 
 
+class BeamInfo(Base):
+    mode: Keyword
+    state: Keyword
+    present: Keyword
+    len: Double
+    energy: Double
+    dest: Keyword
+    curr: Double
+
+
 class Dataset(Base):
     collector_id: Keyword
-    trigger_date: Date
-    trigger_pulse_id: Integer
+    sds_event_timestamp: Date
+    sds_event_pulse_id: Long
     path: Keyword
     timestamp: Date
+    beam_info: BeamInfo
 
     class Config:
         fields = {"timestamp": "@timestamp"}

@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from p4p import Value
 from pydantic import root_validator
+from common.files import AcqEvent, AcqInfo, BeamInfo
 from common.files import Event
 
 
@@ -11,11 +12,12 @@ class EpicsEvent(Event):
     def extract_values(cls, values: Dict[str, Any]):
         if "value" not in values:
             return values
+
         value: Value = values["value"]
         # value
         values.update(
             value=value,
-            data_date=datetime.fromtimestamp(
+            data_timestamp=datetime.fromtimestamp(
                 value.raw.timeStamp.secondsPastEpoch
                 + value.raw.timeStamp.nanoseconds * 1e-9
             ),
@@ -30,11 +32,51 @@ class EpicsEvent(Event):
         sds_info = value.raw.get("sdsInfo")
         if sds_info is not None:
             values.update(
-                trigger_date=datetime.fromtimestamp(
+                sds_event_timestamp=datetime.fromtimestamp(
                     sds_info.timeStamp.secondsPastEpoch
                     + sds_info.timeStamp.nanoseconds * 1e-9
                 ),
-                trigger_pulse_id=sds_info.pulseId,
+                sds_event_pulse_id=sds_info.pulseId,
                 timing_event_code=int(sds_info.evtCode),
             )
+
+        # beamInfo
+        beam_info = value.raw.get("beamInfo")
+        if beam_info is not None:
+            values.update(
+                beam_info=BeamInfo(
+                    mode=beam_info.mode,
+                    state=beam_info.state,
+                    present=beam_info.present,
+                    len=beam_info.len,
+                    energy=beam_info.energy,
+                    dest=beam_info.dest,
+                    curr=beam_info.curr,
+                )
+            )
+        # acqInfo
+        acq_info = value.raw.get("acqInfo")
+        if acq_info is not None:
+            values.update(
+                acq_info=AcqInfo(
+                    acq_type=acq_info["type"],
+                    id=acq_info.id,
+                )
+            )
+        # acqInfo
+        acq_event = value.raw.get("acqEvt")
+        if acq_event is not None:
+            values.update(
+                acq_event=AcqEvent(
+                    timestamp=datetime.fromtimestamp(
+                        acq_event.timeStamp.secondsPastEpoch
+                        + acq_event.timeStamp.nanoseconds * 1e-9
+                    ),
+                    name=acq_event.name,
+                    delay=acq_event.delay,
+                    code=acq_event.code,
+                    evr=acq_event.evr,
+                )
+            )
+
         return values

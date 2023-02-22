@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from threading import Thread
 import time
 from multiprocessing import cpu_count, get_context, shared_memory
+from threading import Thread
 
 import numpy as np
+from ntscalararraysds import NTScalarArraySDS
 from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
-
-from ntscalararraysds import NTScalarArraySDS
+from sds_pv import SdsPV
 
 
 class TriggerHandler(object):
@@ -20,39 +20,36 @@ class TriggerHandler(object):
 
     def put(self, pv, op):
         if op.value().raw.value is True:
-            for (lock, event) in self.events:
-                with lock:
-                    event.set()
+            for event in self.events:
+                event.set()
 
         op.done()
 
 
-class NPulsesHandler(object):
-    def __init__(self, n_pulses):
-        self.n_pulses = n_pulses
+class ScalarHandler(object):
+    def __init__(self, value):
+        self.value = value
 
     def put(self, pv, op):
         if op.value().raw.value > 0:
             pv.post(op.value())
-            self.n_pulses.buf[0] = op.value().raw.value
+            self.value[0] = op.value().raw.value
 
         op.done()
 
 
 class MyServer(object):
-    def __init__(self, lock, event, n_pulses):
-        self.lock = lock
+    def __init__(self, event, n_pulses, freq):
         self.event = event
         self.n_pulses = n_pulses
+        self.freq = freq
 
         self.pvdb = dict()
         self.process = None
-        self.mp_ctxt = get_context("fork")
+        self.mp_ctxt = get_context("spawn")
         self.stop_flag = self.mp_ctxt.Event()
         self.queue = self.mp_ctxt.Queue()
         self.pvdb_lock = self.mp_ctxt.Lock()
-
-        self.provider = StaticProvider()
 
     def add_pv(self, pv_name, n_elem, prefix):
         self.queue.put(("add", pv_name, n_elem, prefix))
@@ -91,6 +88,7 @@ class MyServer(object):
 
     def _start_server(self):
         pulse_id = 0
+        self.provider = StaticProvider()
 
         server = Server(providers=[self.provider])
 
@@ -100,36 +98,52 @@ class MyServer(object):
         with server:
             while not self.stop_flag.is_set():
                 self.event.wait()
-                with self.lock:
-                    self.event.clear()
+                self.event.clear()
                 if self.stop_flag.is_set():
                     break
 
-                trigger_pulse_id = pulse_id
-                trigger_timestamp = time.time_ns()
-                for i in range(int(self.n_pulses.buf[0])):
+                sds_event_pulse_id = pulse_id
+                sds_event_timestamp = time.time_ns()
+                for i in range(int(self.n_pulses[0])):
                     with self.pvdb_lock:
                         for pv in self.pvdb:
                             arr = np.random.random(self.pvdb[pv].current().shape[0])
                             arr[0] = pulse_id
 
                             try:
-                                self.pvdb[pv].post(
-                                    {
-                                        "value": arr,
-                                        "trigger_pulse_id": trigger_pulse_id,
-                                        "trigger_timestamp": trigger_timestamp,
-                                        "timestamp": time.time_ns(),
-                                        "pulse_id": pulse_id,
-                                        "event_name": "data-on-demand",
-                                        "event_code": 1,
-                                    }
+                                sds_pv = SdsPV(
+                                    pv_ts=time.time_ns(),
+                                    pv_value=arr,
+                                    pv_type="ad",
+                                    pv_name=pv,
+                                    start_event_pulse_id=pulse_id,
+                                    start_event_ts=time.time_ns(),
+                                    main_event_pulse_id=pulse_id,
+                                    main_event_ts=time.time_ns(),
+                                    acq_event_name="TestAcqEvent",
+                                    acq_event_code=0,
+                                    acq_event_delay=0,
+                                    beam_mode="TestMode",
+                                    beam_state="ON",
+                                    beam_present="YES",
+                                    beam_len=3.86,
+                                    beam_energy=2e9,
+                                    beam_dest="Target",
+                                    beam_curr=62.5,
+                                    sds_evt_code=1,
+                                    sds_ts=sds_event_timestamp,
+                                    sds_pulse_id=sds_event_pulse_id,
                                 )
+                                self.pvdb[pv].post(sds_pv)
                             except Exception as e:
                                 print("error received", e)
                                 pass
+                        # Wait to process the next pulse at the right frequency
+                        if i < int(self.n_pulses[0]) - 1:
+                            time.sleep(1 / self.freq[0])
+                        else:
+                            time.sleep(0.001)
                         pulse_id += 1
-                        time.sleep(0.01)
 
         print("Server stopped")
         queue_thread.join()
@@ -140,28 +154,28 @@ class MyServer(object):
 
 
 def run_server(n_pvs, n_elem, prefix):
-    mp_ctxt = get_context("fork")
+    mp_ctxt = get_context("spawn")
     N_PROC = cpu_count()
 
     mngr = mp_ctxt.Manager()
-    events = [(mngr.Lock(), mngr.Event()) for i in range(N_PROC)]
-    n_pulses = shared_memory.SharedMemory(create=True, size=sys.getsizeof(1))
-    n_pulses.buf[0] = 1
+    events = [mngr.Event() for i in range(N_PROC)]
+    n_pulses = shared_memory.ShareableList([1])
+    freq = shared_memory.ShareableList([14])
 
     servers = []
     for i in range(N_PROC):
-        servers.append(MyServer(*events[i], n_pulses))
+        servers.append(MyServer(events[i], n_pulses, freq))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
         handler=TriggerHandler(events), nt=NTScalar("?"), initial=False
     )
-    n_pulses_pv = SharedPV(
-        handler=NPulsesHandler(n_pulses), nt=NTScalar("i"), initial=1
-    )
+    n_pulses_pv = SharedPV(handler=ScalarHandler(n_pulses), nt=NTScalar("i"), initial=1)
+    freq_pv = SharedPV(handler=ScalarHandler(freq), nt=NTScalar("d"), initial=14.0)
 
     provider.add(prefix + "N_PULSES", n_pulses_pv)
     provider.add(prefix + "TRIG", trigger_pv)
+    provider.add(prefix + "FREQ", freq_pv)
 
     pvs = update_pvs(servers, n_pvs, n_elem, prefix)
 
@@ -189,9 +203,8 @@ def run_server(n_pvs, n_elem, prefix):
         server.start_server()
 
     # Set the event to load meaningful data from the start
-    for (lock, event) in events:
-        with lock:
-            event.set()
+    for event in events:
+        event.set()
 
     with Server(providers=[provider]):
         for server in servers:
@@ -217,8 +230,7 @@ def update_pvs(servers, n_pvs, n_elem, prefix):
         pvs.append(prefix + pv_name)
 
     for server in servers:
-        with server.lock:
-            server.event.set()
+        server.event.set()
 
     return pvs
 

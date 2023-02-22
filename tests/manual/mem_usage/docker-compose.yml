@@ -1,53 +1,39 @@
 version: '3'
 services:
   sds_indexer:
-    build: "."
     image: sds
-    container_name: sds_indexer
     ports:
       - "8000:8000"
-    expose:
-      - "8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
     command: uvicorn indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
 
-  sds_retriever:
-    build: "."
-    image: sds
-    container_name: sds_retriever
-    ports:
-      - "8001:8000"
-    environment:
-      ELASTIC_URL: "http://elasticsearch:9200"
-      STORAGE_PATH: /data
-    command: uvicorn retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
-    volumes:
-      - type: bind
-        source: ${STORAGE_PATH:?}
-        target: /data
-
   sds_collector:
+    image: sds_mem
     build: "."
-    image: sds
     container_name: sds_collector
     network_mode: "host"
     environment:
       INDEXER_URL: "http://127.0.0.1:8000"
-      COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
+      COLLECTOR_DEFINITIONS: "/app/config/collector.json"
       STORAGE_PATH: /data
       COLLECTOR_API_PORT: 8003
-    command: python -m collector.main
+      EVENTS_PER_FILE: ${EVENTS_PER_FILE:?}
+    command: psrecord --plot /data/mem.png --include-children --duration ${MEAS_TIME:?} `python -m collector.main`
     volumes:
-      - ./collectors.json:/app/config/collectors.json
+      - ./collector.json:/app/config/collector.json
       - type: bind
         source: ${STORAGE_PATH:?}
         target: /data
     network_mode: "host"
+  
+  test_ioc:
+    image: sds_test
+    command: python test_ioc/pva_server.py ${N_PVS:?} ${N_ELEM:?}
+    network_mode: "host"
 
   elasticsearch:
     image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.0"
-    container_name: elasticsearch
     ports:
       - "9200:9200"
     expose:

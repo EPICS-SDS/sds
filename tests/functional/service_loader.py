@@ -5,7 +5,7 @@ from typing import List, Optional
 import pytest_asyncio
 import uvicorn
 from collector.collector_manager import CollectorManager
-from collector.main import load_collectors
+from collector.main import load_collectors, wait_for_indexer
 from collector.config import settings
 from indexer import app as indexer_app
 from retriever import app as retriever_app
@@ -34,7 +34,13 @@ class UvicornTestServer(uvicorn.Server):
             port (int, optional): the port. Defaults to PORT.
         """
         self._startup_done = asyncio.Event()
-        super().__init__(config=uvicorn.Config(app, host=host, port=port))
+        super().__init__(
+            config=uvicorn.Config(
+                app,
+                host=host,
+                port=port,
+            )
+        )
 
     async def startup(self, sockets: Optional[List] = None) -> None:
         """Override uvicorn startup"""
@@ -75,14 +81,15 @@ async def retriever_service():
 async def collector_service():
     """Start server as test fixture and tear down after test"""
 
+    await wait_for_indexer()
     collectors = await load_collectors()
     print("Starting collectors...")
 
-    cm = CollectorManager(collectors)
-    cm.start()
+    cm = await CollectorManager.create(collectors)
+    await cm.start_all_collectors()
     await cm.wait_for_startup()
     yield
-    cm.close()
+    await cm.close()
     await cm.join()
 
 
@@ -109,15 +116,16 @@ class ConfigurableCollectorService:
             settings.collector_definitions = config.name
 
     async def start(self):
+        await wait_for_indexer()
         collectors = await load_collectors()
         print("Starting collectors...")
 
-        self.cm = CollectorManager(collectors)
-        self.cm.start()
+        self.cm = await CollectorManager.create(collectors)
+        await self.cm.start_all_collectors()
         await self.cm.wait_for_startup()
 
     async def stop(self):
-        self.cm.close()
+        await self.cm.close()
         await self.cm.join()
 
 

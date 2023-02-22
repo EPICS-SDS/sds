@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from common.files import AcqEvent, AcqInfo, BeamInfo
 from pydantic import BaseModel
 
 
@@ -12,7 +13,11 @@ class Event(BaseModel):
     pv_name: str
     value: Any
     timing_event_code: int
-    data_date: datetime
-    trigger_date: datetime
+    data_timestamp: datetime
+    sds_event_timestamp: datetime
     pulse_id: int
-    trigger_pulse_id: int
+    sds_event_pulse_id: int
+
+    acq_info: AcqInfo
+    acq_event: AcqEvent
+    beam_info: BeamInfo

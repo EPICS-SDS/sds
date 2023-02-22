@@ -49,6 +49,26 @@ class Integer(ESField):
         return validators.int_validator(v)
 
 
+class Long(ESField):
+    es_type = "long"
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, str) and isinstance(v, Iterable):
+            return list(map(validators.int_validator, v))
+        return validators.int_validator(v)
+
+
+class Double(ESField):
+    es_type = "double"
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, str) and isinstance(v, Iterable):
+            return list(map(validators.float_validator, v))
+        return validators.float_validator(v)
+
+
 class Text(ESField):
     es_type = "text"
 
