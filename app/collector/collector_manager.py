@@ -36,7 +36,7 @@ class CollectorManager:
         self,
         timeout: int,
     ):
-        self._context = Context("pva")
+        self._context = Context("pva", nt=False)
         self._timeout = timeout
         self.collectors: Dict[str, Collector] = dict()
         self.shutdown_event = asyncio.Event()

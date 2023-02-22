@@ -16,20 +16,20 @@ class EpicsEvent(Event):
         value: Value = values["value"]
         # value
         values.update(
-            value=value,
+            value=value.get('value').todict(),
             data_timestamp=datetime.fromtimestamp(
-                value.raw.timeStamp.secondsPastEpoch
-                + value.raw.timeStamp.nanoseconds * 1e-9
+                value.timeStamp.secondsPastEpoch
+                + value.timeStamp.nanoseconds * 1e-9
             ),
         )
 
         # pulse_id
-        pulse_id = value.raw.get("pulseId")
+        pulse_id = value.get("pulseId")
         if pulse_id is not None:
             values.update(pulse_id=pulse_id.value)
 
         # eventCode
-        sds_info = value.raw.get("sdsInfo")
+        sds_info = value.get("sdsInfo")
         if sds_info is not None:
             values.update(
                 sds_event_timestamp=datetime.fromtimestamp(
@@ -41,7 +41,7 @@ class EpicsEvent(Event):
             )
 
         # beamInfo
-        beam_info = value.raw.get("beamInfo")
+        beam_info = value.get("beamInfo")
         if beam_info is not None:
             values.update(
                 beam_info=BeamInfo(
@@ -55,7 +55,7 @@ class EpicsEvent(Event):
                 )
             )
         # acqInfo
-        acq_info = value.raw.get("acqInfo")
+        acq_info = value.get("acqInfo")
         if acq_info is not None:
             values.update(
                 acq_info=AcqInfo(
@@ -64,7 +64,7 @@ class EpicsEvent(Event):
                 )
             )
         # acqInfo
-        acq_event = value.raw.get("acqEvt")
+        acq_event = value.get("acqEvt")
         if acq_event is not None:
             values.update(
                 acq_event=AcqEvent(
