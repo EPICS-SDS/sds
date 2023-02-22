@@ -18,8 +18,8 @@ services:
       COLLECTOR_DEFINITIONS: "/app/config/collector.json"
       STORAGE_PATH: /data
       COLLECTOR_API_PORT: 8003
-      EVENTS_PER_FILE: ${EVENTS_PER_FILE:?}
-    command: psrecord --plot /data/mem.png --include-children --duration ${MEAS_TIME:?} `python -m collector.main`
+      EVENTS_PER_FILE: ${EVENTS_PER_FILE:-"1"}
+    command: psrecord --plot /data/mem.png --include-children --duration ${MEAS_TIME:-"100"} `python -m collector.main`
     volumes:
       - ./collector.json:/app/config/collector.json
       - type: bind
@@ -29,7 +29,7 @@ services:
   
   test_ioc:
     image: sds_test
-    command: python test_ioc/pva_server.py ${N_PVS:?} ${N_ELEM:?}
+    command: python test_ioc/pva_server.py ${N_PVS:-"10"} ${N_ELEM:-"10000"}
     network_mode: "host"
 
   elasticsearch:
