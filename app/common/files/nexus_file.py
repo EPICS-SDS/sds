@@ -97,7 +97,9 @@ class NexusFile:
                     pulse_attributes["beam_info.present"] = event.beam_info.present
                     pulse_attributes["beam_info.state"] = event.beam_info.state
 
-                self._parse_value(entry[sds_event_key][pulse_key], event.pv_name, event.value)
+                self._parse_value(
+                    entry[sds_event_key][pulse_key], event.pv_name, event.value
+                )
 
                 # Acq info and event metadata
                 acquisition_attributes = entry[sds_event_key][pulse_key][
@@ -120,13 +122,12 @@ class NexusFile:
             print(e)
 
     def _parse_value(self, parent, key, value):
-        if isinstance(value,dict):
+        if isinstance(value, dict):
             group = parent.create_group(name=key)
-            for k,v in value.items():
-                self._parse_value(group, k,v)
+            for k, v in value.items():
+                self._parse_value(group, k, v)
         else:
             parent[key] = value
-
 
     def write_from_datasets(self):
         """
