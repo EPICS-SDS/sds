@@ -135,7 +135,7 @@ class NexusFile:
         """
         try:
             print(repr(self), f"writing to '{self.path}'")
-            h5file = File(self.path, "w")
+            h5file = File(settings.storage_path / self.path, "w")
             entry = h5file.create_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
