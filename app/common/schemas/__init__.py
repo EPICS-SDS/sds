@@ -1,2 +1,2 @@
-from .collector import Collector, CollectorBase, CollectorCreate, CollectorList
+from .collector import Collector, CollectorBase, CollectorCreate
 from .dataset import Dataset, DatasetBase, DatasetCreate

@@ -19,11 +19,6 @@ async def load_collectors() -> List[CollectorDefinition]:
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
 
-    if not os.access(path, os.W_OK):
-        print(
-            "Collector definition file not writable. Any configuration change won't be saved."
-        )
-
     collectors = parse_file_as(List[CollectorDefinition], path)
     return collectors
 

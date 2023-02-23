@@ -1,4 +1,3 @@
-import json
 import os
 import zipfile
 from datetime import datetime
@@ -188,7 +187,7 @@ class TestDatasets:
         "mode": "TestMode",
         "state": "ON",
         "present": "YES",
-        "len": 2.84e-3,
+        "len": 2.86e-3,
         "energy": 2e9,
         "dest": "Target",
         "curr": 62.5e-3,

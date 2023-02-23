@@ -28,6 +28,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+COLLECTOR_NOT_FOUND = "Collector not found"
+
 # Settings
 settings_router = APIRouter()
 
@@ -49,7 +52,7 @@ async def get_collector_with_name(*, name: str):
     collector = collector_settings.collectors.get(name, None)
     if collector is not None:
         return collector
-    raise HTTPException(status_code=404, detail="Collector not found")
+    raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
 
 @settings_router.put(
@@ -149,7 +152,7 @@ async def get_status_with_name(*, name: str):
     collector = collector_status.collector_status_dict.get(name, None)
     if collector is not None:
         return collector
-    raise HTTPException(status_code=404, detail="Collector not found")
+    raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
 
 @status_router.put("/collectors/start")
@@ -180,7 +183,7 @@ async def start_collector(*, name: str):
     try:
         await cm.start_collector(name)
     except CollectorNotFoundException:
-        raise HTTPException(status_code=404, detail="Collector not found")
+        raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
 
 @status_router.put("/collector/{name}/stop")
@@ -194,7 +197,7 @@ async def stop_collector(*, name: str):
     try:
         await cm.stop_collector(name)
     except CollectorNotFoundException:
-        raise HTTPException(status_code=404, detail="Collector not found")
+        raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
 
 app.include_router(status_router, prefix="/status", tags=["status"])

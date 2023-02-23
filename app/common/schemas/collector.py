@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Set
+from typing import Set
 
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,3 @@ class CollectorInDBBase(CollectorBase):
 
 class Collector(CollectorInDBBase):
     pass
-
-
-class CollectorList(BaseModel):
-    __root__: List[CollectorBase]

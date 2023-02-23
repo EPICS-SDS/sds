@@ -1,4 +1,4 @@
-from typing import Set
+from typing import List, Set
 
 from pydantic import BaseModel
 
@@ -12,3 +12,7 @@ class CollectorDefinition(BaseModel):
     pvs: Set[str]
     event_name: str
     event_code: int
+
+
+class CollectorList(BaseModel):
+    __root__: List[CollectorDefinition]

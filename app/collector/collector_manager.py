@@ -1,5 +1,4 @@
 import asyncio
-import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
@@ -14,8 +13,8 @@ from collector.collector import Collector
 from collector.config import settings
 from collector.epics_event import EpicsEvent
 from common.files import Event
-from common.files import CollectorDefinition
-from common.schemas import CollectorBase, CollectorList
+from common.files import CollectorDefinition, CollectorList
+from common.schemas import CollectorBase
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
 
@@ -48,6 +47,8 @@ class CollectorManager:
         )
 
         collector_settings.collectors = self.collectors
+        collector_status.collector_status_dict.clear()
+        collector_status.pv_status_dict.clear()
 
     @classmethod
     async def create(
@@ -83,26 +84,25 @@ class CollectorManager:
     async def save_configuration(self):
         path = settings.collector_definitions
 
-        if not os.access(path, os.W_OK):
+        try:
+            async with aiofiles.open(path, mode="w") as json_file:
+                cl = CollectorList.parse_obj(
+                    [
+                        CollectorDefinition.parse_obj(coll)
+                        for coll in self.collectors.values()
+                    ]
+                )
+                await json_file.write(
+                    cl.json(
+                        exclude={
+                            "id",
+                        },
+                        indent=4,
+                    )
+                )
+        except PermissionError:
             print(
                 "Collector definition file not writable. Configuration changes could not be saved."
-            )
-            return
-
-        async with aiofiles.open(path, mode="w") as json_file:
-            cl = CollectorList.parse_obj(
-                [
-                    CollectorDefinition.parse_obj(coll)
-                    for coll in self.collectors.values()
-                ]
-            )
-            await json_file.write(
-                cl.json(
-                    exclude={
-                        "id",
-                    },
-                    indent=4,
-                )
             )
 
     async def add_collector(self, collector_definition: CollectorDefinition):

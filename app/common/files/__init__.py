@@ -1,5 +1,5 @@
 from .sds_pv_metadata import AcqEvent, AcqInfo, BeamInfo
-from .collector import CollectorDefinition
+from .collector import CollectorDefinition, CollectorList
 from .config import settings
 from .dataset import Dataset
 from .event import Event
