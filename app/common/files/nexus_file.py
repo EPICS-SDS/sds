@@ -127,7 +127,12 @@ class NexusFile:
             for k, v in value.items():
                 self._parse_value(group, k, v)
         else:
-            parent[key] = value
+            if settings.compression:
+                parent.create_dataset(
+                    key, data=value, compression="gzip", compression_opts=9
+                )
+            else:
+                parent[key] = value
 
     def write_from_datasets(self):
         """
