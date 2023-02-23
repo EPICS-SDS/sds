@@ -33,7 +33,7 @@ class TestCollector:
         )
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
         ctxt = ThContext()
-        ctxt.get("SDS:TEST:TRIG")
+        ctxt.get("SDS:TEST:TRIG", timeout=15)
 
         pv_len = 100
         n_pvs = 10

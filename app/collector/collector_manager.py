@@ -38,6 +38,7 @@ class CollectorManager:
     ):
         self._context = Context("pva", nt=False)
         self._timeout = timeout
+        self._tasks: Dict[str, asyncio.Task] = dict()
         self.collectors: Dict[str, Collector] = dict()
         self.shutdown_event = asyncio.Event()
         self.collector_lock = asyncio.Lock()
@@ -155,7 +156,7 @@ class CollectorManager:
             if collector in self.running_collectors:
                 return
 
-            new_pvs = [pv for pv in collector.pvs if pv not in self._tasks.keys()]
+            new_pvs = {pv for pv in collector.pvs if pv not in self._tasks.keys()}
 
             # Subscribe to each new PV and store the task reference
             self._tasks.update(
@@ -201,11 +202,19 @@ class CollectorManager:
         """Start all the collectors in the ColectorManager"""
         async with self.collector_lock:
             # Collect PVs into a set to remove duplicates
-            pvs = {pv for collector in self.collectors.values() for pv in collector.pvs}
-            # Subscribe to each PV and store the task reference
-            self._tasks: Dict[str, asyncio.Task] = {
-                pv: asyncio.create_task(self._subscribe(pv)) for pv in pvs
+            new_pvs = {
+                pv
+                for collector in self.collectors.values()
+                for pv in collector.pvs
+                if pv not in self._tasks.keys()
             }
+
+            # Subscribe to each new PV and store the task reference
+            self._tasks.update(
+                {pv: asyncio.create_task(self._subscribe(pv)) for pv in new_pvs}
+            )
+
+            # Update collector status
             for collector_name in self.collectors.keys():
                 self.running_collectors.append(collector_name)
                 collector_status.set_collector_running(collector_name, True)
@@ -213,10 +222,11 @@ class CollectorManager:
     async def stop_all_collectors(self):
         """Stop all the collectors in the ColectorManager"""
         async with self.collector_lock:
-            for task in self._tasks.values():
-                task.cancel()
-            await asyncio.wait(self._tasks.values())
-            self._tasks.clear()
+            if len(self._tasks) > 0:
+                for task in self._tasks.values():
+                    task.cancel()
+                await asyncio.wait(self._tasks.values())
+                self._tasks.clear()
 
             for collector_name in self.collectors.keys():
                 collector_status.set_collector_running(collector_name, False)
