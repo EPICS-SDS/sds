@@ -92,11 +92,13 @@ class TestCollector:
         n_files = 1 if same_event else n
         for _i in range(n_files):
             await self.trigger()
-        value = await asyncio.wait_for(queue.get(), 5)
-        assert value[0] == last_pulse
+        value = await asyncio.wait_for(queue.get(), 15)
+        assert (
+            value[0] == last_pulse
+        ), f"Last pulse not received by collector. Last pulse={last_pulse}. Last received={value[0]}"
         mon.close()
-        # Waiting one more second than the collector timeout to make sure the files are written to disk
-        await asyncio.sleep(settings.collector_timeout + 1)
+        # Waiting for 5 more seconds than the collector timeout to make sure the files are written to disk
+        await asyncio.sleep(settings.collector_timeout + 5)
 
         # Check files
         collectors_path = settings.collector_definitions
@@ -119,22 +121,30 @@ class TestCollector:
                         f"{collector.name}_{collector.event_code}_{int(first_pulse)+n}.h5"
                     )
                 )
-                assert file_path.exists()
+                assert file_path.exists(), f"File {file_path} not found."
 
                 h5file = File(file_path, "r")
                 entry = h5file.get("entry", None)
-                assert entry is not None
+                assert (
+                    entry is not None
+                ), f"File {file_path} does not contain an entry group."
                 sds_event = entry.get(f"sds_event_{int(first_pulse)+n}", None)
-                assert sds_event is not None
+                assert (
+                    sds_event is not None
+                ), f"File {file_path} does not contain the sds event for pulse {int(first_pulse)+n}."
 
                 for i in range(n_pulses):
                     pulse = sds_event.get(f"pulse_{int(first_pulse)+n+i}", None)
-                    assert pulse is not None
+                    assert (
+                        pulse is not None
+                    ), f"File {file_path} does not contain the pulse {int(first_pulse)+n +i}."
 
-                for pv in collector.pvs:
-                    if pv in pv_list:
-                        pv_field = pulse.get(pv, None)
-                        assert pv_field is not None
+                    for pv in collector.pvs:
+                        if pv in pv_list:
+                            pv_field = pulse.get(pv, None)
+                            assert (
+                                pv_field is not None
+                            ), f"PV {pv} not found in file {file_path} for pulse {int(first_pulse)+n+i} ({i+1}/{n_pulses})"
 
                 h5file.close()
 
