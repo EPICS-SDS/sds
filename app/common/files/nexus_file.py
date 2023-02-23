@@ -141,7 +141,7 @@ class NexusFile:
             entry.attrs["collector_name"] = self.collector_name
 
             for dataset in self.datasets.values():
-                origin = File(dataset.path, "r")
+                origin = File(settings.storage_path / dataset.path, "r")
                 data = origin["entry"][f"sds_event_{dataset.sds_event_pulse_id}"]
 
                 h5file.copy(data, entry)
