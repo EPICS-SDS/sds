@@ -66,6 +66,8 @@ event = Event(
     beam_info=beam_info,
 )
 
+NON_EXISTING = "non existing"
+
 
 class TestCollectorApi:
     @pytest.fixture(autouse=True)
@@ -94,6 +96,29 @@ class TestCollectorApi:
         await cm.join()
 
     @pytest.mark.asyncio
+    async def test_add_collector_twice(self):
+        cm = await CollectorManager.create([])
+
+        await api.add_collector(
+            collector_in=CollectorDefinition.parse_obj(collector), start_collector=False
+        )
+
+        assert collector.name in cm.collectors.keys()
+
+        try:
+            await api.add_collector(
+                collector_in=CollectorDefinition.parse_obj(collector),
+                start_collector=False,
+            )
+        except HTTPException:
+            assert True
+        else:
+            assert False
+
+        await cm.close()
+        await cm.join()
+
+    @pytest.mark.asyncio
     async def test_remove_collector(self):
         cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
         assert collector.name in cm.collectors.keys()
@@ -115,6 +140,19 @@ class TestCollectorApi:
         await api.remove_collector(name=collector.name, response=response)
 
         assert response.status_code == 404
+
+        await cm.close()
+        await cm.join()
+
+    @pytest.mark.asyncio
+    async def test_get_collectors(self):
+        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        assert collector.name in cm.collectors.keys()
+
+        response = await api.get_collectors()
+
+        assert isinstance(response, list)
+        assert isinstance(response[0], CollectorBase)
 
         await cm.close()
         await cm.join()
@@ -190,7 +228,8 @@ class TestCollectorApi:
         response = await api.get_status()
 
         assert isinstance(response[0], CollectorBasicStatus)
-        assert response[0].name == collector.name
+        assert isinstance(response, list)
+        assert response[0].name == collector.name, response
 
         await cm.close()
         await cm.join()
@@ -202,6 +241,7 @@ class TestCollectorApi:
         response = await api.get_full_status()
 
         assert isinstance(response[0], CollectorFullStatus)
+        assert isinstance(response, list)
         assert response[0].name == collector.name
 
         await cm.close()
@@ -224,7 +264,7 @@ class TestCollectorApi:
         cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
 
         try:
-            await api.get_status_with_name(name="non existing")
+            await api.get_status_with_name(name=NON_EXISTING)
         except HTTPException:
             assert True
         else:
@@ -239,6 +279,25 @@ class TestCollectorApi:
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
+        await api.start_all_collectors()
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert response.running
+
+        await cm.close()
+        await cm.join()
+
+    @pytest.mark.asyncio
+    async def test_start_all_collectors_twice(self):
+        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert not response.running
+        await api.start_all_collectors()
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert response.running
+
         await api.start_all_collectors()
 
         response = await api.get_status_with_name(name=collector.name)
@@ -264,11 +323,49 @@ class TestCollectorApi:
         await cm.join()
 
     @pytest.mark.asyncio
+    async def test_stop_all_collectors_twice(self):
+        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+
+        await api.start_all_collectors()
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert response.running
+        await api.stop_all_collectors()
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert not response.running
+        await api.stop_all_collectors()
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert not response.running
+
+        await cm.close()
+        await cm.join()
+
+    @pytest.mark.asyncio
     async def test_start_collector(self):
         cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
+        await api.start_collector(name=collector.name)
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert response.running
+
+        await cm.close()
+        await cm.join()
+
+    @pytest.mark.asyncio
+    async def test_start_collector_twice(self):
+        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert not response.running
+        await api.start_collector(name=collector.name)
+
+        response = await api.get_status_with_name(name=collector.name)
+        assert response.running
         await api.start_collector(name=collector.name)
 
         response = await api.get_status_with_name(name=collector.name)
@@ -298,7 +395,7 @@ class TestCollectorApi:
         cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
 
         try:
-            await api.start_collector(name="non existing")
+            await api.start_collector(name=NON_EXISTING)
         except HTTPException:
             assert True
         else:
@@ -312,7 +409,7 @@ class TestCollectorApi:
         cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
 
         try:
-            await api.stop_collector(name="non existing")
+            await api.stop_collector(name=NON_EXISTING)
         except HTTPException:
             assert True
         else:

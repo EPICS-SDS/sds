@@ -40,12 +40,7 @@ class PvStatus:
         self.event_timestamps: deque[datetime] = deque(maxlen=5)
         self.pv_status = PvStatusSchema(name=name)
 
-    @property
-    def last_event(self):
-        return self.pv_status.last_event
-
-    @last_event.setter
-    def last_event(self, last_event: datetime):
+    def set_last_event(self, last_event: datetime):
         self.pv_status.last_event = last_event
         if last_event is not None:
             self.event_timestamps.append(last_event)
@@ -94,7 +89,7 @@ class StatusManager:
         return self.pv_status_dict[pv].pv_status
 
     def set_update_event(self, pv: str):
-        self.pv_status_dict[pv].last_event = datetime.utcnow()
+        self.pv_status_dict[pv].set_last_event(datetime.utcnow())
 
     def set_collector_running(self, collector_name: str, running: bool):
         collector = self.collector_status_dict.get(collector_name)

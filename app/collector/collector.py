@@ -41,9 +41,6 @@ class Collector(CollectorBase):
             if value == f:
                 del self._files[key]
 
-    def get_queue(self, id: int):
-        return self._queues.get(id)
-
     def create_queue(self, id: int):
         queue = Queue()
         self._queues[id] = queue
