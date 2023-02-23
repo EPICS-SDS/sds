@@ -115,7 +115,7 @@ class NTScalarArraySDS(NTScalar):
 
     def wrap(self, sds_pv: SdsPV):
         if type(sds_pv) is SdsPV:
-            wrapped_value = super().wrap(sds_pv.pv_value[:2])
+            wrapped_value = super().wrap(sds_pv.pv_value)
 
             # Copy timestamp from PV
             pv_timestamp = timeStamp()
