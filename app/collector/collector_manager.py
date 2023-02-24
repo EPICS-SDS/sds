@@ -39,6 +39,7 @@ class CollectorManager:
         self._timeout = timeout
         self._tasks: Dict[str, asyncio.Task] = dict()
         self.collectors: Dict[str, Collector] = dict()
+        self._timers: Dict[str, asyncio.Task] = dict()
         self.shutdown_event = asyncio.Event()
         self.collector_lock = asyncio.Lock()
         self.running_collectors: List[str] = []
@@ -146,7 +147,7 @@ class CollectorManager:
         self.collectors.pop(collector_name)
         collector_status.remove_collector(collector_name)
 
-    async def start_collector(self, name: str):
+    async def start_collector(self, name: str, timer: float = 0):
         async with self.collector_lock:
             collector = self.collectors.get(name)
             if collector is None:
@@ -155,6 +156,13 @@ class CollectorManager:
             # If collector is running, do nothing
             if name in self.running_collectors:
                 return
+
+            # Clear any previous expired timer
+            try:
+                await self._timers[name]
+                self._timers.pop(name)
+            except KeyError:
+                pass
 
             new_pvs = {pv for pv in collector.pvs if pv not in self._tasks.keys()}
 
@@ -166,41 +174,74 @@ class CollectorManager:
             self.running_collectors.append(name)
             collector_status.set_collector_running(name, True)
 
+            if timer > 0:
+                timer_task = asyncio.create_task(
+                    self._stop_collector_after_timer(name=name, timer=timer)
+                )
+
+                self._timers.update({name: timer_task})
+
+    async def _stop_collector_after_timer(self, name: str, timer: float):
+        await asyncio.sleep(timer)
+        async with self.collector_lock:
+            await self._stop_collector(name)
+
     async def stop_collector(self, name: str):
         async with self.collector_lock:
-            collector = self.collectors.get(name)
-            if collector is None:
-                raise CollectorNotFoundException()
-
+            # Clear any running timer
             try:
-                self.running_collectors.remove(name)
-            except ValueError:
-                # If collector is not running, do nothing
-                return
+                self._timers[name].cancel()
+                try:
+                    await self._timers[name]
+                except asyncio.CancelledError:
+                    pass
+                self._timers.pop(name)
+            except KeyError:
+                pass
 
-            pvs_to_keep = {
-                pv
-                for (collector_name, collector) in self.collectors.items()
-                if collector_name in self.running_collectors
-                for pv in collector.pvs
-            }
+            await self._stop_collector(name)
 
-            pvs_to_remove = [pv for pv in collector.pvs if pv not in pvs_to_keep]
+    async def _stop_collector(self, name: str):
+        collector = self.collectors.get(name)
+        if collector is None:
+            raise CollectorNotFoundException()
 
-            # Subscribe to each new PV and store the task reference
-            canceled_tasks = []
-            for pv in pvs_to_remove:
-                task = self._tasks.pop(pv)
-                task.cancel()
-                canceled_tasks.append(task)
+        try:
+            self.running_collectors.remove(name)
+        except ValueError:
+            # If collector is not running, do nothing
+            return
 
-            await asyncio.wait(canceled_tasks)
+        pvs_to_keep = {
+            pv
+            for (collector_name, collector) in self.collectors.items()
+            if collector_name in self.running_collectors
+            for pv in collector.pvs
+        }
 
-            collector_status.set_collector_running(name, False)
+        pvs_to_remove = [pv for pv in collector.pvs if pv not in pvs_to_keep]
+
+        # Subscribe to each new PV and store the task reference
+        canceled_tasks = []
+        for pv in pvs_to_remove:
+            task = self._tasks.pop(pv)
+            task.cancel()
+            canceled_tasks.append(task)
+
+        await asyncio.wait(canceled_tasks)
+
+        collector_status.set_collector_running(name, False)
 
     async def start_all_collectors(self):
         """Start all the collectors in the ColectorManager"""
         async with self.collector_lock:
+            # Clear any existing timer (those collectors will continue to run)
+            if len(self._timers) > 0:
+                for timer_task in self._timers.values():
+                    timer_task.cancel()
+                await asyncio.wait(self._timers.values())
+                self._timers.clear()
+
             # Collect PVs into a set to remove duplicates
             new_pvs = {
                 pv
@@ -215,6 +256,7 @@ class CollectorManager:
             )
 
             # Update collector status
+            self.running_collectors.clear()
             for collector_name in self.collectors.keys():
                 self.running_collectors.append(collector_name)
                 collector_status.set_collector_running(collector_name, True)
@@ -222,6 +264,13 @@ class CollectorManager:
     async def stop_all_collectors(self):
         """Stop all the collectors in the ColectorManager"""
         async with self.collector_lock:
+            # Clear any existing timer
+            if len(self._timers) > 0:
+                for timer_task in self._timers.values():
+                    timer_task.cancel()
+                await asyncio.wait(self._timers.values())
+                self._timers.clear()
+
             if len(self._tasks) > 0:
                 for task in self._tasks.values():
                     task.cancel()

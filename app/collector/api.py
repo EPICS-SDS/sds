@@ -174,14 +174,15 @@ async def stop_all_collectors():
 
 
 @status_router.put("/collector/{name}/start")
-async def start_collector(*, name: str):
+async def start_collector(*, name: str, timer: float = 0):
     """
     Start a collector from the ones loaded in the service by specifying its name.
+    If the optional parameter `timer` is provided, the collector will stop after that time.
     Returns a 404 error if the collector is not loaded.
     """
     cm = CollectorManager.get_instance()
     try:
-        await cm.start_collector(name)
+        await cm.start_collector(name, timer)
     except CollectorNotFoundException:
         raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
