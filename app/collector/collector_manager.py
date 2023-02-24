@@ -153,7 +153,7 @@ class CollectorManager:
                 raise CollectorNotFoundException()
 
             # If collector is running, do nothing
-            if collector in self.running_collectors:
+            if name in self.running_collectors:
                 return
 
             new_pvs = {pv for pv in collector.pvs if pv not in self._tasks.keys()}
