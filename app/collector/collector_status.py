@@ -2,6 +2,7 @@ from collections import deque
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from collector.config import settings
 from common.schemas import CollectorBase
 from pydantic import BaseModel
 
@@ -32,12 +33,14 @@ class CollectorFullStatus(CollectorBasicStatus):
 
 
 class CollectorStatus(CollectorFullStatus):
-    collection_time_queue: deque[float] = deque(maxlen=5)
+    collection_time_queue: deque[float] = deque(maxlen=settings.status_queue_length)
 
 
 class PvStatus:
     def __init__(self, name: str):
-        self.event_timestamps: deque[datetime] = deque(maxlen=5)
+        self.event_timestamps: deque[datetime] = deque(
+            maxlen=settings.status_queue_length
+        )
         self.pv_status = PvStatusSchema(name=name)
 
     def set_last_event(self, last_event: datetime):
