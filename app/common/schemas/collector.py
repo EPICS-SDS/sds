@@ -4,11 +4,14 @@ from typing import Set
 from pydantic import BaseModel, Field
 
 
-class CollectorBase(BaseModel):
+class CollectorDefinition(BaseModel):
     name: str
     event_name: str
     event_code: int
     pvs: Set[str]
+
+
+class CollectorBase(CollectorDefinition):
     host: str
 
 

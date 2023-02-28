@@ -77,7 +77,7 @@ async def save_collectors_definition():
     status_code=status.HTTP_201_CREATED,
 )
 async def add_collector(
-    *, start_collector: bool = True, collector_in: schemas.CollectorBase
+    *, start_collector: bool = True, collector_in: schemas.CollectorDefinition
 ):
     """
     Load a collector to the service. Optionally, select if the collector should be started or not after adding it.
