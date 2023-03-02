@@ -1,6 +1,8 @@
 import asyncio
 from typing import List
 
+from pydantic import BaseModel
+
 from collector import collector_settings, collector_status
 from collector.collector_manager import CollectorManager, CollectorNotFoundException
 from collector.collector_status import CollectorBasicStatus, CollectorFullStatus
@@ -35,7 +37,33 @@ COLLECTOR_NOT_FOUND = "Collector not found"
 settings_router = APIRouter()
 
 
-@settings_router.get("", response_model=List[schemas.CollectorBase])
+class CollectorSettingsSchema(BaseModel):
+    epics_addr_list: str
+    collector_timeout: int
+    events_per_file: int
+    autostart_collectors: bool
+    status_queue_length: int
+
+
+@settings_router.get("", response_model=CollectorSettingsSchema)
+async def get_settings():
+    """
+    Get the settings of this collector services instance.
+    """
+
+    cm = CollectorManager.get_instance()
+    epics_settings = cm._context.conf()
+
+    return CollectorSettingsSchema(
+        epics_addr_list=epics_settings["EPICS_PVA_ADDR_LIST"],
+        collector_timeout=settings.collector_timeout,
+        events_per_file=settings.events_per_file,
+        autostart_collectors=settings.autostart_collectors,
+        status_queue_length=settings.status_queue_length,
+    )
+
+
+@settings_router.get("/collectors", response_model=List[schemas.CollectorBase])
 async def get_collectors():
     """
     Get the collectors configuration currently loaded.
@@ -43,7 +71,7 @@ async def get_collectors():
     return list(collector_settings.collectors.values())
 
 
-@settings_router.get("/{name}", response_model=schemas.CollectorBase)
+@settings_router.get("/collectors/{name}", response_model=schemas.CollectorBase)
 async def get_collector_with_name(*, name: str):
     """
     Get the settings for a given collector.

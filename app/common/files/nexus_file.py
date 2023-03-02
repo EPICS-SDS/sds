@@ -1,4 +1,4 @@
-from datetime import datetime
+import os.path
 from pathlib import Path
 from typing import Dict, List
 
@@ -159,6 +159,9 @@ class NexusFile:
 
     def __repr__(self):
         return f"Dataset({self.file_name})"
+
+    def getsize(self) -> float:
+        return os.path.getsize(settings.storage_path / self.path)
 
 
 def write_file(nexus_file: NexusFile):

@@ -3,7 +3,22 @@ from contextlib import asynccontextmanager
 
 from collector import collector_status
 from collector.collector_status import PvStatus
+from p4p import Type
 from p4p.client.asyncio import Context, Disconnected
+from numpy import array
+
+
+def calc_size(v, t):
+    """
+    Calculate the size of a p4p.Value object. Enums and variants are not considered.
+    """
+    data_size = 0
+    if isinstance(t, Type):
+        for elem in v:
+            data_size += calc_size(v[elem], t[elem])
+    else:
+        data_size = array(v).nbytes
+    return data_size
 
 
 class AsyncSubscription:
@@ -63,6 +78,9 @@ class AsyncSubscription:
             raise value
         else:
             collector_status.set_update_event(self._pv)
+            collector_status.set_event_size(
+                self._pv, calc_size(value.todict("value"), value.type()["value"])
+            )
             self.queue.put_nowait(value)
 
     @asynccontextmanager
