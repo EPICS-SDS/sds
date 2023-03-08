@@ -228,7 +228,8 @@ class CollectorManager:
             task.cancel()
             canceled_tasks.append(task)
 
-        await asyncio.wait(canceled_tasks)
+        if canceled_tasks != []:
+            await asyncio.wait(canceled_tasks)
 
         collector_status.set_collector_running(name, False)
 
