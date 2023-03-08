@@ -127,6 +127,42 @@ async def add_collector(
     return collector
 
 
+@settings_router.post(
+    "/collectors",
+    response_model=List[schemas.CollectorBase],
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_collectors(
+    *,
+    start_collector: bool = True,
+    collectors_in: List[schemas.CollectorDefinition],
+    response: Response
+):
+    """
+    Load several collectors to the service. Optionally, select if the collectors should be started or not after adding it.
+    Returns a 206 status if a collector with the same name is already loaded.
+    """
+    cm = CollectorManager.get_instance()
+    errors = []
+    collectors = []
+    for collector_in in collectors_in:
+        if collector_in.name in cm.collectors.keys():
+            errors.append(collector_in.name)
+            continue
+        collector = await cm.add_collector(collector_in)
+        collectors.append(collector)
+        if start_collector:
+            await cm.start_collector(collector_in.name)
+
+    if settings.autosave_collectors_definition:
+        await cm.save_configuration()
+
+    if errors != []:
+        response.status_code = status.HTTP_206_PARTIAL_CONTENT
+
+    return collectors
+
+
 @settings_router.delete(
     "/collector/{name}",
     status_code=status.HTTP_200_OK,
