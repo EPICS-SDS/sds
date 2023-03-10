@@ -9,10 +9,10 @@ import aiohttp
 import pytest
 import pytest_asyncio
 import requests
-from common import schemas
-from common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event, NexusFile
 from pydantic import ValidationError
-from retriever.config import settings
+from sds.common import schemas
+from sds.common.files import AcqEvent, AcqInfo, BeamInfo, Event, NexusFile
+from sds.retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
     RETRIEVER_PORT,

@@ -4,11 +4,11 @@ from typing import List, Optional
 
 import pytest_asyncio
 import uvicorn
-from collector.collector_manager import CollectorManager
-from collector.main import load_collectors, wait_for_indexer
-from collector.config import settings
-from indexer import app as indexer_app
-from retriever import app as retriever_app
+from sds.collector.collector_manager import CollectorManager
+from sds.collector.main import load_collectors, wait_for_indexer
+from sds.collector.config import settings
+from sds.indexer import app as indexer_app
+from sds.retriever import app as retriever_app
 
 INDEXER_PORT = 8000
 RETRIEVER_PORT = 8001

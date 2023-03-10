@@ -1,8 +1,8 @@
 from datetime import datetime
 
 import pytest
-from collector.collector import Collector
-from common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event
+from sds.collector.collector import Collector
+from sds.common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event
 
 collector = Collector(
     name="test_collector",

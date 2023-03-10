@@ -1,24 +1,16 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import pytest
-from collector import api
-from collector.collector import Collector
-from collector.collector_manager import CollectorManager
-from collector.collector_status import CollectorBasicStatus, CollectorFullStatus
-from collector.config import settings
-from common.files import (
-    AcqEvent,
-    AcqInfo,
-    BeamInfo,
-    CollectorDefinition,
-    Dataset,
-    Event,
-)
-from common.schemas import CollectorBase
 from fastapi import HTTPException, Response
+from sds.collector import api
+from sds.collector.collector import Collector
+from sds.collector.collector_manager import CollectorManager
+from sds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
+from sds.collector.config import settings
+from sds.common.files import AcqEvent, AcqInfo, BeamInfo, CollectorDefinition, Event
+from sds.common.schemas import CollectorBase
 from tests.functional.service_loader import indexer_service
 
 collector = Collector(

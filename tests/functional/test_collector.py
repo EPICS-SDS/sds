@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from collector.collector_manager import CollectorManager
-from collector.config import settings
-from collector.main import load_collectors, main, wait_for_indexer
-from common.files.config import settings as file_settings
-from common.files import CollectorDefinition
+from sds.collector.collector_manager import CollectorManager
+from sds.collector.config import settings
+from sds.collector.main import load_collectors, main, wait_for_indexer
+from sds.common.files.config import settings as file_settings
+from sds.common.files import CollectorDefinition
 
 from h5py import File
 from p4p.client.asyncio import Context, timesout

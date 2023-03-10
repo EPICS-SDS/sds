@@ -2,9 +2,8 @@ import asyncio
 from asyncio import CancelledError
 
 import pytest
-from aiohttp.client_exceptions import ClientConnectorError
-from collector.config import settings
-from collector.main import load_collectors, main, wait_for_indexer
+from sds.collector.config import settings
+from sds.collector.main import load_collectors, main, wait_for_indexer
 
 
 class TestCollectorMain:

@@ -10,7 +10,7 @@ services:
       - "8000"
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
-    command: uvicorn indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
+    command: uvicorn sds.indexer:app --host 0.0.0.0 --port ${INDEXER_PORT:-"8000"}
 
   sds_retriever:
     build: "."
@@ -21,7 +21,7 @@ services:
     environment:
       ELASTIC_URL: "http://elasticsearch:9200"
       STORAGE_PATH: /data
-    command: uvicorn retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
+    command: uvicorn sds.retriever:app --host 0.0.0.0 --port ${RETRIEVER_PORT:-"8000"}
     volumes:
       - type: bind
         source: ${STORAGE_PATH:?}
@@ -37,7 +37,7 @@ services:
       COLLECTOR_DEFINITIONS: "/app/config/collectors.json"
       STORAGE_PATH: /data
       COLLECTOR_API_PORT: 8003
-    command: python -m collector.main
+    command: python -m sds.collector.main
     volumes:
       - ./collectors.json:/app/config/collectors.json
       - type: bind

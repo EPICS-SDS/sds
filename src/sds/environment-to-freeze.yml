@@ -1,0 +1,20 @@
+name: sds
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - aiofiles
+  - aiohttp
+  - elasticsearch
+  - fastapi   
+  - nexusformat
+  - pip
+  - python=3.10
+  - requests
+  - uvicorn
+# GCC can be removed once binaries of p4p are released for aarch64
+  - gcc
+  - gxx
+  - pip:
+    - --index-url https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+    - p4p==4.1.2
