@@ -2,6 +2,7 @@
 include:
   - remote: "https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/PreCommit.gitlab-ci.yml"
   - remote: "https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/SonarScanner.gitlab-ci.yml"
+  - remote: "https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/ArtifactoryPyPI.gitlab-ci.yml"
 
 variables:
   CONTAINER_TEST_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"

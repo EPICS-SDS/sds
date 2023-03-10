@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SDS"
+authors = [
+    {name = "Juan F. Esteban Müller", email = "JuanF.EstebanMuller@ess.eu"},
+]
+description = "Synchronous Data Service"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-3.0-or-later"}
+dependencies = [
+        "aiofiles",
+        "aiohttp",
+        "elasticsearch",
+        "fastapi",
+        "uvicorn",
+         "p4p == 4.1.2",
+         "numpy",
+         "h5py",
+         "datetime",
+    "requests",
+]
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+write_to = "src/sds/_version.py"
