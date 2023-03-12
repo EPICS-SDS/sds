@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools_scm[toml]"]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -26,4 +26,4 @@ dependencies = [
 dynamic = ["version"]
 
 [tool.setuptools_scm]
-write_to = "src/sds/_version.py"
+write_to = "src/_version.py"
