@@ -8,3 +8,8 @@ esdata
 *.lock
 junit.xml
 profile
+build
+dist
+**/_version.py
+*.egg-info
+.eggs
