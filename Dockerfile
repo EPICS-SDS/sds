@@ -3,7 +3,7 @@ FROM continuumio/miniconda3:22.11.1
 RUN groupadd -r -g 1000 csi \
   && useradd --no-log-init -r -g csi -u 1000 csi
 
-COPY src/sds/environment.yml /app/environment.yml
+COPY src/environment.yml /app/environment.yml
 
 RUN conda update -n base conda \
   && conda config --system --set channel_alias https://artifactory.esss.lu.se/artifactory/api/conda \

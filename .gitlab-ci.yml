@@ -48,8 +48,8 @@ test:
     - python -m pytest --ignore tests/performance --junitxml=junit.xml --cov-config tests/.coveragerc --cov-report xml --cov '.'
   artifacts:
     paths:
-      - app/junit.xml
-      - app/coverage.xml
+      - src/junit.xml
+      - src/coverage.xml
     reports:
-      junit: app/junit.xml
+      junit: src/junit.xml
     expire_in: 1 hour
