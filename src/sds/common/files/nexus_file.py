@@ -127,7 +127,7 @@ class NexusFile:
             for k, v in value.items():
                 self._parse_value(group, k, v)
         else:
-            if settings.compression:
+            if settings.compression and hasattr(value, "__len__"):
                 parent.create_dataset(
                     key, data=value, compression="gzip", compression_opts=9
                 )
