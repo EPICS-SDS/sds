@@ -77,6 +77,9 @@ class AsyncSubscription:
         elif isinstance(value, Exception):
             raise value
         else:
+            if "value" not in value.keys():
+                print(f"PV '{self._pv}' has no value field, discarding event.")
+                return
             collector_status.set_update_event(self._pv)
             collector_status.set_event_size(
                 self._pv, calc_size(value.todict("value"), value.type()["value"])
