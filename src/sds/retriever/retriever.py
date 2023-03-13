@@ -9,8 +9,10 @@ from typing import Any, Dict, List, Optional
 
 import aiofiles
 from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from h5py import File
+
 from sds.common import crud, schemas
 from sds.common.db.connection import wait_for_connection
 from sds.common.files import NexusFile
@@ -36,6 +38,14 @@ app = FastAPI(
     title="SDS Retriever Service API",
     description=description,
     version="0.1",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
