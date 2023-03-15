@@ -2,10 +2,27 @@ import os.path
 from pathlib import Path
 from typing import Dict, List
 
+import numpy as np
 from h5py import File
+
 from sds.common.files.config import settings
 from sds.common.files.dataset import Dataset
 from sds.common.files.event import Event
+
+p4p_type_to_hdf5 = {
+    "?": np.bool_,
+    "s": np.str_,
+    "b": np.byte,
+    "B": np.ubyte,
+    "h": np.int16,
+    "H": np.uint16,
+    "i": np.int32,
+    "I": np.uint32,
+    "l": np.int64,
+    "L": np.uint64,
+    "f": np.float32,
+    "d": np.float64,
+}
 
 
 class NexusFile:
@@ -98,7 +115,10 @@ class NexusFile:
                     pulse_attributes["beam_info.state"] = event.beam_info.state
 
                 self._parse_value(
-                    entry[sds_event_key][pulse_key], event.pv_name, event.value
+                    entry[sds_event_key][pulse_key],
+                    event.pv_name,
+                    event.value,
+                    event.type,
                 )
 
                 # Acq info and event metadata
@@ -121,18 +141,23 @@ class NexusFile:
             print(repr(self), "writing failed!")
             print(e)
 
-    def _parse_value(self, parent, key, value):
+    def _parse_value(self, parent, key, value, t):
         if isinstance(value, dict):
             group = parent.create_group(name=key)
             for k, v in value.items():
-                self._parse_value(group, k, v)
+                self._parse_value(group, k, v, t[k])
         else:
-            if settings.compression and hasattr(value, "__len__"):
+            if settings.compression and isinstance(value, np.ndarray):
+                # Only compress arrays
                 parent.create_dataset(
-                    key, data=value, compression="gzip", compression_opts=9
+                    key,
+                    data=value,
+                    compression="gzip",
+                    compression_opts=9,
+                    dtype=p4p_type_to_hdf5[t[-1]],
                 )
             else:
-                parent[key] = value
+                parent.create_dataset(key, data=value, dtype=p4p_type_to_hdf5[t[-1]])
 
     def write_from_datasets(self):
         """

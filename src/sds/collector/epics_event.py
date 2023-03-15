@@ -16,6 +16,7 @@ class EpicsEvent(Event):
         # value
         values.update(
             value=value.todict("value"),
+            type=value.type()["value"],
             data_timestamp=datetime.fromtimestamp(
                 value.timeStamp.secondsPastEpoch + value.timeStamp.nanoseconds * 1e-9
             ),

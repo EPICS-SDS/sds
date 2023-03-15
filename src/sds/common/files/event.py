@@ -12,6 +12,7 @@ class Event(BaseModel):
 
     pv_name: str
     value: Any
+    type: Any
     timing_event_code: int
     data_timestamp: datetime
     sds_event_timestamp: datetime
