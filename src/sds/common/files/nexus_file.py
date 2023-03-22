@@ -163,7 +163,9 @@ class NexusFile:
                     dtype=p4p_type_to_hdf5[t.type[-1]],
                 )
             else:
-                parent.create_dataset(key, data=value, dtype=p4p_type_to_hdf5[t[-1]])
+                parent.create_dataset(
+                    key, data=value, dtype=p4p_type_to_hdf5[t.type[-1]]
+                )
 
     def write_from_datasets(self):
         """
