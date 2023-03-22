@@ -17,3 +17,4 @@ dependencies:
   - pip:
     - --index-url https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
     - p4p==4.1.2
+    - pvxslibs>=1.1.3
