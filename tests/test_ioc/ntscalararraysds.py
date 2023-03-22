@@ -107,9 +107,10 @@ class NTScalarArraySDS(NTScalar):
                 )
             ]
         )
-        _metaHelper(
-            F, valtype, display=display, control=control, valueAlarm=value_alarm
-        )
+        if not isinstance(valtype, tuple):
+            _metaHelper(
+                F, valtype, display=display, control=control, valueAlarm=value_alarm
+            )
         F.extend(extra)
         return Type(id="epics:nt/NTScalarArray:1.0", spec=F)
 

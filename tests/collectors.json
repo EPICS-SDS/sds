@@ -41,5 +41,24 @@
             "SDS:TEST:PV_100_1",
             "SDS:TEST:PV_100_2"
         ]
+    },
+    {
+        "name": "types-test",
+        "event_name": "data-on-demand",
+        "event_code": 1,
+        "pvs": [
+            "SDS:TYPES_TEST:PV:BYTE",
+            "SDS:TYPES_TEST:PV:UBYTE",
+            "SDS:TYPES_TEST:PV:SHORT",
+            "SDS:TYPES_TEST:PV:USHORT",
+            "SDS:TYPES_TEST:PV:INT",
+            "SDS:TYPES_TEST:PV:UINT",
+            "SDS:TYPES_TEST:PV:LONG",
+            "SDS:TYPES_TEST:PV:ULONG",
+            "SDS:TYPES_TEST:PV:FLOAT",
+            "SDS:TYPES_TEST:PV:DOUBLE",
+            "SDS:TYPES_TEST:PV:STRING",
+            "SDS:TYPES_TEST:PV:ENUM"
+        ]
     }
 ]
