@@ -198,7 +198,7 @@ class TestCollector:
             datetime.utcnow().strftime("%Y"),
             datetime.utcnow().strftime("%Y-%m-%d"),
         )
-        file_path = file_settings.storage_path / directory / f"types-test_1_{pulse}.h5"
+        file_path = file_settings.storage_path / directory / f"types-test_3_{pulse}.h5"
 
         assert file_path.exists(), f"File {file_path} not found."
 

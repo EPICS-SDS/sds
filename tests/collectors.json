@@ -44,8 +44,8 @@
     },
     {
         "name": "types-test",
-        "event_name": "data-on-demand",
-        "event_code": 1,
+        "event_name": "types",
+        "event_code": 3,
         "pvs": [
             "SDS:TYPES_TEST:PV:BYTE",
             "SDS:TYPES_TEST:PV:UBYTE",

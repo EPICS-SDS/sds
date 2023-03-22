@@ -22,7 +22,7 @@ class TestCollectorMain:
     @pytest.mark.asyncio
     async def test_load_collectors(self):
         collectors = await load_collectors()
-        assert len(collectors) == 4
+        assert len(collectors) == 5
         assert collectors[0].name == "test"
 
     @pytest.mark.asyncio
