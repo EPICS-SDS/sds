@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
-from h5py import File
+from h5py import File, enum_dtype
 
 from sds.common.files.config import settings
 from sds.common.files.dataset import Dataset
@@ -11,7 +11,7 @@ from sds.common.files.event import Event
 
 p4p_type_to_hdf5 = {
     "?": np.bool_,
-    "s": np.str_,
+    "s": None,
     "b": np.byte,
     "B": np.ubyte,
     "h": np.int16,
@@ -143,9 +143,15 @@ class NexusFile:
 
     def _parse_value(self, parent, key, value, t):
         if isinstance(value, dict):
-            group = parent.create_group(name=key)
-            for k, v in value.items():
-                self._parse_value(group, k, v, t[k])
+            if t.get_id() == "enum_t":
+                enum_type = enum_dtype(
+                    {f"{c}": i for i, c in enumerate(value["choices"])}, basetype="i"
+                )
+                parent.create_dataset(key, data=value["index"], dtype=enum_type)
+            else:
+                group = parent.create_group(name=key)
+                for k, v in value.items():
+                    self._parse_value(group, k, v, t.subtypes[k])
         else:
             if settings.compression and isinstance(value, np.ndarray):
                 # Only compress arrays
@@ -154,7 +160,7 @@ class NexusFile:
                     data=value,
                     compression="gzip",
                     compression_opts=9,
-                    dtype=p4p_type_to_hdf5[t[-1]],
+                    dtype=p4p_type_to_hdf5[t.type[-1]],
                 )
             else:
                 parent.create_dataset(key, data=value, dtype=p4p_type_to_hdf5[t[-1]])

@@ -1,9 +1,30 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from p4p import Value
+from p4p import Value, Type
 from pydantic import root_validator
 from sds.common.files import AcqEvent, AcqInfo, BeamInfo, Event
+
+
+class P4pType:
+    def __init__(self, t):
+        if isinstance(t, Type):
+            self.subtypes = {}
+            self.id = t.getID()
+            for k in t.keys():
+                self.subtypes.update({k: P4pType(t[k])})
+        else:
+            self.type = t
+
+    def has_subtypes(self):
+        if "subtypes" in self.__dict__:
+            return True
+        return False
+
+    def get_id(self):
+        if "id" in self.__dict__:
+            return self.id
+        return None
 
 
 class EpicsEvent(Event):
@@ -16,7 +37,7 @@ class EpicsEvent(Event):
         # value
         values.update(
             value=value.todict("value"),
-            type=value.type()["value"],
+            type=P4pType(value.type()["value"]),
             data_timestamp=datetime.fromtimestamp(
                 value.timeStamp.secondsPastEpoch + value.timeStamp.nanoseconds * 1e-9
             ),
