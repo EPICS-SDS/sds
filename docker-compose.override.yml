@@ -3,17 +3,17 @@ services:
   sds_indexer:
     volumes:
       - ./src:/app/
-    command: uvicorn sds.indexer:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn esds.indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
     volumes:
       - ./src:/app/
-    command: uvicorn sds.retriever:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn esds.retriever:app --host 0.0.0.0 --port 8000 --reload
 
   sds_collector:
     volumes:
       - ./src:/app/
-    command: python -m sds.collector.main --reload
+    command: python -m esds.collector.main --reload
     network_mode: "host"
 
   elasticsearch:

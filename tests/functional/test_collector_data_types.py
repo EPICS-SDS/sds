@@ -10,8 +10,8 @@ from p4p.client.asyncio import Context
 from p4p.client.thread import Context as ThContext
 from tests.functional.service_loader import collector_service, indexer_service
 
-from sds.collector.config import settings
-from sds.common.files.config import settings as file_settings
+from esds.collector.config import settings
+from esds.common.files.config import settings as file_settings
 
 # PV names
 FLOAT_PV = "SDS:TYPES_TEST:PV:FLOAT"

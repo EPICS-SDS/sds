@@ -4,13 +4,13 @@ from pathlib import Path
 
 import pytest
 from fastapi import HTTPException, Response
-from sds.collector import api
-from sds.collector.collector import Collector
-from sds.collector.collector_manager import CollectorManager
-from sds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
-from sds.collector.config import settings
-from sds.common.files import AcqEvent, AcqInfo, BeamInfo, CollectorDefinition, Event
-from sds.common.schemas import CollectorBase
+from esds.collector import api
+from esds.collector.collector import Collector
+from esds.collector.collector_manager import CollectorManager
+from esds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
+from esds.collector.config import settings
+from esds.common.files import AcqEvent, AcqInfo, BeamInfo, CollectorDefinition, Event
+from esds.common.schemas import CollectorBase
 from tests.functional.service_loader import indexer_service
 
 collector = Collector(

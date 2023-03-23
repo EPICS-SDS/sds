@@ -5,7 +5,7 @@ import aiohttp
 import pytest
 import pytest_asyncio
 import requests
-from sds.common import schemas
+from esds.common import schemas
 from pydantic import ValidationError
 from tests.functional.service_loader import INDEXER_PORT, indexer_service
 

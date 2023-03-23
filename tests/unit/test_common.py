@@ -2,8 +2,8 @@ import asyncio
 from asyncio import CancelledError
 
 import pytest
-from sds.common.db.connection import wait_for_connection
-from sds.common.db.config import settings
+from esds.common.db.connection import wait_for_connection
+from esds.common.db.config import settings
 
 
 class TestConnection:

@@ -10,9 +10,9 @@ import pytest
 import pytest_asyncio
 import requests
 from pydantic import ValidationError
-from sds.common import schemas
-from sds.common.files import AcqEvent, AcqInfo, BeamInfo, Event, NexusFile
-from sds.retriever.config import settings
+from esds.common import schemas
+from esds.common.files import AcqEvent, AcqInfo, BeamInfo, Event, NexusFile
+from esds.retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
     RETRIEVER_PORT,
