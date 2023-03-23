@@ -12,7 +12,14 @@ logger = logging.getLogger("sds_common")
 
 @asynccontextmanager
 async def get_connection():
-    connection = AsyncElasticsearch(settings.elastic_url)
+    if settings.elastic_password is not None:
+        connection = AsyncElasticsearch(
+            settings.elastic_url,
+            basic_auth=("elastic", settings.elastic_password),
+            verify_certs=False,
+        )
+    else:
+        connection = AsyncElasticsearch(settings.elastic_url)
     try:
         yield connection
     finally:
