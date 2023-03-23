@@ -58,7 +58,18 @@
             "SDS:TYPES_TEST:PV:FLOAT",
             "SDS:TYPES_TEST:PV:DOUBLE",
             "SDS:TYPES_TEST:PV:STRING",
-            "SDS:TYPES_TEST:PV:ENUM"
+            "SDS:TYPES_TEST:PV:ENUM",
+            "SDS:TYPES_TEST:PV:ABYTE",
+            "SDS:TYPES_TEST:PV:AUBYTE",
+            "SDS:TYPES_TEST:PV:ASHORT",
+            "SDS:TYPES_TEST:PV:AUSHORT",
+            "SDS:TYPES_TEST:PV:AINT",
+            "SDS:TYPES_TEST:PV:AUINT",
+            "SDS:TYPES_TEST:PV:ALONG",
+            "SDS:TYPES_TEST:PV:AULONG",
+            "SDS:TYPES_TEST:PV:AFLOAT",
+            "SDS:TYPES_TEST:PV:ADOUBLE",
+            "SDS:TYPES_TEST:PV:ASTRING"
         ]
     }
 ]

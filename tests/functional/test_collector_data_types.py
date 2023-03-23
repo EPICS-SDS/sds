@@ -27,6 +27,19 @@ ULONG_PV = "SDS:TYPES_TEST:PV:ULONG"
 STRING_PV = "SDS:TYPES_TEST:PV:STRING"
 ENUM_PV = "SDS:TYPES_TEST:PV:ENUM"
 
+
+AFLOAT_PV = "SDS:TYPES_TEST:PV:AFLOAT"
+ADOUBLE_PV = "SDS:TYPES_TEST:PV:ADOUBLE"
+ABYTE_PV = "SDS:TYPES_TEST:PV:ABYTE"
+ASHORT_PV = "SDS:TYPES_TEST:PV:ASHORT"
+AINT_PV = "SDS:TYPES_TEST:PV:AINT"
+ALONG_PV = "SDS:TYPES_TEST:PV:ALONG"
+AUBYTE_PV = "SDS:TYPES_TEST:PV:AUBYTE"
+AUSHORT_PV = "SDS:TYPES_TEST:PV:AUSHORT"
+AUINT_PV = "SDS:TYPES_TEST:PV:AUINT"
+AULONG_PV = "SDS:TYPES_TEST:PV:AULONG"
+ASTRING_PV = "SDS:TYPES_TEST:PV:ASTRING"
+
 # Test values
 FLOAT_1 = 2 ** (2**8 - 1 - 2**7 - 1) * (
     1 + np.sum([2 ** (-i - 1) for i in range(23)])
@@ -117,6 +130,18 @@ class TestCollector:
             await ctxt.put(STRING_PV, STRING_1)
             # Enum 1
             await ctxt.put(ENUM_PV, ENUM_1)
+            # Arrays
+            await ctxt.put(AFLOAT_PV, [FLOAT_1, FLOAT_2])
+            await ctxt.put(ADOUBLE_PV, [DOUBLE_1, DOUBLE_2])
+            await ctxt.put(ABYTE_PV, [BYTE_1, BYTE_2])
+            await ctxt.put(ASHORT_PV, [SHORT_1, SHORT_2])
+            await ctxt.put(AINT_PV, [INT_1, INT_2])
+            await ctxt.put(ALONG_PV, [LONG_1, LONG_2])
+            await ctxt.put(AUBYTE_PV, [UBYTE_1, UBYTE_2])
+            await ctxt.put(AUSHORT_PV, [USHORT_1, USHORT_2])
+            await ctxt.put(AUINT_PV, [UINT_1, UINT_2])
+            await ctxt.put(AULONG_PV, [ULONG_1, ULONG_2])
+            await ctxt.put(ASTRING_PV, [STRING_1, STRING_2])
 
             await asyncio.sleep(1)
             # Second "pulse"
@@ -137,6 +162,18 @@ class TestCollector:
             await ctxt.put(STRING_PV, STRING_2)
             # Enum 2
             await ctxt.put(ENUM_PV, ENUM_2)
+            # Arrays
+            await ctxt.put(AFLOAT_PV, [FLOAT_2, FLOAT_1])
+            await ctxt.put(ADOUBLE_PV, [DOUBLE_2, DOUBLE_1])
+            await ctxt.put(ABYTE_PV, [BYTE_2, BYTE_1])
+            await ctxt.put(ASHORT_PV, [SHORT_2, SHORT_1])
+            await ctxt.put(AINT_PV, [INT_2, INT_1])
+            await ctxt.put(ALONG_PV, [LONG_2, LONG_1])
+            await ctxt.put(AUBYTE_PV, [UBYTE_2, UBYTE_1])
+            await ctxt.put(AUSHORT_PV, [USHORT_2, USHORT_1])
+            await ctxt.put(AUINT_PV, [UINT_2, UINT_1])
+            await ctxt.put(AULONG_PV, [ULONG_2, ULONG_1])
+            await ctxt.put(ASTRING_PV, [STRING_2, STRING_1])
 
             await asyncio.sleep(settings.collector_timeout + 5)
 
@@ -184,7 +221,7 @@ class TestCollector:
         self.check_value(pulse=2, pv=ULONG_PV, dtype=np.uint64, value=ULONG_2)
 
     # Tests for string
-    def test_float(self):
+    def test_string(self):
         self.check_value(pulse=1, pv=STRING_PV, dtype=np.object_, value=STRING_1)
         self.check_value(pulse=2, pv=STRING_PV, dtype=np.object_, value=STRING_2)
 
@@ -192,6 +229,80 @@ class TestCollector:
     def test_enum(self):
         self.check_value(pulse=1, pv=ENUM_PV, dtype=np.int32, value=ENUM_1)
         self.check_value(pulse=2, pv=ENUM_PV, dtype=np.int32, value=ENUM_2)
+
+    # Arrays
+
+    def test_afloat(self):
+        self.check_value(
+            pulse=1, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_1, FLOAT_2]
+        )
+        self.check_value(
+            pulse=2, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_2, FLOAT_1]
+        )
+
+    def test_adouble(self):
+        self.check_value(
+            pulse=1, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_1, DOUBLE_2]
+        )
+        self.check_value(
+            pulse=2, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_2, DOUBLE_1]
+        )
+
+    def test_abyte(self):
+        self.check_value(pulse=1, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_1, BYTE_2])
+        self.check_value(pulse=2, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_2, BYTE_1])
+
+    def test_ashort(self):
+        self.check_value(
+            pulse=1, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_1, SHORT_2]
+        )
+        self.check_value(
+            pulse=2, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_2, SHORT_1]
+        )
+
+    def test_aint(self):
+        self.check_value(pulse=1, pv=AINT_PV, dtype=np.int32, value=[INT_1, INT_2])
+        self.check_value(pulse=2, pv=AINT_PV, dtype=np.int32, value=[INT_2, INT_1])
+
+    def test_along(self):
+        self.check_value(pulse=1, pv=ALONG_PV, dtype=np.int64, value=[LONG_1, LONG_2])
+        self.check_value(pulse=2, pv=ALONG_PV, dtype=np.int64, value=[LONG_2, LONG_1])
+
+    def test_aubyte(self):
+        self.check_value(
+            pulse=1, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_1, UBYTE_2]
+        )
+        self.check_value(
+            pulse=2, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_2, UBYTE_1]
+        )
+
+    def test_aushort(self):
+        self.check_value(
+            pulse=1, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_1, USHORT_2]
+        )
+        self.check_value(
+            pulse=2, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_2, USHORT_1]
+        )
+
+    def test_auint(self):
+        self.check_value(pulse=1, pv=AUINT_PV, dtype=np.uint32, value=[UINT_1, UINT_2])
+        self.check_value(pulse=2, pv=AUINT_PV, dtype=np.uint32, value=[UINT_2, UINT_1])
+
+    def test_aulong(self):
+        self.check_value(
+            pulse=1, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_1, ULONG_2]
+        )
+        self.check_value(
+            pulse=2, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_2, ULONG_1]
+        )
+
+    def test_astring(self):
+        self.check_value(
+            pulse=1, pv=ASTRING_PV, dtype=np.object_, value=[STRING_1, STRING_2]
+        )
+        self.check_value(
+            pulse=2, pv=ASTRING_PV, dtype=np.object_, value=[STRING_2, STRING_1]
+        )
 
     def check_value(self, pulse, pv, dtype, value):
         directory = Path(
@@ -223,6 +334,9 @@ class TestCollector:
 
         assert pv_field.dtype == dtype
 
-        assert pv_field[()] == (value if dtype is np.object_ else dtype(value))
+        if isinstance(value, list):
+            assert (pv_field[()] == np.array(value, dtype=dtype)).all()
+        else:
+            assert pv_field[()] == (value if dtype is np.object_ else dtype(value))
 
         h5file.close()
