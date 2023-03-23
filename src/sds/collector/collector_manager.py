@@ -2,7 +2,7 @@ import asyncio
 import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import aiofiles
 import aiohttp
@@ -53,19 +53,20 @@ class CollectorManager:
     @classmethod
     async def create(
         cls,
-        collectors: List[CollectorBase],
+        collectors: Optional[List[CollectorBase]],
         timeout: int = settings.collector_timeout,
     ):
 
         cls.instance = CollectorManager(timeout)
 
         adding_collector_tasks = []
-        for collector in collectors:
-            adding_collector_tasks.append(
-                asyncio.create_task(cls.instance.add_collector(collector))
-            )
+        if collectors is not None:
+            for collector in collectors:
+                adding_collector_tasks.append(
+                    asyncio.create_task(cls.instance.add_collector(collector))
+                )
 
-        await asyncio.gather(*adding_collector_tasks)
+            await asyncio.gather(*adding_collector_tasks)
 
         return cls.instance
 

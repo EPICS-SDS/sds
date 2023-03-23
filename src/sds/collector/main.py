@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 
 import aiohttp
 from aiohttp.client_exceptions import ClientError
@@ -14,11 +14,11 @@ from sds.common.files import CollectorDefinition
 set_debug(logging.WARNING)
 
 
-async def load_collectors() -> List[CollectorDefinition]:
+async def load_collectors() -> Optional[List[CollectorDefinition]]:
     path = settings.collector_definitions
     print(f"Loading collector definitions from {path}")
 
-    collectors = parse_file_as(List[CollectorDefinition], path)
+    collectors = parse_file_as(Optional[List[CollectorDefinition]], path)
     return collectors
 
 
