@@ -1,30 +1,11 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from p4p import Value, Type
+from p4p import Value
 from pydantic import root_validator
+
+from sds.common.p4p_type import P4pType
 from sds.common.files import AcqEvent, AcqInfo, BeamInfo, Event
-
-
-class P4pType:
-    def __init__(self, t):
-        if isinstance(t, Type):
-            self.subtypes = {}
-            self.id = t.getID()
-            for k in t.keys():
-                self.subtypes.update({k: P4pType(t[k])})
-        else:
-            self.type = t
-
-    def has_subtypes(self):
-        if "subtypes" in self.__dict__:
-            return True
-        return False
-
-    def get_id(self):
-        if "id" in self.__dict__:
-            return self.id
-        return None
 
 
 class EpicsEvent(Event):
