@@ -1,13 +1,13 @@
+import logging
 import os.path
 from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
-from h5py import File, enum_dtype
-
 from esds.common.files.config import settings
 from esds.common.files.dataset import Dataset
 from esds.common.files.event import Event
+from h5py import File, enum_dtype
 
 p4p_type_to_hdf5 = {
     "?": np.bool_,
@@ -77,7 +77,7 @@ class NexusFile:
         Write NeXus file from a list of Event objects (for collector)
         """
         try:
-            print(repr(self), f"writing to '{self.path}'")
+            logging.info(f"{repr(self)} writing to '{self.path}'")
             absolute_path = settings.storage_path / self.path
             absolute_path.parent.mkdir(parents=True, exist_ok=True)
             h5file = File(absolute_path, "w")
@@ -136,10 +136,12 @@ class NexusFile:
                 acquisition_attributes["acq_event.evr"] = event.acq_event.evr
 
             h5file.close()
-            print(repr(self), "writing done.")
+            logging.info(f"{repr(self)} writing done.")
+            return True
         except Exception as e:
-            print(repr(self), "writing failed!")
-            print(e)
+            logging.warning(f"{repr(self)} writing failed!")
+            logging.warning(e)
+            return False
 
     def _parse_value(self, parent, key, value, t):
         if isinstance(value, dict):
@@ -172,7 +174,7 @@ class NexusFile:
         Write a combined NeXus file from a list of files (for retriever)
         """
         try:
-            print(repr(self), f"writing to '{self.path}'")
+            logging.info(f"{repr(self)} writing to '{self.path}'")
             h5file = File(settings.storage_path / self.path, "w")
             entry = h5file.create_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
@@ -185,10 +187,10 @@ class NexusFile:
                 h5file.copy(data, entry)
 
             h5file.close()
-            print(repr(self), "writing done.")
+            logging.info(f"{repr(self)} writing done.")
         except Exception as e:
-            print(repr(self), "writing failed!")
-            print(e)
+            logging.warning(f"{repr(self)} writing failed!")
+            logging.warning(e)
 
     def __repr__(self):
         return f"Dataset({self.file_name})"

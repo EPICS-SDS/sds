@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
@@ -102,14 +103,14 @@ class CollectorManager:
                     )
                 )
         except PermissionError:
-            print(
+            logging.warning(
                 "Collector definition file not writable. Configuration changes could not be saved."
             )
 
     async def add_collector(self, collector_definition: CollectorDefinition):
         # First register the collector in the indexer service
         async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
-            print(f"Adding collector '{collector_definition.name}'")
+            logging.info(f"Adding collector '{collector_definition.name}'")
             try:
                 new_collector = CollectorBase(
                     **collector_definition.dict(), host=settings.collector_host
@@ -120,9 +121,9 @@ class CollectorManager:
                 ) as response:
                     response.raise_for_status()
                     if response.status == 201:
-                        print(f"Collector '{new_collector.name}' created in DB")
+                        logging.info(f"Collector '{new_collector.name}' created in DB")
                     elif response.status == 200:
-                        print(f"Collector '{new_collector.name}' already in DB")
+                        logging.info(f"Collector '{new_collector.name}' already in DB")
 
                     obj = await response.json()
                     collector = Collector.parse_obj(obj)
@@ -130,7 +131,7 @@ class CollectorManager:
                 ClientError,
                 OSError,
             ):
-                print(
+                logging.error(
                     f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status."
                 )
                 raise
@@ -289,7 +290,9 @@ class CollectorManager:
             for pv in collector_status.pv_status_dict.values():
                 all_pv_connected *= pv.pv_status.connected
             if all_pv_connected:
-                print(f"Collector start-up completed in {time.time() - start_time} s.")
+                logging.info(
+                    f"Collector start-up completed in {time.time() - start_time} s."
+                )
                 return
             await asyncio.sleep(0.1)
 
@@ -302,27 +305,29 @@ class CollectorManager:
     async def _subscribe(self, pv):
         while True:
             try:
-                print(f"PV '{pv}' subscribing...")
+                logging.info(f"PV '{pv}' subscribing...")
                 async with AsyncSubscription(self._context, pv) as sub:
                     async with sub.messages() as messages:
-                        print(f"PV '{pv}' subscribed!")
+                        logging.info(f"PV '{pv}' subscribed!")
                         async for message in messages:
                             self._message_handler(pv, message)
-                print(f"PV '{pv}' subscription ended")
+                logging.info(f"PV '{pv}' subscription ended")
             except Disconnected:
                 collector_status.get_pv_status(pv).connected = False
-                print(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
+                logging.info(
+                    f"PV '{pv}' disconnected, reconnecting in {self._timeout}s"
+                )
             except asyncio.CancelledError:
                 collector_status.get_pv_status(pv).connected = False
-                print(f"PV '{pv}' subscription closed")
+                logging.info(f"PV '{pv}' subscription closed")
                 return
 
     def _message_handler(self, pv, message):
         try:
             event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError as e:
-            print(f"PV '{pv}' event validation error")
-            print(e)
+            logging.error(f"PV '{pv}' event validation error")
+            logging.error(e)
             return
 
         self._event_handler(event)

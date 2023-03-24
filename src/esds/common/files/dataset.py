@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from pathlib import Path
 import aiohttp
 from pydantic import BaseModel
@@ -30,5 +31,5 @@ class Dataset(BaseModel):
                 async with client.post(url, data=data) as response:
                     response.raise_for_status()
         except Exception as e:
-            print(repr(self), "indexing failed!")
-            print(e)
+            logging.error(f"{repr(self)} indexing failed!")
+            logging.error(e)

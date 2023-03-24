@@ -16,7 +16,7 @@ set_debug(logging.WARNING)
 
 async def load_collectors() -> Optional[List[CollectorDefinition]]:
     path = settings.collector_definitions
-    print(f"Loading collector definitions from {path}")
+    logging.info(f"Loading collector definitions from {path}")
 
     collectors = parse_file_as(Optional[List[CollectorDefinition]], path)
     return collectors
@@ -33,7 +33,7 @@ async def wait_for_indexer():
                     ) as response:
                         response.raise_for_status()
                         if response.status == 200:
-                            print("Indexer ready")
+                            logging.info("Indexer ready")
                             return
                 except (
                     ClientError,
@@ -41,7 +41,7 @@ async def wait_for_indexer():
                 ):
                     pass
 
-                print(
+                logging.warning(
                     f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {indexer_timeout} s."
                 )
                 await asyncio.sleep(indexer_timeout)
@@ -52,13 +52,13 @@ async def wait_for_indexer():
 async def main():
     await wait_for_indexer()
 
-    print("SDS Collector service\n")
+    logging.info("SDS Collector service\n")
     collectors = await load_collectors()
 
     if settings.collector_api_enabled:
         serve_task = start_api()
 
-    print("Starting collectors...")
+    logging.info("Starting collectors...")
     async with await CollectorManager.create(collectors) as cm:
         await cm.join()
 

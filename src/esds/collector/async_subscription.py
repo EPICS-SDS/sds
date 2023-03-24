@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+import logging
 
 from numpy import array
 from p4p import Type
@@ -65,20 +66,22 @@ class AsyncSubscription:
         elif isinstance(value, Exception):
             raise value
         else:
-            print(f"PV '{self._pv}' connected")
+            logging.info(f"PV '{self._pv}' connected")
             self.cb = self._cb
             self.pv_status.connected = True
 
     def _cb(self, value):
         if isinstance(value, Disconnected):
-            print(f"PV '{self._pv}' disconnected")
+            logging.info(f"PV '{self._pv}' disconnected")
             self.pv_status.connected = False
             self.cb = self._first_cb
         elif isinstance(value, Exception):
             raise value
         else:
             if "value" not in value.keys():
-                print(f"PV '{self._pv}' has no value field, discarding event.")
+                logging.warning(
+                    f"PV '{self._pv}' has no value field, discarding event."
+                )
                 return
             collector_status.set_update_event(self._pv)
             collector_status.set_event_size(

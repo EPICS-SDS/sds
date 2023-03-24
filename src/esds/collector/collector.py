@@ -1,6 +1,7 @@
 from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+import logging
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Set
@@ -52,7 +53,7 @@ class Collector(CollectorBase):
     def update(self, event: Event):
         # If the PV does not belong to this event, ignore it.
         if not self.event_matches(event):
-            print(repr(self), f"received bad event {repr(event)}")
+            logging.warning(f"{repr(self)} received bad event {repr(event)}")
             return
 
         with self._file_lock:
