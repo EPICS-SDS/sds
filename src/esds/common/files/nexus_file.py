@@ -159,7 +159,7 @@ class NexusFile:
                     key,
                     data=value,
                     compression="gzip",
-                    compression_opts=9,
+                    compression_opts=settings.compression_level,
                     dtype=p4p_type_to_hdf5[t.type[-1]],
                 )
             else:
