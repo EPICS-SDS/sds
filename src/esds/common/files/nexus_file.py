@@ -1,13 +1,15 @@
 import logging
 import os.path
+import time
 from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
+from h5py import File, enum_dtype
+
 from esds.common.files.config import settings
 from esds.common.files.dataset import Dataset
 from esds.common.files.event import Event
-from h5py import File, enum_dtype
 
 p4p_type_to_hdf5 = {
     "?": np.bool_,
@@ -77,11 +79,12 @@ class NexusFile:
         Write NeXus file from a list of Event objects (for collector)
         """
         try:
+            h5file = self._get_h5file()
+            if h5file is None:
+                return
             logging.info(f"{repr(self)} writing to '{self.path}'")
-            absolute_path = settings.storage_path / self.path
-            absolute_path.parent.mkdir(parents=True, exist_ok=True)
-            h5file = File(absolute_path, "w")
-            entry = h5file.create_group(name="entry")
+
+            entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
 
@@ -93,26 +96,26 @@ class NexusFile:
                     break
                 sds_event_key = f"sds_event_{event.sds_event_pulse_id}"
                 pulse_key = f"pulse_{event.pulse_id}"
-                if sds_event_key not in entry:
-                    sds_event_group = entry.create_group(name=sds_event_key)
-                    sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
-                    sds_event_group.attrs[
-                        "timestamp"
-                    ] = event.sds_event_timestamp.isoformat()
-                    sds_event_group.attrs["event_code"] = event.timing_event_code
-                if pulse_key not in entry[sds_event_key]:
-                    entry[sds_event_key].create_group(name=pulse_key)
-                    # Adding attributes about pulse (should be the same for all events)
-                    pulse_attributes = entry[sds_event_key][pulse_key].attrs
-                    pulse_attributes["pulse_id"] = event.pulse_id
-                    pulse_attributes["timestamp"] = event.data_timestamp.isoformat()
-                    pulse_attributes["beam_info.curr"] = event.beam_info.curr
-                    pulse_attributes["beam_info.dest"] = event.beam_info.dest
-                    pulse_attributes["beam_info.energy"] = event.beam_info.energy
-                    pulse_attributes["beam_info.len"] = event.beam_info.len
-                    pulse_attributes["beam_info.mode"] = event.beam_info.mode
-                    pulse_attributes["beam_info.present"] = event.beam_info.present
-                    pulse_attributes["beam_info.state"] = event.beam_info.state
+
+                sds_event_group = entry.require_group(name=sds_event_key)
+                sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
+                sds_event_group.attrs[
+                    "timestamp"
+                ] = event.sds_event_timestamp.isoformat()
+                sds_event_group.attrs["event_code"] = event.timing_event_code
+
+                entry[sds_event_key].require_group(name=pulse_key)
+                # Adding attributes about pulse (should be the same for all events)
+                pulse_attributes = entry[sds_event_key][pulse_key].attrs
+                pulse_attributes["pulse_id"] = event.pulse_id
+                pulse_attributes["timestamp"] = event.data_timestamp.isoformat()
+                pulse_attributes["beam_info.curr"] = event.beam_info.curr
+                pulse_attributes["beam_info.dest"] = event.beam_info.dest
+                pulse_attributes["beam_info.energy"] = event.beam_info.energy
+                pulse_attributes["beam_info.len"] = event.beam_info.len
+                pulse_attributes["beam_info.mode"] = event.beam_info.mode
+                pulse_attributes["beam_info.present"] = event.beam_info.present
+                pulse_attributes["beam_info.state"] = event.beam_info.state
 
                 self._parse_value(
                     entry[sds_event_key][pulse_key],
@@ -174,9 +177,12 @@ class NexusFile:
         Write a combined NeXus file from a list of files (for retriever)
         """
         try:
+            h5file = self._get_h5file()
+            if h5file is None:
+                return
+
             logging.info(f"{repr(self)} writing to '{self.path}'")
-            h5file = File(settings.storage_path / self.path, "w")
-            entry = h5file.create_group(name="entry")
+            entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
 
@@ -191,6 +197,23 @@ class NexusFile:
         except Exception as e:
             logging.warning(f"{repr(self)} writing failed!")
             logging.warning(e)
+
+    def _get_h5file(self):
+        absolute_path = settings.storage_path / self.path
+        absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        if os.path.exists(absolute_path):
+            if (
+                time.time()
+                > os.path.getmtime(absolute_path) + settings.file_appendable_window
+            ):
+                logging.warning(
+                    f"{repr(self)} skipped writing to '{self.path}. The file exists and time window to append data expired.'"
+                )
+                return None
+            else:
+                return File(absolute_path, "a")
+        else:
+            return File(absolute_path, "w")
 
     def __repr__(self):
         return f"Dataset({self.file_name})"
