@@ -27,7 +27,7 @@ RETRIEVER_URL = "http://0.0.0.0:" + str(RETRIEVER_PORT)
 COLLECTORS_ENDPOINT = "/collectors"
 DATASETS_ENDPOINT = "/datasets"
 NEXUS_ENDPOINT = "/nexus"
-SEARCH_ENDPOINT = "/search"
+SEARCH_ENDPOINT = "/query"
 
 
 class TestCollector:

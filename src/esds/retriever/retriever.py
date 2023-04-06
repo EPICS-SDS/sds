@@ -256,13 +256,14 @@ async def get_file_by_dataset_id(
     )
 
 
-@files_router.get("/search", response_class=StreamingResponse)
+@files_router.get("/query", response_class=StreamingResponse)
 async def get_file_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     sds_event_pulse_id_start: Optional[int] = None,
     sds_event_pulse_id_end: Optional[int] = None,
+    include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
     Search for datasets in the index and returns a file containing all hits.
@@ -273,6 +274,7 @@ async def get_file_by_dataset_query(
     - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
     - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
     - **search_after** (int, optional): to scroll over a large number of hits
+    - **include_pvs** (List[str], optional): list of PVs to return
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -299,15 +301,20 @@ async def get_file_by_dataset_query(
         raise HTTPException(status_code=404, detail="Datasets not found")
 
     return await get_file_with_multiple_datasets(
-        [schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets]
+        [schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets],
+        include_pvs=include_pvs,
     )
 
 
 @files_router.post("/datasets", response_class=StreamingResponse)
-async def get_file_with_multiple_datasets(datasets: List[schemas.DataseDefinition]):
+async def get_file_with_multiple_datasets(
+    datasets: List[schemas.DataseDefinition],
+    include_pvs: Optional[List[str]] = Query(default=None),
+):
     """
     Get a set of NeXus files containing the requested datasets, one file per collector (zipped if needed).
     - **datasets** (List[Dataset], required): list of datasets to download
+    - **include_pvs** (List[str], optional): list of PVs to return
     """
 
     # If all the datasets requested and only those are stored in a single file, return that file.
@@ -316,7 +323,7 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DataseDefinitio
         total, response, _ = await crud.dataset.get_multi_by_path(paths[0])
         # If the number of datasets in the file is the same as the number of datasets requested...
         # No check is done on the datasets, assuming they exist an were obtained using the `/datasets` endpoint
-        if total == len(datasets):
+        if total == len(datasets) and include_pvs is None:
             return FileResponse(
                 settings.storage_path / paths[0],
                 filename=paths[0].name,
@@ -350,7 +357,7 @@ async def get_file_with_multiple_datasets(datasets: List[schemas.DataseDefinitio
         zip_io = BytesIO()
         with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as zip:
             for nexus_file in nexus_files.values():
-                nexus_file.write_from_datasets()
+                nexus_file.write_from_datasets(include_pvs=include_pvs)
                 zip.write(os.path.join(d, nexus_file.path), nexus_file.file_name)
 
     return StreamingResponse(
@@ -420,14 +427,14 @@ async def get_json_by_dataset_id(
     )
 
 
-@json_router.get("/search", response_class=JSONResponse)
+@json_router.get("/query", response_class=JSONResponse)
 async def get_json_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     sds_event_pulse_id_start: Optional[int] = None,
     sds_event_pulse_id_end: Optional[int] = None,
-    pvs: Optional[List[str]] = Query(default=None),
+    include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
     Search for datasets in the index and returns a json with all hits.
@@ -438,7 +445,7 @@ async def get_json_by_dataset_query(
     - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
     - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
     - **search_after** (int, optional): to scroll over a large number of hits
-    - **pvs** (List[str], optional): list of PVs to return
+    - **include_pvs** (List[str], optional): list of PVs to return
 
     To search for a set of PVs, first one needs to search for collectors
     containing those PVs and then search by collector IDs.
@@ -466,19 +473,19 @@ async def get_json_by_dataset_query(
 
     return await get_json_with_multiple_datasets(
         datasets=[schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets],
-        pvs=pvs,
+        include_pvs=include_pvs,
     )
 
 
 @json_router.post("/datasets", response_class=JSONResponse)
 async def get_json_with_multiple_datasets(
     datasets: List[schemas.DataseDefinition],
-    pvs: Optional[List[str]] = Query(default=None),
+    include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
     Get a Json containing the requested datasets.
     - **datasets** (List[Dataset], required): list of datasets to download
-    - **pvs** (List[str], optional): list of PVs to return
+    - **include_pvs** (List[str], optional): list of PVs to return
     """
     collectors_json: Dict[str, Any] = dict()
 
@@ -487,7 +494,7 @@ async def get_json_with_multiple_datasets(
         dataset_json = collectors_json.get(dataset.collector_id)
 
         if dataset_json is None:
-            dataset_json = JsonFile(pvs=pvs)
+            dataset_json = JsonFile(pvs=include_pvs)
             collectors_json[dataset.collector_id] = dataset_json
 
         dataset_json.add_dataset(dataset)
