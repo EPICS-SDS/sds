@@ -1,8 +1,8 @@
 from traceback import print_exc
 from typing import Dict, List
 from h5py import File, Group
-from sds.common.files.config import settings
-from sds.common.files.dataset import Dataset
+from esds.common.files.config import settings
+from esds.common.files.dataset import Dataset
 
 import numpy as np
 
