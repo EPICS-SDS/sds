@@ -43,7 +43,6 @@ services:
       - type: bind
         source: ${STORAGE_PATH:?}
         target: /data
-    network_mode: "host"
 
   elasticsearch:
     image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.2"
