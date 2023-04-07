@@ -172,7 +172,7 @@ class NexusFile:
                     key, data=value, dtype=p4p_type_to_hdf5[t.type[-1]]
                 )
 
-    def write_from_datasets(self):
+    def write_from_datasets(self, include_pvs=None):
         """
         Write a combined NeXus file from a list of files (for retriever)
         """
@@ -188,9 +188,28 @@ class NexusFile:
 
             for dataset in self.datasets.values():
                 origin = File(settings.storage_path / dataset.path, "r")
-                data = origin["entry"][f"sds_event_{dataset.sds_event_pulse_id}"]
+                entry_origin = origin["entry"]
+                sds_event_origin = entry_origin[
+                    f"sds_event_{dataset.sds_event_pulse_id}"
+                ]
+                if include_pvs is None:
+                    h5file.copy(sds_event_origin, entry)
+                else:
+                    sds_event = entry.require_group(
+                        f"sds_event_{dataset.sds_event_pulse_id}"
+                    )
 
-                h5file.copy(data, entry)
+                    for att in sds_event_origin.attrs:
+                        sds_event.attrs[att] = sds_event_origin.attrs[att]
+                    for pulse_id in sds_event_origin:
+                        pulse = sds_event.require_group(pulse_id)
+                        pulse_origin = sds_event_origin[pulse_id]
+                        for att in pulse_origin.attrs:
+                            pulse.attrs[att] = pulse_origin.attrs[att]
+                        for pv in pulse_origin:
+                            if pv in include_pvs:
+                                h5file.copy(pulse_origin[pv], pulse)
+                origin.close()
 
             h5file.close()
             logging.info(f"{repr(self)} writing done.")

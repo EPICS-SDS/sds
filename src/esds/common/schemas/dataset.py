@@ -50,11 +50,14 @@ class BeamInfo(BaseModel):
     curr: float
 
 
-class DatasetBase(BaseModel):
+class DataseDefinition(BaseModel):
     collector_id: str
     sds_event_timestamp: datetime
     sds_event_pulse_id: int
     path: PurePosixPath
+
+
+class DatasetBase(DataseDefinition):
     beam_info: BeamInfo
 
 

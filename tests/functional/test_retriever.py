@@ -26,7 +26,8 @@ RETRIEVER_URL = "http://0.0.0.0:" + str(RETRIEVER_PORT)
 
 COLLECTORS_ENDPOINT = "/collectors"
 DATASETS_ENDPOINT = "/datasets"
-FILES_ENDPOINT = "/files"
+NEXUS_ENDPOINT = "/nexus"
+SEARCH_ENDPOINT = "/query"
 
 
 class TestCollector:
@@ -467,7 +468,7 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL
-                + FILES_ENDPOINT
+                + NEXUS_ENDPOINT
                 + "/dataset/"
                 + self.test_dataset_1[0]["dataset_id"]
             ) as response:
@@ -492,7 +493,7 @@ class TestDatasets:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 RETRIEVER_URL
-                + FILES_ENDPOINT
+                + NEXUS_ENDPOINT
                 + "/dataset/"
                 + self.test_dataset_1[0]["dataset_id"]
             ) as response:
@@ -507,7 +508,7 @@ class TestDatasets:
     async def test_get_non_existing_file_with_id(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + FILES_ENDPOINT + "/dataset/wrong_id"
+                RETRIEVER_URL + NEXUS_ENDPOINT + "/dataset/wrong_id"
             ) as response:
                 assert response.status == 404
 
@@ -515,7 +516,7 @@ class TestDatasets:
     async def test_get_existing_file_with_path(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + FILES_ENDPOINT,
+                RETRIEVER_URL + NEXUS_ENDPOINT,
                 params={"path": self.test_dataset_1[0]["path"]},
             ) as response:
                 assert response.status == 200
@@ -533,7 +534,7 @@ class TestDatasets:
     async def test_get_non_existing_file_with_path(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + FILES_ENDPOINT, params={"path": "/wrong/path/file.h5"}
+                RETRIEVER_URL + NEXUS_ENDPOINT, params={"path": "/wrong/path/file.h5"}
             ) as response:
                 assert response.status == 404
 
@@ -541,7 +542,7 @@ class TestDatasets:
     async def test_get_existing_file_with_query(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + FILES_ENDPOINT + DATASETS_ENDPOINT,
+                RETRIEVER_URL + NEXUS_ENDPOINT + SEARCH_ENDPOINT,
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 assert response.status == 200
@@ -555,7 +556,7 @@ class TestDatasets:
     async def test_get_non_existing_file_with_query(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RETRIEVER_URL + FILES_ENDPOINT + DATASETS_ENDPOINT,
+                RETRIEVER_URL + NEXUS_ENDPOINT + SEARCH_ENDPOINT,
                 params={"collector_id": "wrong_id"},
             ) as response:
                 assert response.status == 404
@@ -566,7 +567,7 @@ class TestDatasets:
             dataset = dict(self.test_dataset_1[0])
             dataset.pop("dataset_id")
             async with session.post(
-                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                RETRIEVER_URL + NEXUS_ENDPOINT + DATASETS_ENDPOINT,
                 json=[dataset],
             ) as response:
                 assert response.status == 200
@@ -589,7 +590,7 @@ class TestDatasets:
                 dataset.pop("dataset_id")
                 datasets.append(dataset)
             async with session.post(
-                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                RETRIEVER_URL + NEXUS_ENDPOINT + DATASETS_ENDPOINT,
                 json=datasets,
             ) as response:
                 assert response.status == 200
@@ -616,7 +617,7 @@ class TestDatasets:
                 dataset.pop("dataset_id")
                 datasets.append(dataset)
             async with session.post(
-                RETRIEVER_URL + FILES_ENDPOINT + "/compile",
+                RETRIEVER_URL + NEXUS_ENDPOINT + DATASETS_ENDPOINT,
                 json=datasets,
             ) as response:
                 assert response.status == 200
