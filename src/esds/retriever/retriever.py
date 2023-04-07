@@ -39,7 +39,7 @@ This API can be used for:
 app = FastAPI(
     title="SDS Retriever Service API",
     description=description,
-    version="0.1",
+    version="0.2",
 )
 
 app.add_middleware(
@@ -214,7 +214,7 @@ files_router = APIRouter()
 
 
 @files_router.get("/", response_class=FileResponse)
-async def get_file_by_path(
+async def get_nexus_by_path(
     *,
     path: Path,
 ):
@@ -233,7 +233,7 @@ async def get_file_by_path(
 
 
 @files_router.get("/dataset/{id}", response_class=FileResponse)
-async def get_file_by_dataset_id(
+async def get_nexus_by_dataset_id(
     *,
     id: Any,
 ):
@@ -257,7 +257,7 @@ async def get_file_by_dataset_id(
 
 
 @files_router.get("/query", response_class=StreamingResponse)
-async def get_file_by_dataset_query(
+async def get_nexus_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
@@ -300,14 +300,14 @@ async def get_file_by_dataset_query(
     if datasets == []:
         raise HTTPException(status_code=404, detail="Datasets not found")
 
-    return await get_file_with_multiple_datasets(
+    return await get_nexus_with_multiple_datasets(
         [schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets],
         include_pvs=include_pvs,
     )
 
 
 @files_router.post("/datasets", response_class=StreamingResponse)
-async def get_file_with_multiple_datasets(
+async def get_nexus_with_multiple_datasets(
     datasets: List[schemas.DataseDefinition],
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
