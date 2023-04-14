@@ -165,11 +165,11 @@ class NexusFile:
                     data=value,
                     compression="gzip",
                     compression_opts=settings.compression_level,
-                    dtype=p4p_type_to_hdf5[t.type[-1]],
+                    dtype=p4p_type_to_hdf5.get(t.type[-1], None),
                 )
             else:
                 parent.create_dataset(
-                    key, data=value, dtype=p4p_type_to_hdf5[t.type[-1]]
+                    key, data=value, dtype=p4p_type_to_hdf5.get(t.type[-1], None)
                 )
 
     def write_from_datasets(self, include_pvs=None):
