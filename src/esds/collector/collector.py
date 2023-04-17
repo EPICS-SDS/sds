@@ -1,14 +1,17 @@
+import logging
+import os.path
 from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
-import logging
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Set
 
 from esds.collector import collector_status
 from esds.collector.config import settings
-from esds.common.files import Event, NexusFile, write_file
+from esds.common.files import Event, NexusFile
+from esds.common.files import settings as file_settings
+from esds.common.files import write_to_file
 from esds.common.schemas import CollectorBase
 
 
@@ -16,11 +19,11 @@ class Collector(CollectorBase):
     id: str
     _tasks: Set[Task] = set()
     _queues: Dict[int, Queue] = dict()
-    _timeout: int = settings.collector_timeout
     _events_per_file: int = settings.events_per_file
     _file_lock: Lock
     _files: Dict[int, NexusFile] = dict()
-    _concurrent_events: Dict[str, List[Queue]] = dict()
+    # To keep track of different datasets stored in the same NeXus file
+    _concurrent_datasets: Dict[str, List[Queue]] = dict()
     _pool: ProcessPoolExecutor
 
     class Config:
@@ -75,15 +78,23 @@ class Collector(CollectorBase):
                     file_name=file_name,
                     directory=directory,
                 )
+
+                absolute_path = file_settings.storage_path / nexus_file.path
+                if os.path.exists(absolute_path):
+                    logging.error(
+                        f"File {nexus_file.path} already exists. Discarding update for SDS event {event}."
+                    )
+                    return
+
                 self._files[event.sds_event_pulse_id] = nexus_file
-                self._concurrent_events[nexus_file.file_name] = []
+                self._concurrent_datasets[nexus_file.file_name] = 0
 
             # One queue per sds_event_id
             queue = self._queues.get(event.sds_event_pulse_id)
             if queue is None:
                 queue = self.create_queue(event.sds_event_pulse_id)
 
-                self._concurrent_events[nexus_file.file_name].append(queue)
+                self._concurrent_datasets[nexus_file.file_name] += 1
 
                 task = create_task(self._collector(queue, nexus_file))
                 self._tasks.add(task)
@@ -98,36 +109,61 @@ class Collector(CollectorBase):
 
     async def _collector(self, queue: Queue, nexus_file: NexusFile):
         first_update_received = datetime.utcnow()
-        last_update_received = [datetime.utcnow()]
+        last_flush = datetime.utcnow()
+        last_update_received = datetime.utcnow()
 
-        async def consumer(queue: Queue, nexus_file: NexusFile):
-            while True:
-                event = await queue.get()
-                nexus_file.add_event(event)
-                last_update_received[0] = datetime.utcnow()
+        events = []
 
-        coro = consumer(queue, nexus_file)
-        try:
-            await wait_for(coro, self._timeout)
-        except TimeoutError:
-            pass
+        while True:
+            try:
+                event = await wait_for(queue.get(), settings.flush_file_delay)
+                events.append(event)
+                last_update_received = datetime.utcnow()
+            except TimeoutError:
+                pass
+
+            # Flush file at regular intervals to free memory
+            if (
+                len(events) != 0
+                and (datetime.utcnow() - last_flush).total_seconds()
+                > settings.flush_file_delay
+            ):
+                frozen_events = list(events)
+                events = []
+                last_flush = datetime.utcnow()
+                async with nexus_file.lock:
+                    await get_running_loop().run_in_executor(
+                        self._pool, write_to_file, nexus_file, frozen_events
+                    )
+
+            # Making sure the queue is empty before timing out the collector
+            if (
+                queue.empty()
+                and (datetime.utcnow() - first_update_received).total_seconds()
+                > settings.collector_timeout
+            ):
+                async with nexus_file.lock:
+                    if len(events) != 0:
+                        await get_running_loop().run_in_executor(
+                            self._pool, write_to_file, nexus_file, events
+                        )
+                break
 
         collector_status.set_last_collection(self.name)
         collector_status.set_collection_time(
-            self.name, (last_update_received[0] - first_update_received).total_seconds()
+            self.name, (last_update_received - first_update_received).total_seconds()
         )
 
         # When all tasks are done, write the file and send metadata to indexer
         with self._file_lock:
-            self._concurrent_events[nexus_file.file_name].remove(queue)
+            self._concurrent_datasets[nexus_file.file_name] -= 1
 
-            file_ready = self._concurrent_events[nexus_file.file_name] == []
+            file_ready = self._concurrent_datasets[nexus_file.file_name] == 0
             if file_ready:
-                self._concurrent_events.pop(nexus_file.file_name)
+                self._concurrent_datasets.pop(nexus_file.file_name)
                 self.discard_file(nexus_file)
 
         if file_ready:
-            await get_running_loop().run_in_executor(self._pool, write_file, nexus_file)
             await nexus_file.index(settings.indexer_url)
             collector_status.set_collection_size(self.name, nexus_file.getsize())
 

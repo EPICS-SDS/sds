@@ -97,8 +97,8 @@ class TestCollector:
             value[0] == last_pulse
         ), f"Last pulse not received by collector. Last pulse={last_pulse}. Last received={value[0]}"
         mon.close()
-        # Waiting for 5 more seconds than the collector timeout to make sure the files are written to disk
-        await asyncio.sleep(settings.collector_timeout + 5)
+        # Waiting for 5 more seconds than the flush to file delay to make sure the files are written to disk
+        await asyncio.sleep(settings.flush_file_delay + 5)
 
         # Check files
         collectors_path = settings.collector_definitions

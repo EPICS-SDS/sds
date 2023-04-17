@@ -17,6 +17,8 @@ from sds_pv import SdsPV
 
 letters = string.ascii_letters
 
+sds_evt_code = 3
+
 
 class Choices:
     instances = dict()
@@ -145,7 +147,7 @@ class PutHandler(object):
             beam_energy=2e9,
             beam_dest="Target",
             beam_curr=62.5e-3,
-            sds_evt_code=3,
+            sds_evt_code=sds_evt_code,
             sds_ts=sds_event_timestamp,
             sds_pulse_id=sds_event_pulse_id,
         )
@@ -246,7 +248,7 @@ class MyServer(object):
                                     beam_energy=2e9,
                                     beam_dest="Target",
                                     beam_curr=62.5e-3,
-                                    sds_evt_code=3,
+                                    sds_evt_code=sds_evt_code,
                                     sds_ts=sds_event_timestamp,
                                     sds_pulse_id=sds_event_pulse_id,
                                 )

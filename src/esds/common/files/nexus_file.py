@@ -1,6 +1,6 @@
+from asyncio import Lock
 import logging
 import os.path
-import time
 from pathlib import Path
 from typing import Dict, List
 
@@ -47,6 +47,7 @@ class NexusFile:
 
         self.datasets: Dict[int, Dataset] = dict()
         self.events: List[Event] = list()
+        self.lock: Lock = Lock()
 
     async def index(self, indexer_url):
         """Send metadata from all dataset to the indexer"""
@@ -221,16 +222,7 @@ class NexusFile:
         absolute_path = settings.storage_path / self.path
         absolute_path.parent.mkdir(parents=True, exist_ok=True)
         if os.path.exists(absolute_path):
-            if (
-                time.time()
-                > os.path.getmtime(absolute_path) + settings.file_appendable_window
-            ):
-                logging.warning(
-                    f"{repr(self)} skipped writing to '{self.path}. The file exists and time window to append data expired.'"
-                )
-                return None
-            else:
-                return File(absolute_path, "a")
+            return File(absolute_path, "a")
         else:
             return File(absolute_path, "w")
 
@@ -241,6 +233,8 @@ class NexusFile:
         return os.path.getsize(settings.storage_path / self.path)
 
 
-def write_file(nexus_file: NexusFile):
+def write_to_file(nexus_file: NexusFile, events: list[Event]):
     """Convenience method to write the NeXus files from a ProcessPoolExecutor"""
+    for event in events:
+        nexus_file.add_event(event)
     nexus_file.write_from_events()
