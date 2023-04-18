@@ -14,6 +14,8 @@ from esds.common.files import settings as file_settings
 from esds.common.files import write_to_file
 from esds.common.schemas import CollectorBase
 
+logger = logging.getLogger(__name__)
+
 
 class Collector(CollectorBase):
     id: str
@@ -56,7 +58,7 @@ class Collector(CollectorBase):
     def update(self, event: Event):
         # If the PV does not belong to this event, ignore it.
         if not self.event_matches(event):
-            logging.warning(f"{repr(self)} received bad event {repr(event)}")
+            logger.warning(f"{repr(self)} received bad event {repr(event)}")
             return
 
         with self._file_lock:
@@ -81,7 +83,7 @@ class Collector(CollectorBase):
 
                 absolute_path = file_settings.storage_path / nexus_file.path
                 if os.path.exists(absolute_path):
-                    logging.error(
+                    logger.error(
                         f"File {nexus_file.path} already exists. Discarding update for SDS event {event}."
                     )
                     return

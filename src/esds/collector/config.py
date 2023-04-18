@@ -1,7 +1,9 @@
+import logging
 from pydantic import BaseSettings, FilePath, AnyHttpUrl
 
 
 class Settings(BaseSettings):
+    log_level: int | str = logging.INFO
     collector_host: str = "0.0.0.0"
     collector_definitions: FilePath
     flush_file_delay: float = 2

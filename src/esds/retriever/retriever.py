@@ -8,26 +8,29 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiofiles
-from esds.common import crud, schemas
-from esds.common.db.connection import wait_for_connection
-from esds.common.files import NexusFile
-from esds.common.files.json_file import JsonFile, numpy_encoder
-from esds.retriever.config import settings
-from esds.retriever.schemas import MultiResponseCollector, MultiResponseDataset
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from h5py import File
 
-HDF5_MIME_TYPE = "application/x-hdf5"
+from esds.common import crud, schemas
+from esds.common.db.connection import wait_for_connection
+from esds.common.files import NexusFile
+from esds.common.files.json_file import JsonFile, numpy_encoder
+from esds.retriever.config import settings
+from esds.retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
-logger = logging.getLogger()
 ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
 ch.setFormatter(formatter)
-logger.addHandler(ch)
-logger.setLevel(settings.log_level)
+ch.setLevel(settings.log_level)
+logging.getLogger().addHandler(ch)
+logging.getLogger().setLevel(settings.log_level)
+
+logger = logging.getLogger(__name__)
+
+HDF5_MIME_TYPE = "application/x-hdf5"
 
 description = """
 This API can be used for:

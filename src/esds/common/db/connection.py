@@ -1,13 +1,14 @@
-import sys
-import logging
 import asyncio
+import logging
+import sys
 from contextlib import asynccontextmanager
 from functools import wraps
+
 from elasticsearch import AsyncElasticsearch
 
 from esds.common.db import settings
 
-logger = logging.getLogger("sds_common")
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager

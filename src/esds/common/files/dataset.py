@@ -1,10 +1,13 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 from pathlib import Path
+
 import aiohttp
 from pydantic import BaseModel
 
 from esds.common.files import BeamInfo
+
+logger = logging.getLogger(__name__)
 
 
 class Dataset(BaseModel):
@@ -31,5 +34,5 @@ class Dataset(BaseModel):
                 async with client.post(url, data=data) as response:
                     response.raise_for_status()
         except Exception as e:
-            logging.error(f"{repr(self)} indexing failed!")
-            logging.error(e)
+            logger.error(f"{repr(self)} indexing failed!")
+            logger.error(e)

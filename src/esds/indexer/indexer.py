@@ -4,19 +4,21 @@ from threading import Lock
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI, Response, status
+
 from esds.common import crud, schemas
 from esds.common.db.connection import wait_for_connection
 from esds.common.db.utils import dict_to_filters
-
 from esds.indexer.config import settings
 from esds.indexer.init_db import init_db
 
-logger = logging.getLogger()
 ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
 ch.setFormatter(formatter)
-logger.addHandler(ch)
-logger.setLevel(settings.log_level)
+ch.setLevel(settings.log_level)
+logging.getLogger().addHandler(ch)
+logging.getLogger().setLevel(settings.log_level)
+
+logger = logging.getLogger(__name__)
 
 description = """
 This API can be used for:

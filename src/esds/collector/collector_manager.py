@@ -10,6 +10,7 @@ import aiohttp
 from aiohttp.client_exceptions import ClientError
 from p4p.client.asyncio import Context, Disconnected
 from pydantic import ValidationError
+
 from esds.collector import collector_settings, collector_status
 from esds.collector.async_subscription import AsyncSubscription
 from esds.collector.collector import Collector
@@ -17,6 +18,8 @@ from esds.collector.config import settings
 from esds.collector.epics_event import EpicsEvent
 from esds.common.files import CollectorDefinition, CollectorList, Event
 from esds.common.schemas import CollectorBase
+
+logger = logging.getLogger(__name__)
 
 
 class CollectorNotFoundException(Exception):
@@ -103,14 +106,14 @@ class CollectorManager:
                     )
                 )
         except PermissionError:
-            logging.warning(
+            logger.warning(
                 "Collector definition file not writable. Configuration changes could not be saved."
             )
 
     async def add_collector(self, collector_definition: CollectorDefinition):
         # First register the collector in the indexer service
         async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
-            logging.info(f"Adding collector '{collector_definition.name}'")
+            logger.info(f"Adding collector '{collector_definition.name}'")
             try:
                 new_collector = CollectorBase(
                     **collector_definition.dict(), host=settings.collector_host
@@ -121,9 +124,9 @@ class CollectorManager:
                 ) as response:
                     response.raise_for_status()
                     if response.status == 201:
-                        logging.info(f"Collector '{new_collector.name}' created in DB")
+                        logger.info(f"Collector '{new_collector.name}' created in DB")
                     elif response.status == 200:
-                        logging.info(f"Collector '{new_collector.name}' already in DB")
+                        logger.info(f"Collector '{new_collector.name}' already in DB")
 
                     obj = await response.json()
                     collector = Collector.parse_obj(obj)
@@ -131,7 +134,7 @@ class CollectorManager:
                 ClientError,
                 OSError,
             ):
-                logging.error(
+                logger.error(
                     f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status."
                 )
                 raise
@@ -290,7 +293,7 @@ class CollectorManager:
             for pv in collector_status.pv_status_dict.values():
                 all_pv_connected *= pv.pv_status.connected
             if all_pv_connected:
-                logging.info(
+                logger.info(
                     f"Collector start-up completed in {time.time() - start_time} s."
                 )
                 return
@@ -305,29 +308,27 @@ class CollectorManager:
     async def _subscribe(self, pv):
         while True:
             try:
-                logging.info(f"PV '{pv}' subscribing...")
+                logger.info(f"PV '{pv}' subscribing...")
                 async with AsyncSubscription(self._context, pv) as sub:
                     async with sub.messages() as messages:
-                        logging.info(f"PV '{pv}' subscribed!")
+                        logger.info(f"PV '{pv}' subscribed!")
                         async for message in messages:
                             self._message_handler(pv, message)
-                logging.info(f"PV '{pv}' subscription ended")
+                logger.info(f"PV '{pv}' subscription ended")
             except Disconnected:
                 collector_status.get_pv_status(pv).connected = False
-                logging.info(
-                    f"PV '{pv}' disconnected, reconnecting in {self._timeout}s"
-                )
+                logger.info(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
             except asyncio.CancelledError:
                 collector_status.get_pv_status(pv).connected = False
-                logging.info(f"PV '{pv}' subscription closed")
+                logger.info(f"PV '{pv}' subscription closed")
                 return
 
     def _message_handler(self, pv, message):
         try:
             event = EpicsEvent(pv_name=pv, value=message)
         except ValidationError as e:
-            logging.error(f"PV '{pv}' event validation error")
-            logging.error(e)
+            logger.error(f"PV '{pv}' event validation error")
+            logger.error(e)
             return
 
         self._event_handler(event)

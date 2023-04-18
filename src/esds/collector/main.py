@@ -6,17 +6,28 @@ import aiohttp
 from aiohttp.client_exceptions import ClientError
 from p4p import set_debug
 from pydantic import parse_file_as
+
 from esds.collector.api import start_api
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.config import settings
 from esds.common.files import CollectorDefinition
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
+ch.setFormatter(formatter)
+ch.setLevel(settings.log_level)
+logging.getLogger().addHandler(ch)
+logging.getLogger().setLevel(settings.log_level)
+
+
+logger = logging.getLogger(__name__)
 
 set_debug(logging.WARNING)
 
 
 async def load_collectors() -> Optional[List[CollectorDefinition]]:
     path = settings.collector_definitions
-    logging.info(f"Loading collector definitions from {path}")
+    logger.info(f"Loading collector definitions from {path}")
 
     collectors = parse_file_as(Optional[List[CollectorDefinition]], path)
     return collectors
@@ -33,7 +44,7 @@ async def wait_for_indexer():
                     ) as response:
                         response.raise_for_status()
                         if response.status == 200:
-                            logging.info("Indexer ready")
+                            logger.info("Indexer ready")
                             return
                 except (
                     ClientError,
@@ -41,7 +52,7 @@ async def wait_for_indexer():
                 ):
                     pass
 
-                logging.warning(
+                logger.warning(
                     f"Could not connect to the indexer service {settings.indexer_url}. Retrying in {indexer_timeout} s."
                 )
                 await asyncio.sleep(indexer_timeout)
@@ -52,13 +63,13 @@ async def wait_for_indexer():
 async def main():
     await wait_for_indexer()
 
-    logging.info("SDS Collector service\n")
+    logger.info("SDS Collector service\n")
     collectors = await load_collectors()
 
     if settings.collector_api_enabled:
         serve_task = start_api()
 
-    logging.info("Starting collectors...")
+    logger.info("Starting collectors...")
     async with await CollectorManager.create(collectors) as cm:
         await cm.join()
 

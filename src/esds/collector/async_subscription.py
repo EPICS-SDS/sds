@@ -1,12 +1,15 @@
 import asyncio
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
 from numpy import array
 from p4p import Type
 from p4p.client.asyncio import Context, Disconnected
+
 from esds.collector import collector_status
 from esds.collector.collector_status import PvStatus
+
+logger = logging.getLogger(__name__)
 
 
 def calc_size(v, t):
@@ -66,22 +69,20 @@ class AsyncSubscription:
         elif isinstance(value, Exception):
             raise value
         else:
-            logging.info(f"PV '{self._pv}' connected")
+            logger.info(f"PV '{self._pv}' connected")
             self.cb = self._cb
             self.pv_status.connected = True
 
     def _cb(self, value):
         if isinstance(value, Disconnected):
-            logging.info(f"PV '{self._pv}' disconnected")
+            logger.info(f"PV '{self._pv}' disconnected")
             self.pv_status.connected = False
             self.cb = self._first_cb
         elif isinstance(value, Exception):
             raise value
         else:
             if "value" not in value.keys():
-                logging.warning(
-                    f"PV '{self._pv}' has no value field, discarding event."
-                )
+                logger.warning(f"PV '{self._pv}' has no value field, discarding event.")
                 return
             collector_status.set_update_event(self._pv)
             collector_status.set_event_size(

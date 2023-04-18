@@ -5,10 +5,11 @@ from typing import List, Optional, Tuple
 
 from elasticsearch import BadRequestError, NotFoundError
 from pydantic import BaseModel, root_validator
+
 from esds.common.db import settings
 from esds.common.db.connection import get_connection
 
-logger = logging.getLogger("sds_common")
+logger = logging.getLogger(__name__)
 
 
 class Base(BaseModel):

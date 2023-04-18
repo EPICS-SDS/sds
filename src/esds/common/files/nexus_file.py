@@ -1,7 +1,8 @@
-from asyncio import Lock
 import logging
 import os.path
+from asyncio import Lock
 from pathlib import Path
+from traceback import print_exc
 from typing import Dict, List
 
 import numpy as np
@@ -10,6 +11,8 @@ from h5py import File, enum_dtype
 from esds.common.files.config import settings
 from esds.common.files.dataset import Dataset
 from esds.common.files.event import Event
+
+logger = logging.getLogger(__name__)
 
 p4p_type_to_hdf5 = {
     "?": np.bool_,
@@ -83,7 +86,7 @@ class NexusFile:
             h5file = self._get_h5file()
             if h5file is None:
                 return
-            logging.info(f"{repr(self)} writing to '{self.path}'")
+            logger.info(f"{repr(self)} writing to '{self.path}'")
 
             entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
@@ -140,11 +143,12 @@ class NexusFile:
                 acquisition_attributes["acq_event.evr"] = event.acq_event.evr
 
             h5file.close()
-            logging.info(f"{repr(self)} writing done.")
+            logger.info(f"{repr(self)} writing done.")
             return True
         except Exception as e:
-            logging.warning(f"{repr(self)} writing failed!")
-            logging.warning(e)
+            logger.warning(f"{repr(self)} writing failed!")
+            print_exc()
+            logger.warning(e)
             return False
 
     def _parse_value(self, parent, key, value, t):
@@ -182,7 +186,7 @@ class NexusFile:
             if h5file is None:
                 return
 
-            logging.info(f"{repr(self)} writing to '{self.path}'")
+            logger.info(f"{repr(self)} writing to '{self.path}'")
             entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
@@ -213,10 +217,10 @@ class NexusFile:
                 origin.close()
 
             h5file.close()
-            logging.info(f"{repr(self)} writing done.")
+            logger.info(f"{repr(self)} writing done.")
         except Exception as e:
-            logging.warning(f"{repr(self)} writing failed!")
-            logging.warning(e)
+            logger.warning(f"{repr(self)} writing failed!")
+            logger.warning(e)
 
     def _get_h5file(self):
         absolute_path = settings.storage_path / self.path

@@ -1,13 +1,14 @@
 import logging
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
+
 from esds.common.db import settings
 from esds.common.db.base_class import Base
 from esds.common.db.connection import get_connection
 from esds.common.db.fields import Date, Double, Keyword, Long
 from esds.common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 
-logger = logging.getLogger("sds_common")
+logger = logging.getLogger(__name__)
 
 DATASET_POLICY_NAME = "dataset_policy"
 DATASET_MAPPING_TEMPLATE = "dataset_mapping"

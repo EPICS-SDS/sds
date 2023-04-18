@@ -2,6 +2,9 @@ import logging
 
 from esds.common.models import Collector, Dataset, Expiry
 
+logger = logging.getLogger(__name__)
+
+
 models = [
     Collector,
     Dataset,
@@ -10,6 +13,6 @@ models = [
 
 
 async def init_db():
-    logging.info("Initialising models...")
+    logger.info("Initialising models...")
     for model in models:
         await model.init()
