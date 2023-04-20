@@ -75,6 +75,12 @@ class NexusFile:
 
         self.events.append(event)
 
+    def clear_events(self):
+        """
+        Convenience method to clear the list of events after a partial write to disk.
+        """
+        self.events.clear()
+
     def add_dataset(self, dataset: Dataset):
         self.datasets.update({dataset.sds_event_pulse_id: dataset})
 
@@ -237,8 +243,6 @@ class NexusFile:
         return os.path.getsize(settings.storage_path / self.path)
 
 
-def write_to_file(nexus_file: NexusFile, events: list[Event]):
+def write_to_file(nexus_file: NexusFile):
     """Convenience method to write the NeXus files from a ProcessPoolExecutor"""
-    for event in events:
-        nexus_file.add_event(event)
     nexus_file.write_from_events()

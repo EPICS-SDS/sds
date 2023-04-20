@@ -114,29 +114,27 @@ class Collector(CollectorBase):
         last_flush = datetime.utcnow()
         last_update_received = datetime.utcnow()
 
-        events = []
-
         while True:
             try:
                 event = await wait_for(queue.get(), settings.flush_file_delay)
-                events.append(event)
+                nexus_file.add_event(event)
                 last_update_received = datetime.utcnow()
             except TimeoutError:
                 pass
 
             # Flush file at regular intervals to free memory
             if (
-                len(events) != 0
+                len(nexus_file.events) != 0
                 and (datetime.utcnow() - last_flush).total_seconds()
                 > settings.flush_file_delay
             ):
-                frozen_events = list(events)
-                events = []
+
                 last_flush = datetime.utcnow()
                 async with nexus_file.lock:
                     await get_running_loop().run_in_executor(
-                        self._pool, write_to_file, nexus_file, frozen_events
+                        self._pool, write_to_file, nexus_file
                     )
+                    nexus_file.clear_events()
 
             # Making sure the queue is empty before timing out the collector
             if (
@@ -145,9 +143,9 @@ class Collector(CollectorBase):
                 > settings.collector_timeout
             ):
                 async with nexus_file.lock:
-                    if len(events) != 0:
+                    if len(nexus_file.events) != 0:
                         await get_running_loop().run_in_executor(
-                            self._pool, write_to_file, nexus_file, events
+                            self._pool, write_to_file, nexus_file
                         )
                 break
 
@@ -159,7 +157,6 @@ class Collector(CollectorBase):
         # When all tasks are done, write the file and send metadata to indexer
         with self._file_lock:
             self._concurrent_datasets[nexus_file.file_name] -= 1
-
             file_ready = self._concurrent_datasets[nexus_file.file_name] == 0
             if file_ready:
                 self._concurrent_datasets.pop(nexus_file.file_name)
