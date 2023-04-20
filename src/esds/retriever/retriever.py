@@ -166,8 +166,10 @@ async def query_datasets(
     """
     filters = []
     if collector_id is not None:
+        collectors_filter = []
         for id in collector_id:
-            filters.append({"match": {"collector_id": id}})
+            collectors_filter.append({"match": {"collector_id": id}})
+        filters.append({"bool": {"should": collectors_filter}})
     if start is not None or end is not None:
         timestamp_range = {}
         if start:
