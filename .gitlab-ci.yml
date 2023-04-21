@@ -53,3 +53,7 @@ test:
     reports:
       junit: src/junit.xml
     expire_in: 1 hour
+
+run-sonar-scanner:
+  only:
+    - main
