@@ -112,6 +112,9 @@ class TestCollector:
 
     @pytest.mark.asyncio
     async def test_acquisition(self, indexer_service, collector_service):
+        # Adding a short wait to allow collector service to start correctly before pushing new PV updates
+        await asyncio.sleep(2)
+
         with Context() as ctxt:
             # Floating point (max value)
             await ctxt.put(FLOAT_PV, FLOAT_1)
