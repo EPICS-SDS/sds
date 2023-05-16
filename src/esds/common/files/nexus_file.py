@@ -141,8 +141,6 @@ class NexusFile:
                 acquisition_attributes[
                     "acq_event.timestamp"
                 ] = event.acq_event.timestamp.isoformat()
-                acquisition_attributes["acq_info.type"] = event.acq_info.acq_type
-                acquisition_attributes["acq_info.id"] = event.acq_info.id
                 acquisition_attributes["acq_event.name"] = event.acq_event.name
                 acquisition_attributes["acq_event.delay"] = event.acq_event.delay
                 acquisition_attributes["acq_event.code"] = event.acq_event.code

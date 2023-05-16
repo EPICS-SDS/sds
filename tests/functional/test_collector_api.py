@@ -9,7 +9,7 @@ from esds.collector.collector import Collector
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
 from esds.collector.config import settings
-from esds.common.files import AcqEvent, AcqInfo, BeamInfo, CollectorDefinition, Event
+from esds.common.files import AcqEvent, BeamInfo, CollectorDefinition, Event
 from esds.common.schemas import CollectorBase
 from tests.functional.service_loader import indexer_service
 
@@ -20,11 +20,6 @@ collector = Collector(
     pvs=["TEST:PV:1", "TEST:PV:2"],
     id="test_id",
     host="0.0.0.0",
-)
-
-acq_info = AcqInfo(
-    acq_type="",
-    id=0,
 )
 
 acq_event = AcqEvent(
@@ -53,7 +48,6 @@ event = Event(
     sds_event_timestamp=datetime.utcnow(),
     pulse_id=1,
     sds_event_pulse_id=1,
-    acq_info=acq_info,
     acq_event=acq_event,
     beam_info=beam_info,
 )

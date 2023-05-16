@@ -60,7 +60,6 @@ class CollectorManager:
         collectors: Optional[List[CollectorBase]],
         timeout: int = settings.collector_timeout,
     ):
-
         cls.instance = CollectorManager(timeout)
 
         adding_collector_tasks = []

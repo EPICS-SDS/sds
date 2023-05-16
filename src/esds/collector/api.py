@@ -41,7 +41,8 @@ settings_router = APIRouter()
 
 class CollectorSettingsSchema(BaseModel):
     epics_addr_list: str
-    collector_timeout: int
+    flush_file_delay: float
+    collector_timeout: float
     events_per_file: int
     autostart_collectors: bool
     status_queue_length: int
@@ -58,6 +59,7 @@ async def get_settings():
 
     return CollectorSettingsSchema(
         epics_addr_list=epics_settings["EPICS_PVA_ADDR_LIST"],
+        flush_file_delay=settings.flush_file_delay,
         collector_timeout=settings.collector_timeout,
         events_per_file=settings.events_per_file,
         autostart_collectors=settings.autostart_collectors,
@@ -138,7 +140,7 @@ async def add_collectors(
     *,
     start_collector: bool = True,
     collectors_in: List[schemas.CollectorDefinition],
-    response: Response
+    response: Response,
 ):
     """
     Load several collectors to the service. Optionally, select if the collectors should be started or not after adding it.

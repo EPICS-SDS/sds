@@ -33,7 +33,6 @@ class Keyword(ESField):
 
     @classmethod
     def validate(cls, v):
-
         if not isinstance(v, str) and isinstance(v, Iterable):
             return list(map(validators.str_validator, v))
         return validators.str_validator(str(v))

@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 from esds.collector.collector import Collector
-from esds.common.files import AcqEvent, AcqInfo, BeamInfo, Dataset, Event
+from esds.common.files import AcqEvent, BeamInfo, Dataset, Event
 
 collector = Collector(
     name="test_collector",
@@ -11,11 +11,6 @@ collector = Collector(
     pvs=["TEST:PV:1", "TEST:PV:2"],
     id="test_id",
     host="0.0.0.0",
-)
-
-acq_info = AcqInfo(
-    acq_type="",
-    id=0,
 )
 
 acq_event = AcqEvent(
@@ -44,7 +39,6 @@ event = Event(
     sds_event_timestamp=datetime.utcnow(),
     pulse_id=1,
     sds_event_pulse_id=1,
-    acq_info=acq_info,
     acq_event=acq_event,
     beam_info=beam_info,
 )
@@ -65,7 +59,6 @@ class TestDataset:
             sds_event_timestamp=datetime.utcnow(),
             sds_event_pulse_id=event.sds_event_pulse_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.sds_event_pulse_id}",
-            acq_info=acq_info,
             acq_event=acq_event,
             beam_info=beam_info,
         )

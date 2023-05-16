@@ -11,7 +11,7 @@ import pytest_asyncio
 import requests
 from pydantic import ValidationError
 from esds.common import schemas
-from esds.common.files import AcqEvent, AcqInfo, BeamInfo, Event, NexusFile
+from esds.common.files import AcqEvent, BeamInfo, Event, NexusFile
 from esds.retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
@@ -194,11 +194,6 @@ class TestDatasets:
         "curr": 62.5e-3,
     }
 
-    acq_info_dict = {
-        "acq_type": "",
-        "id": 0,
-    }
-
     acq_event_dict = {
         "timestamp": datetime.utcnow().isoformat(),
         "name": "TestEvent",
@@ -213,7 +208,6 @@ class TestDatasets:
             "sds_event_pulse_id": 1,
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
             "data_pulse_id": [1],
-            "acq_info": acq_info_dict,
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         }
@@ -224,7 +218,6 @@ class TestDatasets:
             "sds_event_pulse_id": 2,
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
             "data_pulse_id": [2],
-            "acq_info": acq_info_dict,
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         },
@@ -233,7 +226,6 @@ class TestDatasets:
             "sds_event_pulse_id": 3,
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
             "data_pulse_id": [3],
-            "acq_info": acq_info_dict,
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         },
@@ -272,7 +264,6 @@ class TestDatasets:
                 directory=settings.storage_path / directory,
             )
 
-            acq_info = AcqInfo(**self.acq_info_dict)
             acq_event = AcqEvent(**self.acq_event_dict)
             beam_info = BeamInfo(**self.beam_info_dict)
             for dataset in datasets:
@@ -285,7 +276,6 @@ class TestDatasets:
                         sds_event_timestamp=datetime.utcnow(),
                         pulse_id=dataset["sds_event_pulse_id"],
                         sds_event_pulse_id=dataset["sds_event_pulse_id"],
-                        acq_info=acq_info,
                         acq_event=acq_event,
                         beam_info=beam_info,
                     )

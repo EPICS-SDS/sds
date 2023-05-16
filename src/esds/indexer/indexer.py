@@ -55,7 +55,6 @@ async def create_collector(
     response: Response,
     collector_in: schemas.CollectorCreate,
 ):
-
     # Make sure the creation of a collector is an atomic operation.
     while True:
         with collectors_lock:

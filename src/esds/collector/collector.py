@@ -128,7 +128,6 @@ class Collector(CollectorBase):
                 and (datetime.utcnow() - last_flush).total_seconds()
                 > settings.flush_file_delay
             ):
-
                 last_flush = datetime.utcnow()
                 async with nexus_file.lock:
                     await get_running_loop().run_in_executor(

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
-from esds.common.files import AcqEvent, AcqInfo, BeamInfo
+from esds.common.files import AcqEvent, BeamInfo
 
 
 class Event(BaseModel):
@@ -19,6 +19,5 @@ class Event(BaseModel):
     pulse_id: int
     sds_event_pulse_id: int
 
-    acq_info: AcqInfo
     acq_event: AcqEvent
     beam_info: BeamInfo

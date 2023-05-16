@@ -5,7 +5,7 @@ from p4p import Value
 from pydantic import root_validator
 
 from esds.common.p4p_type import P4pType
-from esds.common.files import AcqEvent, AcqInfo, BeamInfo, Event
+from esds.common.files import AcqEvent, BeamInfo, Event
 
 
 class EpicsEvent(Event):
@@ -55,16 +55,7 @@ class EpicsEvent(Event):
                     curr=beam_info.curr,
                 )
             )
-        # acqInfo
-        acq_info = value.get("acqInfo")
-        if acq_info is not None:
-            values.update(
-                acq_info=AcqInfo(
-                    acq_type=acq_info["type"],
-                    id=acq_info.id,
-                )
-            )
-        # acqInfo
+        # acqEvt
         acq_event = value.get("acqEvt")
         if acq_event is not None:
             values.update(
