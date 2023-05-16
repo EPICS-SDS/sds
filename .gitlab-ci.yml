@@ -26,7 +26,7 @@ test:
   stage: test
   image: "$CONTAINER_TEST_IMAGE"
   services:
-    - name: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    - name: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
       alias: elasticsearch
       command:
         [

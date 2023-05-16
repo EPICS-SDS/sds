@@ -17,7 +17,7 @@ dependencies = [
         "elasticsearch",
         "fastapi",
         "uvicorn",
-         "p4p == 4.1.2",
+         "p4p == 4.1.6",
          "numpy",
          "h5py",
          "datetime",
