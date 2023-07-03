@@ -40,6 +40,11 @@ test:
     COLLECTOR_DEFINITIONS: "collectors.json"
     STORAGE_PATH: /data
     ELASTIC_URL: "http://elasticsearch:9200"
+  before_script:
+    - mkdir src/static
+    - wget -O src/static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js
+    - wget -O src/static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
+    - wget -O src/static/redoc.standalone.js https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js
   script:
     - cp -R tests src/
     - cp -R tests/test_ioc src/
