@@ -3,11 +3,12 @@ import logging
 from threading import Lock
 from typing import Optional
 
-from fastapi import APIRouter, FastAPI, Response, status
+from fastapi import APIRouter, Response, status
 
 from esds.common import crud, schemas
 from esds.common.db.connection import wait_for_connection
 from esds.common.db.utils import dict_to_filters
+from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.indexer.config import settings
 from esds.indexer.init_db import init_db
 
@@ -25,7 +26,8 @@ This API can be used for:
 - add/update collector definitions
 - add new datasets for indexing
 """
-app = FastAPI(
+app = FastAPIOfflineDocs(
+    doc_cdon_files="static",
     title="SDS Indexer Service API",
     description=description,
     version="0.1",

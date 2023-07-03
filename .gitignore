@@ -13,3 +13,4 @@ dist
 **/_version.py
 *.egg-info
 .eggs
+src/static

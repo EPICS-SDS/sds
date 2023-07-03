@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiofiles
-from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -16,6 +16,7 @@ from h5py import File
 
 from esds.common import crud, schemas
 from esds.common.db.connection import wait_for_connection
+from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.common.files import NexusFile
 from esds.common.files.json_file import JsonFile, numpy_encoder
 from esds.retriever.config import settings
@@ -39,7 +40,8 @@ This API can be used for:
 - get files by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
 - get data as json by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
 """
-app = FastAPI(
+app = FastAPIOfflineDocs(
+    doc_cdon_files="static",
     title="SDS Retriever Service API",
     description=description,
     version="0.2",

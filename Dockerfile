@@ -16,6 +16,12 @@ COPY --chown=sds-user:sds_group src /app
 RUN chown -R sds-user:sds_group /app
 WORKDIR /app
 
+RUN mkdir static && wget -O static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js \
+  && wget -O static/swagger-ui-bundle.js.map https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js.map \
+  && wget -O static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css \
+  && wget -O static/swagger-ui.css.map https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css.map \
+  && wget -O static/redoc.standalone.js https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js
+
 USER sds-user
 
 # Fixes python not printing anything

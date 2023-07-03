@@ -1,9 +1,11 @@
 import asyncio
 from typing import List
 
-from fastapi import APIRouter, FastAPI, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from uvicorn import Config, Server
+
 from esds.collector import collector_settings, collector_status
 from esds.collector.collector_manager import (
     CollectorManager,
@@ -12,7 +14,7 @@ from esds.collector.collector_manager import (
 from esds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
 from esds.collector.config import settings
 from esds.common import schemas
-from uvicorn import Config, Server
+from esds.common.fast_api_offline import FastAPIOfflineDocs
 
 description = """
 This API can be used for:
@@ -20,7 +22,8 @@ This API can be used for:
 - monitor the collectors' status and performance
 - start/stop collectors
 """
-app = FastAPI(
+app = FastAPIOfflineDocs(
+    doc_cdon_files="static",
     title="SDS Collector Service API",
     description=description,
     version="0.1",
