@@ -15,7 +15,7 @@ class TestCollectorMain:
 
     async def main_no_cancelled_error(self):
         try:
-            await main()
+            await main(root_path="", reload=False)
         except CancelledError:
             pass
 
