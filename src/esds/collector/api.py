@@ -275,8 +275,14 @@ async def stop_collector(*, name: str):
 app.include_router(status_router, prefix="/status", tags=["status"])
 
 
-def start_api() -> asyncio.Task:
+def start_api(root_path: str, reload: bool) -> asyncio.Task:
     collector_api = Server(
-        Config(app, host=settings.collector_host, port=settings.collector_api_port)
+        Config(
+            app,
+            host=settings.collector_host,
+            port=settings.collector_api_port,
+            root_path=root_path,
+            reload=reload,
+        )
     )
     return asyncio.create_task(collector_api.serve())

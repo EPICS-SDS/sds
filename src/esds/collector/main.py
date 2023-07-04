@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 from typing import List, Optional
@@ -60,14 +61,14 @@ async def wait_for_indexer():
                 indexer_timeout = min(indexer_timeout * 2, settings.indexer_timeout_max)
 
 
-async def main():
+async def main(root_path: str, reload: bool):
     await wait_for_indexer()
 
     logger.info("SDS Collector service\n")
     collectors = await load_collectors()
 
     if settings.collector_api_enabled:
-        serve_task = start_api()
+        serve_task = start_api(root_path=root_path, reload=reload)
 
     logger.info("Starting collectors...")
     async with await CollectorManager.create(collectors) as cm:
@@ -78,7 +79,18 @@ async def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Collector service",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--root_path", help="root_path for FastAPI", default="")
+    parser.add_argument(
+        "--reload", help="reload option for FastAPI", action="store_true", default=False
+    )
+
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(root_path=args.root_path, reload=args.reload))
     except KeyboardInterrupt:
         pass
