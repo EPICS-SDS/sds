@@ -16,7 +16,11 @@ class FastAPIOfflineDocs(FastAPI):
             docs_url=None, redoc_url=None, *args, **kwargs
         )
 
-        self.mount("/static", StaticFiles(directory=doc_cdon_files), name="static")
+        self.mount(
+            self.root_path + "/static",
+            StaticFiles(directory=doc_cdon_files),
+            name="static",
+        )
 
         async def custom_swagger_ui_html(req: Request) -> HTMLResponse:
             root_path = req.scope.get("root_path", "").rstrip("/")
