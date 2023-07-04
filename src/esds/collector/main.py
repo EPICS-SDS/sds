@@ -83,7 +83,7 @@ if __name__ == "__main__":
         description="Collector service",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--root_path", help="root_path for FastAPI", default="")
+    parser.add_argument("--root-path", help="root-path for FastAPI", default="")
     parser.add_argument(
         "--reload", help="reload option for FastAPI", action="store_true", default=False
     )
