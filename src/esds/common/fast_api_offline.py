@@ -54,6 +54,7 @@ class FastAPIOfflineDocs(FastAPI):
                 openapi_url=openapi_url,
                 title=self.title + " - ReDoc",
                 redoc_js_url=root_path + "/static/redoc.standalone.js",
+                with_google_fonts=False,
             )
 
         self.add_route("/redoc", redoc_html, include_in_schema=False)
