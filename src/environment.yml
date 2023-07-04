@@ -6,7 +6,7 @@ dependencies:
   - aiofiles
   - aiohttp
   - elasticsearch
-  - fastapi   
+  - fastapi==0.98.0   
   - h5py
   - pip
   - python=3.10

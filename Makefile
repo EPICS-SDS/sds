@@ -23,10 +23,8 @@ swagger_redoc_files.lock: pull_swagger_redoc
 
 pull_swagger_redoc:
 	mkdir src/static | true
-	wget -O src/static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js
-	wget -O src/static/swagger-ui-bundle.js.map https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js.map
-	wget -O src/static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
-	wget -O src/static/swagger-ui.css.map https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css.map
+	wget -O src/static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js
+	wget -O src/static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui.css
 	wget -O src/static/redoc.standalone.js https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js
 	touch swagger_redoc_files.lock
 
