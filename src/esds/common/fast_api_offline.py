@@ -17,7 +17,7 @@ class FastAPIOfflineDocs(FastAPI):
         )
 
         self.mount(
-            self.root_path + "/static",
+            "/static",
             StaticFiles(directory=doc_cdon_files),
             name="static",
         )
@@ -32,8 +32,8 @@ class FastAPIOfflineDocs(FastAPI):
                 openapi_url=openapi_url,
                 title=self.title + " - Swagger UI",
                 oauth2_redirect_url=oauth2_redirect_url,
-                swagger_js_url="/static/swagger-ui-bundle.js",
-                swagger_css_url="/static/swagger-ui.css",
+                swagger_js_url=self.root_path + "/static/swagger-ui-bundle.js",
+                swagger_css_url=self.root_path + "/static/swagger-ui.css",
             )
 
         self.add_route("/docs", custom_swagger_ui_html, include_in_schema=False)
@@ -53,7 +53,7 @@ class FastAPIOfflineDocs(FastAPI):
             return get_redoc_html(
                 openapi_url=openapi_url,
                 title=self.title + " - ReDoc",
-                redoc_js_url="/static/redoc.standalone.js",
+                redoc_js_url=self.root_path + "/static/redoc.standalone.js",
             )
 
         self.add_route("/redoc", redoc_html, include_in_schema=False)
