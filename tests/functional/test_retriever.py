@@ -206,6 +206,7 @@ class TestDatasets:
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "sds_event_pulse_id": 1,
+            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
             "data_pulse_id": [1],
             "acq_event": acq_event_dict,
@@ -216,6 +217,7 @@ class TestDatasets:
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
             "sds_event_pulse_id": 2,
+            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
             "data_pulse_id": [2],
             "acq_event": acq_event_dict,
@@ -224,6 +226,7 @@ class TestDatasets:
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "sds_event_pulse_id": 3,
+            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
             "data_pulse_id": [3],
             "acq_event": acq_event_dict,
@@ -274,6 +277,7 @@ class TestDatasets:
                         timing_event_code=TestCollector.test_collector["event_code"],
                         data_timestamp=datetime.utcnow(),
                         sds_event_timestamp=datetime.utcnow(),
+                        pulse_id_timestamp=dataset["pulse_id_timestamp"],
                         pulse_id=dataset["sds_event_pulse_id"],
                         sds_event_pulse_id=dataset["sds_event_pulse_id"],
                         acq_event=acq_event,

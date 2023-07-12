@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -18,3 +19,13 @@ class BeamInfo(BaseModel):
     energy: float
     dest: str
     curr: float
+
+
+class ArrayInfo(BaseModel):
+    tick: float
+    size: int
+
+
+class BufferInfo(BaseModel):
+    size: int
+    idx: int

@@ -37,6 +37,7 @@ event = Event(
     timing_event_code=2,
     data_timestamp=datetime.utcnow(),
     sds_event_timestamp=datetime.utcnow(),
+    pulse_id_timestamp=datetime.utcnow(),
     pulse_id=1,
     sds_event_pulse_id=1,
     acq_event=acq_event,
@@ -46,7 +47,6 @@ event = Event(
 
 class TestCollector:
     def test_collector_bad_event(self):
-
         collector.update(event)
         assert len(collector._tasks) == 0
 

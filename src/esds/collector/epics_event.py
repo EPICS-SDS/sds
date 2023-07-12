@@ -4,8 +4,8 @@ from typing import Any, Dict
 from p4p import Value
 from pydantic import root_validator
 
+from esds.common.files import AcqEvent, ArrayInfo, BeamInfo, BufferInfo, Event
 from esds.common.p4p_type import P4pType
-from esds.common.files import AcqEvent, BeamInfo, Event
 
 
 class EpicsEvent(Event):
@@ -27,7 +27,13 @@ class EpicsEvent(Event):
         # pulse_id
         pulse_id = value.get("pulseId")
         if pulse_id is not None:
-            values.update(pulse_id=pulse_id.value)
+            values.update(
+                pulse_id=pulse_id.value,
+                pulse_id_timestamp=datetime.fromtimestamp(
+                    pulse_id.timeStamp.secondsPastEpoch
+                    + pulse_id.timeStamp.nanoseconds * 1e-9
+                ),
+            )
 
         # eventCode
         sds_info = value.get("sdsInfo")
@@ -40,6 +46,16 @@ class EpicsEvent(Event):
                 sds_event_pulse_id=sds_info.pulseId,
                 timing_event_code=int(sds_info.evtCode),
             )
+
+            # buffer info (for circular buffer)
+            buffer_info = sds_info.get("buffer")
+            if buffer_info is not None:
+                values.update(
+                    buffer_info=BufferInfo(
+                        size=buffer_info.size,
+                        idx=buffer_info.idx,
+                    )
+                )
 
         # beamInfo
         beam_info = value.get("beamInfo")
@@ -68,6 +84,15 @@ class EpicsEvent(Event):
                     delay=acq_event.delay,
                     code=acq_event.code,
                     evr=acq_event.evr,
+                )
+            )
+        # arrayInfo
+        array_info = value.get("arrayInfo")
+        if array_info is not None:
+            values.update(
+                array_info=ArrayInfo(
+                    tick=array_info.tick,
+                    size=array_info.size,
                 )
             )
 

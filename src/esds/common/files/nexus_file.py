@@ -118,7 +118,7 @@ class NexusFile:
                 # Adding attributes about pulse (should be the same for all events)
                 pulse_attributes = entry[sds_event_key][pulse_key].attrs
                 pulse_attributes["pulse_id"] = event.pulse_id
-                pulse_attributes["timestamp"] = event.data_timestamp.isoformat()
+                pulse_attributes["timestamp"] = event.pulse_id_timestamp.isoformat()
                 pulse_attributes["beam_info.curr"] = event.beam_info.curr
                 pulse_attributes["beam_info.dest"] = event.beam_info.dest
                 pulse_attributes["beam_info.energy"] = event.beam_info.energy
@@ -141,10 +141,19 @@ class NexusFile:
                 acquisition_attributes[
                     "acq_event.timestamp"
                 ] = event.acq_event.timestamp.isoformat()
+                acquisition_attributes["timestamp"] = event.data_timestamp.isoformat()
                 acquisition_attributes["acq_event.name"] = event.acq_event.name
                 acquisition_attributes["acq_event.delay"] = event.acq_event.delay
                 acquisition_attributes["acq_event.code"] = event.acq_event.code
                 acquisition_attributes["acq_event.evr"] = event.acq_event.evr
+
+                if event.buffer_info is not None:
+                    acquisition_attributes["buffer_info.size"] = event.buffer_info.size
+                    acquisition_attributes["buffer_info.idx"] = event.buffer_info.idx
+
+                if event.array_info is not None:
+                    acquisition_attributes["array_info.size"] = event.array_info.size
+                    acquisition_attributes["array_info.tick"] = event.array_info.tick
 
             h5file.close()
             logger.info(f"{repr(self)} writing done.")
