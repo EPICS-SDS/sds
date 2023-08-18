@@ -176,6 +176,13 @@ class NexusFile:
                 for k, v in value.items():
                     self._parse_value(group, k, v, t.subtypes[k])
         else:
+            # Finding data type
+            if isinstance(t.type, list):
+                # For union types, infer type from data
+                dtype = np.array(value).dtype
+            else:
+                # t.type[0] = 'a' for arrays
+                dtype = p4p_type_to_hdf5.get(t.type[-1], None)
             if settings.compression and isinstance(value, np.ndarray):
                 # Only compress arrays
                 parent.create_dataset(
@@ -183,12 +190,10 @@ class NexusFile:
                     data=value,
                     compression="gzip",
                     compression_opts=settings.compression_level,
-                    dtype=p4p_type_to_hdf5.get(t.type[-1], None),
+                    dtype=dtype,
                 )
             else:
-                parent.create_dataset(
-                    key, data=value, dtype=p4p_type_to_hdf5.get(t.type[-1], None)
-                )
+                parent.create_dataset(key, data=value, dtype=dtype)
 
     def write_from_datasets(self, include_pvs=None):
         """
