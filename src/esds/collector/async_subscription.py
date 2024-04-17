@@ -67,6 +67,7 @@ class AsyncSubscription:
         if isinstance(value, Disconnected):
             self.pv_status.connected = False
         elif isinstance(value, Exception):
+            logger.warning(f"PV '{self._pv}' event raised an exception {value}.")
             raise value
         else:
             logger.info(f"PV '{self._pv}' connected")
@@ -79,6 +80,7 @@ class AsyncSubscription:
             self.pv_status.connected = False
             self.cb = self._first_cb
         elif isinstance(value, Exception):
+            logger.warning(f"PV '{self._pv}' event raised an exception {value}.")
             raise value
         else:
             if "value" not in value.keys():
