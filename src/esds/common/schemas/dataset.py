@@ -1,7 +1,8 @@
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, GetJsonSchemaHandler, Field
+from pydantic_core import CoreSchema
 from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
@@ -23,8 +24,13 @@ class PurePosixPath(UnvalidatedPurePosixPath):
         raise TypeError("Type must be string or PurePosixPath")
 
     @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string", example="/directory/file.h5")
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> Dict[str, Any]:
+        json_schema = super().__get_pydantic_json_schema__(core_schema, handler)
+        json_schema = handler.resolve_ref_schema(json_schema)
+        json_schema.update(type="string", example="/directory/file.h5")
+        return json_schema
 
 
 class AcqInfo(BaseModel):

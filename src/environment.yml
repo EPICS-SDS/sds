@@ -9,6 +9,7 @@ dependencies:
   - fastapi==0.110.1
   - h5py
   - pip
+  - pydantic-settings
   - python=3.10
   - requests
   - uvicorn

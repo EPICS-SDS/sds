@@ -1,5 +1,6 @@
 import logging
-from pydantic import BaseSettings, FilePath, AnyHttpUrl
+from pydantic_settings import BaseSettings
+from pydantic import FilePath, AnyHttpUrl
 
 
 class Settings(BaseSettings):
