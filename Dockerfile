@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:23.5.2-0
+FROM continuumio/miniconda3:24.3.0-0
 
 RUN groupadd -r -g 10058 sds_group \
   && useradd --no-log-init -r -g sds_group -u 10057 sds-user
