@@ -17,11 +17,11 @@ dependencies = [
         "elasticsearch",
         "fastapi",
         "uvicorn",
-         "p4p == 4.1.6",
-         "numpy",
-         "h5py",
-         "datetime",
-    "requests",
+        "p4p",
+        "numpy",
+        "h5py",
+        "datetime",
+        "requests",
 ]
 dynamic = ["version"]
 
