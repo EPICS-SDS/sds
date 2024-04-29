@@ -6,11 +6,11 @@ dependencies:
   - aiofiles
   - aiohttp
   - elasticsearch
-  - fastapi==0.110.1
+  - fastapi==0.110.2
   - h5py
   - pip
   - pydantic-settings
-  - python=3.10
+  - python=3.11
   - requests
   - uvicorn
   - gcc=12

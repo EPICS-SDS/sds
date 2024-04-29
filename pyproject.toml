@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Synchronous Data Service"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {text = "GPL-3.0-or-later"}
 dependencies = [
         "aiofiles",
