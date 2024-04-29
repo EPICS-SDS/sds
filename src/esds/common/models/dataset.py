@@ -1,4 +1,7 @@
 import logging
+from typing import Any, ClassVar, Dict
+
+from pydantic import AliasGenerator, ConfigDict
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 
@@ -16,6 +19,17 @@ DATASET_INDEX_SETTINGS_TEMPLATE = "dataset_index_settings"
 COMPONENT_TEMPLATE_STR = "component_templates"
 DATASET_INDEX_TEMPLATE = "dataset_template"
 
+
+def _validate_alias(name):
+    if name == "@timestamp":
+        return "timestamp"
+    return name
+
+
+def _serialize_alias(name):
+    if name == "timestamp":
+        return "@timestamp"
+    return name
 
 class BeamInfo(Base):
     mode: Keyword
@@ -35,11 +49,14 @@ class Dataset(Base):
     timestamp: Date
     beam_info: BeamInfo
 
-    class Config:
-        fields = {"timestamp": "@timestamp"}
+    model_config = ConfigDict(
+        alias_generator=AliasGenerator(
+            validation_alias=_validate_alias,
+            serialization_alias=_serialize_alias,
+        )
+    )
 
-    class Index:
-        name = "dataset"
+    index: ClassVar[str] = "dataset"
 
     @classmethod
     async def init(cls):

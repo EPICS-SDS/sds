@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Tuple
 
 from elasticsearch import BadRequestError, NotFoundError
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, model_validator, ValidationError
 
 from esds.common.db import settings
 from esds.common.db.connection import get_connection
@@ -13,27 +13,30 @@ logger = logging.getLogger(__name__)
 
 
 class Base(BaseModel):
-    id: Optional[str]
+    id: Optional[str] = None
 
-    @root_validator(pre=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
+
+    @model_validator(mode="before")
     def from_hit(cls, values):
         hit = values.pop("hit", None)
         if not hit:
             return values
+
         values.update(
             id=hit.pop("_id"),
             **hit.pop("_source"),
         )
-        return values
+        if "@timestamp" in values:
+            values.update(timestamp=values.pop("@timestamp"))
 
-    class Config:
-        arbitrary_types_allowed = True
+        return values
 
     async def save(self):
         async with get_connection() as es:
             response = await es.index(
                 index=self.get_index(),
-                document=self.dict(by_alias=True, exclude_none=True),
+                document=self.model_dump(exclude_none=True, by_alias=True),
             )
             self.id = response["_id"]
             return self
@@ -50,19 +53,21 @@ class Base(BaseModel):
     @classmethod
     def _recursive_mappings(cls, items):
         properties = {}
-        for key, es_type in items:
-            if issubclass(es_type, Base):
+        for key, fieldinfo in items:
+            if key == "id":
+                continue
+            if issubclass(fieldinfo.annotation, Base):
                 properties[key] = cls._recursive_mappings(
-                    es_type.__annotations__.items()
+                    fieldinfo.annotation.model_fields.items()
                 )
             else:
-                properties[key] = {"type": es_type.es_type}
+                properties[key] = {"type": fieldinfo.annotation.es_type}
 
         return {"properties": properties}
 
     @classmethod
     def mappings(cls):
-        return cls._recursive_mappings(cls.__annotations__.items())
+        return cls._recursive_mappings(cls.model_fields.items())
 
     @classmethod
     async def init(cls):
@@ -122,7 +127,6 @@ class Base(BaseModel):
             # Query got 0 hits, either in total or after paginating with search_after
             if n_total == 0 or response["hits"]["hits"] == []:
                 return (n_total, [], None)
-
             hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
 
             if sort is None:
@@ -130,19 +134,23 @@ class Base(BaseModel):
             else:
                 search_after = response["hits"]["hits"][-1]["sort"][0]
 
-            return (n_total, hits, search_after)
+            return n_total, hits, search_after
 
     @classmethod
-    async def create(cls, dict):
-        db_obj = cls(**dict)
+    async def create(cls: Base, dict):
+        try:
+            db_obj = cls.model_validate(dict)
+        except ValidationError:
+            raise
+
         await db_obj.save()
         return db_obj
 
     @classmethod
     def get_index(cls):
-        return cls.Index.name
+        return cls.index
 
     @classmethod
     async def refresh_index(cls):
         async with get_connection() as es:
-            return await es.indices.refresh(index=cls.Index.name)
+            return await es.indices.refresh(index=cls.index)

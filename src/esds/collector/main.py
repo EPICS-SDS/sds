@@ -1,17 +1,19 @@
 import argparse
 import asyncio
+import json
 import logging
 from typing import List, Optional
+from urllib.parse import urljoin
 
 import aiohttp
 from aiohttp.client_exceptions import ClientError
 from p4p import set_debug
-from pydantic import parse_file_as
+from pydantic import TypeAdapter
 
 from esds.collector.api import start_api
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.config import settings
-from esds.common.files import CollectorDefinition
+from esds.common.files import CollectorList
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
@@ -26,22 +28,26 @@ logger = logging.getLogger(__name__)
 set_debug(logging.WARNING)
 
 
-async def load_collectors() -> Optional[List[CollectorDefinition]]:
+async def load_collectors() -> Optional[CollectorList]:
     path = settings.collector_definitions
     logger.info(f"Loading collector definitions from {path}")
 
-    collectors = parse_file_as(Optional[List[CollectorDefinition]], path)
+    with open(path, "r") as settings_file:
+        collectors = TypeAdapter(Optional[CollectorList]).validate_python(
+            json.load(settings_file)
+        )
     return collectors
 
 
 async def wait_for_indexer():
     if settings.wait_for_indexer:
         indexer_timeout = settings.indexer_timeout_min
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(conn_timeout=5, read_timeout=5) as session:
             while True:
                 try:
+                    logger.info(f'url = {urljoin(str(settings.indexer_url),"/health")}')
                     async with session.get(
-                        settings.indexer_url + "/health"
+                        urljoin(str(settings.indexer_url), "/health")
                     ) as response:
                         response.raise_for_status()
                         if response.status == 200:
@@ -50,7 +56,8 @@ async def wait_for_indexer():
                 except (
                     ClientError,
                     OSError,
-                ):
+                ) as e:
+                    logger.warning(e)
                     pass
 
                 logger.warning(

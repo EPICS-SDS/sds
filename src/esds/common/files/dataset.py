@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 import aiohttp
 from pydantic import BaseModel
-
+from urllib.parse import urljoin
 from esds.common.files import BeamInfo
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class Dataset(BaseModel):
         Publish metadata into the indexer service
         """
         try:
-            url = indexer_url + "/datasets"
+            url = urljoin(str(indexer_url), "/datasets")
             data = Dataset.parse_obj(self).json()
             headers = {"Content-Type": "application/json"}
             async with aiohttp.ClientSession(headers=headers) as client:

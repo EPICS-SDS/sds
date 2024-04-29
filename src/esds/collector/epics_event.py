@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Any, Dict
 
 from p4p import Value
-from pydantic import root_validator
+from pydantic import model_validator
 
 from esds.common.files import AcqEvent, ArrayInfo, BeamInfo, BufferInfo, Event
 from esds.common.p4p_type import P4pType
 
 
 class EpicsEvent(Event):
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def extract_values(cls, values: Dict[str, Any]):
         if "value" not in values:
             return values
