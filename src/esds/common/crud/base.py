@@ -26,7 +26,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         )
 
     async def create(self, obj_in: CreateSchemaType) -> ModelType:
-        return await self.model.create(obj_in.dict(by_alias=True))
+        return await self.model.create(obj_in.model_dump())
 
     async def refresh_index(self):
         return await self.model.refresh_index()

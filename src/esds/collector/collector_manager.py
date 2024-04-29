@@ -4,6 +4,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 from typing import Dict, List, Optional
+from urllib.parse import urljoin
 
 import aiofiles
 import aiohttp
@@ -111,15 +112,22 @@ class CollectorManager:
 
     async def add_collector(self, collector_definition: CollectorDefinition):
         # First register the collector in the indexer service
-        session_timeout = aiohttp.ClientTimeout(total=None,sock_connect=settings.http_connection_timeout,sock_read=settings.http_connection_timeout)
-        async with aiohttp.ClientSession(json_serialize=CollectorBase.model_dump_json, timeout=session_timeout) as session:
+        session_timeout = aiohttp.ClientTimeout(
+            total=None,
+            sock_connect=settings.http_connection_timeout,
+            sock_read=settings.http_connection_timeout,
+        )
+        async with aiohttp.ClientSession(
+            json_serialize=CollectorBase.model_dump_json, timeout=session_timeout
+        ) as session:
             logger.info(f"Adding collector '{collector_definition.name}'")
             try:
                 new_collector = CollectorBase(
-                    **collector_definition.dict(), host=settings.collector_host
+                    **collector_definition.model_dump(), host=settings.collector_host
                 )
+
                 async with session.post(
-                    settings.indexer_url + "/collectors",
+                    urljoin(str(settings.indexer_url), "/collectors"),
                     json=new_collector,
                 ) as response:
                     response.raise_for_status()
@@ -127,15 +135,24 @@ class CollectorManager:
                         logger.info(f"Collector '{new_collector.name}' created in DB")
                     elif response.status == 200:
                         logger.info(f"Collector '{new_collector.name}' already in DB")
+                    else:
+                        logger.info(
+                            f"Received response '{response.status}' while submitting collector to the indexer service."
+                        )
 
                     obj = await response.json()
-                    collector = Collector.parse_obj(obj)
+                    collector = Collector.model_validate(obj)
             except (
                 ClientError,
                 OSError,
             ):
                 logger.error(
                     f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status."
+                )
+                return None
+            except Exception as e:
+                logger.error(
+                    f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
                 )
                 raise
 

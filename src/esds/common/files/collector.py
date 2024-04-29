@@ -14,5 +14,4 @@ class CollectorDefinition(BaseModel):
     event_code: int
 
 
-class CollectorList(BaseModel):
-    __root__: List[CollectorDefinition]
+CollectorList = List[CollectorDefinition]

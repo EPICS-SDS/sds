@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -16,7 +16,7 @@ class CRUDDataset(CRUDBase[Dataset, DatasetCreate]):
     ) -> Dataset:
         db_obj = await super().create(obj_in=obj_in)
         if ttl:
-            date = datetime.utcnow() + timedelta(seconds=ttl)
+            date = datetime.now(tz=UTC) + timedelta(seconds=ttl)
             await db_obj.set_expiry(date, Expiry)
         return db_obj
 

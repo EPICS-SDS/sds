@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 async def get_connection():
     if settings.elastic_password is not None:
         connection = AsyncElasticsearch(
-            settings.elastic_url,
+            str(settings.elastic_url),
             basic_auth=("elastic", settings.elastic_password),
             verify_certs=False,
         )
     else:
-        connection = AsyncElasticsearch(settings.elastic_url)
+        connection = AsyncElasticsearch(str(settings.elastic_url))
     try:
         yield connection
     finally:

@@ -1,18 +1,21 @@
 import logging
 import os.path
 from asyncio import Lock
+from datetime import datetime
 from pathlib import Path
 from traceback import print_exc
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
-from h5py import File, enum_dtype
+from h5py import File, enum_dtype, special_dtype
 
 from esds.common.files.config import settings
 from esds.common.files.dataset import Dataset
 from esds.common.files.event import Event
 
 logger = logging.getLogger(__name__)
+
+text_dtype = special_dtype(vlen=str)
 
 p4p_type_to_hdf5 = {
     "?": np.bool_,
@@ -108,6 +111,7 @@ class NexusFile:
                 pulse_key = f"pulse_{event.pulse_id}"
 
                 sds_event_group = entry.require_group(name=sds_event_key)
+                sds_event_group.attrs["NX_class"] = "NXsubentry"
                 sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
                 sds_event_group.attrs[
                     "timestamp"
@@ -117,22 +121,23 @@ class NexusFile:
                 entry[sds_event_key].require_group(name=pulse_key)
                 # Adding attributes about pulse (should be the same for all events)
                 pulse_attributes = entry[sds_event_key][pulse_key].attrs
+                pulse_attributes["NX_class"] = "NXdata"
                 pulse_attributes["pulse_id"] = event.pulse_id
                 pulse_attributes["timestamp"] = event.pulse_id_timestamp.isoformat()
-                pulse_attributes["beam_info.curr"] = event.beam_info.curr
-                pulse_attributes["beam_info.dest"] = event.beam_info.dest
-                pulse_attributes["beam_info.energy"] = event.beam_info.energy
-                pulse_attributes["beam_info.len"] = event.beam_info.len
-                pulse_attributes["beam_info.mode"] = event.beam_info.mode
-                pulse_attributes["beam_info.present"] = event.beam_info.present
-                pulse_attributes["beam_info.state"] = event.beam_info.state
 
-                self._parse_value(
-                    entry[sds_event_key][pulse_key],
-                    event.pv_name,
-                    event.value,
-                    event.type,
-                )
+                try:
+                    self._parse_value(
+                        entry[sds_event_key][pulse_key],
+                        event.pv_name,
+                        event.value,
+                        event.type,
+                    )
+                except ValueError:
+                    logger.error(
+                        f"Duplicated value for PV {event.pv_name}. SDS event {sds_event_key}. Pulse ID {pulse_key}"
+                    )
+
+                    continue
 
                 # Acq info and event metadata
                 acquisition_attributes = entry[sds_event_key][pulse_key][
@@ -159,9 +164,10 @@ class NexusFile:
             logger.info(f"{repr(self)} writing done.")
             return True
         except Exception as e:
-            logger.warning(f"{repr(self)} writing failed!")
+            logger.warning(f"{repr(self)} writing event failed!")
             print_exc()
             logger.warning(e)
+            h5file.close()
             return False
 
     def _parse_value(self, parent, key, value, t):
@@ -177,7 +183,11 @@ class NexusFile:
                     self._parse_value(group, k, v, t.subtypes[k])
         else:
             # Finding data type
-            if isinstance(t.type, list):
+            if (
+                isinstance(t.type, list)
+                or isinstance(t.type, set)
+                or isinstance(t.type, tuple)
+            ):
                 # For union types, infer type from data
                 dtype = np.array(value).dtype
             else:

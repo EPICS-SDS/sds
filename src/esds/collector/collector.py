@@ -2,7 +2,7 @@ import logging
 import os.path
 from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wait_for
 from concurrent.futures import ProcessPoolExecutor
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Set
@@ -110,25 +110,25 @@ class Collector(CollectorBase):
         queue.put_nowait(event)
 
     async def _collector(self, queue: Queue, nexus_file: NexusFile):
-        first_update_received = datetime.utcnow()
-        last_flush = datetime.utcnow()
-        last_update_received = datetime.utcnow()
+        first_update_received = datetime.now(UTC)
+        last_flush = datetime.now(UTC)
+        last_update_received = datetime.now(UTC)
 
         while True:
             try:
                 event = await wait_for(queue.get(), settings.flush_file_delay)
                 nexus_file.add_event(event)
-                last_update_received = datetime.utcnow()
+                last_update_received = datetime.now(UTC)
             except TimeoutError:
                 pass
 
             # Flush file at regular intervals to free memory
             if (
                 len(nexus_file.events) != 0
-                and (datetime.utcnow() - last_flush).total_seconds()
+                and (datetime.now(UTC) - last_flush).total_seconds()
                 > settings.flush_file_delay
             ):
-                last_flush = datetime.utcnow()
+                last_flush = datetime.now(UTC)
                 async with nexus_file.lock:
                     await get_running_loop().run_in_executor(
                         self._pool, write_to_file, nexus_file
@@ -138,7 +138,7 @@ class Collector(CollectorBase):
             # Making sure the queue is empty before timing out the collector
             if (
                 queue.empty()
-                and (datetime.utcnow() - first_update_received).total_seconds()
+                and (datetime.now(UTC) - first_update_received).total_seconds()
                 > settings.collector_timeout
             ):
                 async with nexus_file.lock:

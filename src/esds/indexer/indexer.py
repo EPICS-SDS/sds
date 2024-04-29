@@ -65,7 +65,7 @@ async def create_collector(
                 break
         await asyncio.sleep(0)
 
-    filters = dict_to_filters(collector_in.dict(exclude={"created"}))
+    filters = dict_to_filters(collector_in.model_dump(exclude={"created"}))
 
     (_, collectors, _) = await crud.collector.get_multi(filters=filters)
     # HTTP 200 if the collector already exists

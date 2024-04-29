@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from esds.common.db.base_class import Base
 from esds.common.db.fields import Date, Integer, Keyword
 
@@ -10,5 +12,4 @@ class Collector(Base):
     host: Keyword
     created: Date
 
-    class Index:
-        name = "collector"
+    index: ClassVar[str] = "collector"
