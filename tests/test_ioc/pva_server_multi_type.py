@@ -333,7 +333,6 @@ def create_pvs(servers, pvs_def, prefix):
 
 
 if __name__ == "__main__":
-
     prefix = "SDS:TYPES_TEST:"
 
     pvs_def = {
