@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     collector_definitions: FilePath
     flush_file_delay: float = 2
     collector_timeout: float = 2
+    http_connection_timeout: float = 5
     events_per_file: int = 1
     indexer_url: AnyHttpUrl
     wait_for_indexer: bool = True

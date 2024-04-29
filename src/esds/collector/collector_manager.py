@@ -111,7 +111,8 @@ class CollectorManager:
 
     async def add_collector(self, collector_definition: CollectorDefinition):
         # First register the collector in the indexer service
-        async with aiohttp.ClientSession(json_serialize=CollectorBase.json) as session:
+        session_timeout = aiohttp.ClientTimeout(total=None,sock_connect=settings.http_connection_timeout,sock_read=settings.http_connection_timeout)
+        async with aiohttp.ClientSession(json_serialize=CollectorBase.model_dump_json, timeout=session_timeout) as session:
             logger.info(f"Adding collector '{collector_definition.name}'")
             try:
                 new_collector = CollectorBase(
