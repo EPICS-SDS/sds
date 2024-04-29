@@ -6,7 +6,6 @@ from typing import Any, Dict, Optional
 import aiohttp
 from pydantic import BaseModel
 from urllib.parse import urljoin
-from esds.common.files import BeamInfo
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class Dataset(BaseModel):
     sds_event_timestamp: datetime
     sds_event_pulse_id: int
     path: Path
-    beam_info: BeamInfo
+    beam_info: Optional[Dict[str, Any]]
 
     async def index(self, indexer_url):
         """

@@ -8,7 +8,7 @@ from elasticsearch import AsyncElasticsearch, NotFoundError
 from esds.common.db import settings
 from esds.common.db.base_class import Base
 from esds.common.db.connection import get_connection
-from esds.common.db.fields import Date, Double, Keyword, Long
+from esds.common.db.fields import Date, Json, Keyword, Long
 from esds.common.db.utils import UpdateRequiredException, check_dict_for_updated_entries
 
 logger = logging.getLogger(__name__)
@@ -31,15 +31,6 @@ def _serialize_alias(name):
         return "@timestamp"
     return name
 
-class BeamInfo(Base):
-    mode: Keyword
-    state: Keyword
-    present: Keyword
-    len: Double
-    energy: Double
-    dest: Keyword
-    curr: Double
-
 
 class Dataset(Base):
     collector_id: Keyword
@@ -47,7 +38,7 @@ class Dataset(Base):
     sds_event_pulse_id: Long
     path: Keyword
     timestamp: Date
-    beam_info: BeamInfo
+    beam_info: Json
 
     model_config = ConfigDict(
         alias_generator=AliasGenerator(

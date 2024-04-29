@@ -4,7 +4,7 @@ from typing import Any, Dict
 from p4p import Value
 from pydantic import model_validator
 
-from esds.common.files import AcqEvent, ArrayInfo, BeamInfo, BufferInfo, Event
+from esds.common.files import Event
 from esds.common.p4p_type import P4pType
 
 
@@ -15,6 +15,10 @@ class EpicsEvent(Event):
             return values
 
         value: Value = values["value"]
+
+        # we store all metadata from the PV structure that is not stored in any other field
+        attributes = value.todict()
+
         # value
         values.update(
             value=value.todict("value"),
@@ -23,6 +27,8 @@ class EpicsEvent(Event):
                 value.timeStamp.secondsPastEpoch + value.timeStamp.nanoseconds * 1e-9
             ),
         )
+        attributes.pop("value")
+        attributes.pop("timeStamp")
 
         # pulse_id
         pulse_id = value.get("pulseId")
@@ -34,6 +40,7 @@ class EpicsEvent(Event):
                     + pulse_id.timeStamp.nanoseconds * 1e-9
                 ),
             )
+        attributes.pop("pulseId")
 
         # eventCode
         sds_info = value.get("sdsInfo")
@@ -47,53 +54,12 @@ class EpicsEvent(Event):
                 timing_event_code=int(sds_info.evtCode),
             )
 
-            # buffer info (for circular buffer)
-            buffer_info = sds_info.get("buffer")
-            if buffer_info is not None:
-                values.update(
-                    buffer_info=BufferInfo(
-                        size=buffer_info.size,
-                        idx=buffer_info.idx,
-                    )
-                )
+        attributes["sdsInfo"].pop("timeStamp")
+        attributes["sdsInfo"].pop("pulseId")
+        attributes["sdsInfo"].pop("evtCode")
 
-        # beamInfo
-        beam_info = value.get("beamInfo")
-        if beam_info is not None:
-            values.update(
-                beam_info=BeamInfo(
-                    mode=beam_info.mode,
-                    state=beam_info.state,
-                    present=beam_info.present,
-                    len=beam_info.len,
-                    energy=beam_info.energy,
-                    dest=beam_info.dest,
-                    curr=beam_info.curr,
-                )
-            )
-        # acqEvt
-        acq_event = value.get("acqEvt")
-        if acq_event is not None:
-            values.update(
-                acq_event=AcqEvent(
-                    timestamp=datetime.fromtimestamp(
-                        acq_event.timeStamp.secondsPastEpoch
-                        + acq_event.timeStamp.nanoseconds * 1e-9
-                    ),
-                    name=acq_event.name,
-                    delay=acq_event.delay,
-                    code=acq_event.code,
-                    evr=acq_event.evr,
-                )
-            )
-        # arrayInfo
-        array_info = value.get("arrayInfo")
-        if array_info is not None:
-            values.update(
-                array_info=ArrayInfo(
-                    tick=array_info.tick,
-                    size=array_info.size,
-                )
-            )
+        values.update(
+            attributes=attributes,
+        )
 
         return values

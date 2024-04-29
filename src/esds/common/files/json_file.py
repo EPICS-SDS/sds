@@ -98,5 +98,6 @@ class JsonFile:
 numpy_encoder = {
     np.integer: int,
     np.floating: float,
+    np.bool_: bool,
     np.ndarray: lambda arr: arr.tolist(),
 }

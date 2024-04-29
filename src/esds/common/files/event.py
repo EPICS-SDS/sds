@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
-
-from esds.common.files import AcqEvent, ArrayInfo, BeamInfo, BufferInfo
 
 
 class Event(BaseModel):
@@ -21,9 +19,4 @@ class Event(BaseModel):
     pulse_id: int
     sds_event_pulse_id: int
 
-    acq_event: AcqEvent
-    beam_info: BeamInfo
-
-    buffer_info: Optional[BufferInfo] = None
-
-    array_info: Optional[ArrayInfo] = None
+    attributes: Optional[Dict[str, Any]]

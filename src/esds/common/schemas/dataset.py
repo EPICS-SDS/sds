@@ -45,29 +45,6 @@ class PurePosixPath(UnvalidatedPurePosixPath):
         return json_schema
 
 
-class AcqInfo(BaseModel):
-    type: str
-    id: int
-
-
-class AcqEvent(BaseModel):
-    name: str
-    evr: str
-    delay: float
-    code: int
-    timestamp: datetime
-
-
-class BeamInfo(BaseModel):
-    mode: str
-    state: str
-    present: str
-    len: float
-    energy: float
-    dest: str
-    curr: float
-
-
 class DataseDefinition(BaseModel):
     collector_id: str
     sds_event_timestamp: datetime
@@ -76,7 +53,7 @@ class DataseDefinition(BaseModel):
 
 
 class DatasetBase(DataseDefinition):
-    beam_info: BeamInfo
+    beam_info: Dict[str, Any]
 
 
 class DatasetCreate(DatasetBase):

@@ -72,7 +72,7 @@ class NexusFile:
                 sds_event_timestamp=event.sds_event_timestamp,
                 sds_event_pulse_id=event.sds_event_pulse_id,
                 path=self.path,
-                beam_info=event.beam_info,
+                beam_info=event.attributes.get("beamInfo", None),
             )
             self.datasets.update({event.sds_event_pulse_id: dataset})
 
@@ -125,6 +125,13 @@ class NexusFile:
                 pulse_attributes["pulse_id"] = event.pulse_id
                 pulse_attributes["timestamp"] = event.pulse_id_timestamp.isoformat()
 
+                if "beamInfo" in event.attributes:
+                    self._recursively_add_attributes(
+                        pulse_attributes,
+                        event.attributes.pop("beamInfo"),
+                        prefix="beamInfo",
+                    )
+
                 try:
                     self._parse_value(
                         entry[sds_event_key][pulse_key],
@@ -143,22 +150,11 @@ class NexusFile:
                 acquisition_attributes = entry[sds_event_key][pulse_key][
                     event.pv_name
                 ].attrs
-                acquisition_attributes[
-                    "acq_event.timestamp"
-                ] = event.acq_event.timestamp.isoformat()
                 acquisition_attributes["timestamp"] = event.data_timestamp.isoformat()
-                acquisition_attributes["acq_event.name"] = event.acq_event.name
-                acquisition_attributes["acq_event.delay"] = event.acq_event.delay
-                acquisition_attributes["acq_event.code"] = event.acq_event.code
-                acquisition_attributes["acq_event.evr"] = event.acq_event.evr
 
-                if event.buffer_info is not None:
-                    acquisition_attributes["buffer_info.size"] = event.buffer_info.size
-                    acquisition_attributes["buffer_info.idx"] = event.buffer_info.idx
-
-                if event.array_info is not None:
-                    acquisition_attributes["array_info.size"] = event.array_info.size
-                    acquisition_attributes["array_info.tick"] = event.array_info.tick
+                self._recursively_add_attributes(
+                    acquisition_attributes, event.attributes
+                )
 
             h5file.close()
             logger.info(f"{repr(self)} writing done.")
@@ -169,6 +165,29 @@ class NexusFile:
             logger.warning(e)
             h5file.close()
             return False
+
+    def _recursively_add_attributes(
+        self, attributes_node, attributes_dict: Dict[str, Any], prefix=None
+    ):
+        for key, value in attributes_dict.items():
+            new_key = key if prefix is None else f"{prefix}.{key}"
+            if key == "timeStamp":
+                attributes_node[new_key] = datetime.fromtimestamp(
+                    value["secondsPastEpoch"] + value["nanoseconds"] * 1e-9
+                ).isoformat()
+            elif (
+                isinstance(value, list)
+                or isinstance(value, set)
+                or isinstance(value, tuple)
+            ):
+                for i, val in enumerate(value):
+                    self._recursively_add_attributes(
+                        attributes_node, val, prefix=f"{new_key}_{i}"
+                    )
+            elif isinstance(value, dict):
+                self._recursively_add_attributes(attributes_node, value, prefix=new_key)
+            else:
+                attributes_node[new_key] = value
 
     def _parse_value(self, parent, key, value, t):
         if isinstance(value, dict):
