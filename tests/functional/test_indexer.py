@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 import aiohttp
 import pytest
@@ -72,7 +72,7 @@ class TestCollector:
                 INDEXER_URL + COLLECTORS_ENDPOINT, json=self.test_collector
             ) as response:
                 try:
-                    schemas.Collector.parse_obj(
+                    schemas.Collector.model_validate(
                         json.loads(await response.content.read())
                     )
                 except ValidationError:
@@ -82,9 +82,9 @@ class TestCollector:
 
 class TestDatasets:
     test_dataset = {
-        "sds_event_timestamp": datetime.utcnow().isoformat(),
+        "sds_event_timestamp": datetime.now(UTC).isoformat(),
         "sds_event_pulse_id": 0,
-        "data_timestamp": [datetime.utcnow().isoformat()],
+        "data_timestamp": [datetime.now(UTC).isoformat()],
         "data_pulse_id": [0],
         "path": "/directory/file.h5",
         "beam_info": {
@@ -147,7 +147,9 @@ class TestDatasets:
                 INDEXER_URL + DATASETS_ENDPOINT, json=self.test_dataset
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj(json.loads(await response.content.read()))
+                    schemas.Dataset.model_validate(
+                        json.loads(await response.content.read())
+                    )
                 except ValidationError:
                     assert False
                 assert True

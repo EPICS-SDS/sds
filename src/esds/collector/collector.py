@@ -4,6 +4,7 @@ from asyncio import Queue, Task, TimeoutError, create_task, get_running_loop, wa
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, UTC
 from pathlib import Path
+from pydantic import ConfigDict
 from threading import Lock
 from typing import Dict, List, Set
 
@@ -28,9 +29,7 @@ class Collector(CollectorBase):
     _concurrent_datasets: Dict[str, List[Queue]] = dict()
     _pool: ProcessPoolExecutor
 
-    class Config:
-        frozen = True
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(frozen=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -66,9 +65,7 @@ class Collector(CollectorBase):
 
             if nexus_file is None:
                 # File name is build from the collector name, the event code, and the pulse ID of the first event
-                file_name: str = (
-                    f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_pulse_id)}"
-                )
+                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_pulse_id)}"
                 # Path is generated from date
                 directory = Path(
                     event.sds_event_timestamp.strftime("%Y"),

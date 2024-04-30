@@ -1,6 +1,6 @@
 import asyncio
 import subprocess
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import numpy as np
@@ -88,7 +88,7 @@ class TestCollector:
         )
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
         ctxt = ThContext()
-        ctxt.get("SDS:TYPES_TEST:TRIG", timeout=15)
+        ctxt.get("SDS:TYPES_TEST:TRIG", timeout=5)
 
         ctxt.close()
 
@@ -309,8 +309,8 @@ class TestCollector:
 
     def check_value(self, pulse, pv, dtype, value):
         directory = Path(
-            datetime.utcnow().strftime("%Y"),
-            datetime.utcnow().strftime("%Y-%m-%d"),
+            datetime.now(UTC).strftime("%Y"),
+            datetime.now(UTC).strftime("%Y-%m-%d"),
         )
         file_path = file_settings.storage_path / directory / f"types-test_3_{pulse}.h5"
 

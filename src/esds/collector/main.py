@@ -42,7 +42,12 @@ async def load_collectors() -> Optional[CollectorList]:
 async def wait_for_indexer():
     if settings.wait_for_indexer:
         indexer_timeout = settings.indexer_timeout_min
-        async with aiohttp.ClientSession(conn_timeout=5, read_timeout=5) as session:
+        session_timeout = aiohttp.ClientTimeout(
+            total=None,
+            sock_connect=settings.http_connection_timeout,
+            sock_read=settings.http_connection_timeout,
+        )
+        async with aiohttp.ClientSession(timeout=session_timeout) as session:
             while True:
                 try:
                     logger.info(f'url = {urljoin(str(settings.indexer_url),"/health")}')

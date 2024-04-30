@@ -1,6 +1,6 @@
 import os
 import zipfile
-from datetime import datetime
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -11,7 +11,7 @@ import pytest_asyncio
 import requests
 from pydantic import ValidationError
 from esds.common import schemas
-from esds.common.files import AcqEvent, BeamInfo, Event, NexusFile
+from esds.common.files import Event, NexusFile
 from esds.retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
@@ -160,7 +160,7 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT, params={"name": "retriever_test"}
             ) as response:
                 try:
-                    schemas.Collector.parse_obj(
+                    schemas.Collector.model_validate(
                         (await response.json())["collectors"][0]
                     )
                 except ValidationError:
@@ -177,7 +177,7 @@ class TestCollector:
                 + self.test_collector["collector_id"]
             ) as response:
                 try:
-                    schemas.Collector.parse_obj(await response.json())
+                    schemas.Collector.model_validate(await response.json())
                 except ValidationError:
                     assert False
                 assert True
@@ -195,7 +195,7 @@ class TestDatasets:
     }
 
     acq_event_dict = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "name": "TestEvent",
         "delay": 0.0,
         "code": 0,
@@ -256,8 +256,8 @@ class TestDatasets:
             file_name: str = f'{TestCollector.test_collector["name"]}_{str(TestCollector.test_collector["event_code"])}_{str(datasets[0]["sds_event_pulse_id"])}'
             # Path is generated from date
             directory = Path(
-                datetime.utcnow().strftime("%Y"),
-                datetime.utcnow().strftime("%Y-%m-%d"),
+                datetime.now(UTC).strftime("%Y"),
+                datetime.now(UTC).strftime("%Y-%m-%d"),
             )
 
             nexus = NexusFile(
@@ -267,21 +267,21 @@ class TestDatasets:
                 directory=settings.storage_path / directory,
             )
 
-            acq_event = AcqEvent(**self.acq_event_dict)
-            beam_info = BeamInfo(**self.beam_info_dict)
             for dataset in datasets:
                 for i, pv in enumerate(TestCollector.test_collector["pvs"]):
                     new_event = Event(
                         pv_name=pv,
                         value=i,
+                        type=None,
                         timing_event_code=TestCollector.test_collector["event_code"],
-                        data_timestamp=datetime.utcnow(),
-                        sds_event_timestamp=datetime.utcnow(),
+                        data_timestamp=datetime.now(UTC),
+                        sds_event_timestamp=datetime.now(UTC),
                         pulse_id_timestamp=dataset["pulse_id_timestamp"],
                         pulse_id=dataset["sds_event_pulse_id"],
                         sds_event_pulse_id=dataset["sds_event_pulse_id"],
-                        acq_event=acq_event,
-                        beam_info=beam_info,
+                        attributes=dict(
+                            acq_event=self.acq_event_dict, beam_info=self.beam_info_dict
+                        ),
                     )
                     nexus.add_event(new_event)
 
@@ -435,7 +435,9 @@ class TestDatasets:
                 params={"collector_id": self.test_dataset_1[0]["collector_id"]},
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj((await response.json())["datasets"][0])
+                    schemas.Dataset.model_validate(
+                        (await response.json())["datasets"][0]
+                    )
                 except ValidationError:
                     assert False
                 assert True
@@ -450,7 +452,7 @@ class TestDatasets:
                 + self.test_dataset_1[0]["dataset_id"]
             ) as response:
                 try:
-                    schemas.Dataset.parse_obj(await response.json())
+                    schemas.Dataset.model_validate(await response.json())
                 except ValidationError:
                     assert False
                 assert True

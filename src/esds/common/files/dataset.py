@@ -28,7 +28,7 @@ class Dataset(BaseModel):
         """
         try:
             url = urljoin(str(indexer_url), "/datasets")
-            data = Dataset.parse_obj(self).json()
+            data = Dataset.model_validate(self).model_dump_json()
             headers = {"Content-Type": "application/json"}
             async with aiohttp.ClientSession(headers=headers) as client:
                 async with client.post(url, data=data) as response:

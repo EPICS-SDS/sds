@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 import pytest
 from esds.collector.collector import Collector
-from esds.common.files import AcqEvent, BeamInfo, Dataset, Event
+from esds.common.files import Dataset, Event
 
 collector = Collector(
     name="test_collector",
@@ -13,15 +13,15 @@ collector = Collector(
     host="0.0.0.0",
 )
 
-acq_event = AcqEvent(
-    timestamp=datetime.utcnow(),
+acq_event = dict(
+    timestamp=datetime.now(UTC),
     name="TestEvent",
     delay=0.0,
     code=0,
     evr="TestEVR",
 )
 
-beam_info = BeamInfo(
+beam_info = dict(
     mode="TestMode",
     state="ON",
     present="YES",
@@ -34,14 +34,14 @@ beam_info = BeamInfo(
 event = Event(
     pv_name="TEST:PV:3",
     value=1,
+    type=None,
     timing_event_code=2,
-    data_timestamp=datetime.utcnow(),
-    sds_event_timestamp=datetime.utcnow(),
-    pulse_id_timestamp=datetime.utcnow(),
+    data_timestamp=datetime.now(UTC),
+    sds_event_timestamp=datetime.now(UTC),
+    pulse_id_timestamp=datetime.now(UTC),
     pulse_id=1,
     sds_event_pulse_id=1,
-    acq_event=acq_event,
-    beam_info=beam_info,
+    attributes=dict(acq_event=acq_event, beam_info=beam_info),
 )
 
 
@@ -56,7 +56,7 @@ class TestDataset:
     async def test_dataset_index_fail(self):
         dataset = Dataset(
             collector_id=collector.id,
-            sds_event_timestamp=datetime.utcnow(),
+            sds_event_timestamp=datetime.now(UTC),
             sds_event_pulse_id=event.sds_event_pulse_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.sds_event_pulse_id}",
             acq_event=acq_event,

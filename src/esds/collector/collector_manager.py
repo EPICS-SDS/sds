@@ -91,14 +91,14 @@ class CollectorManager:
 
         try:
             async with aiofiles.open(path, mode="w") as json_file:
-                cl = CollectorList.parse_obj(
+                cl = CollectorList.model_validate(
                     [
-                        CollectorDefinition.parse_obj(coll)
+                        CollectorDefinition.model_validate(coll)
                         for coll in self.collectors.values()
                     ]
                 )
                 await json_file.write(
-                    cl.json(
+                    cl.model_dump_json(
                         exclude={
                             "id",
                         },

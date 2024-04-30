@@ -2,6 +2,7 @@ import asyncio
 import logging
 from threading import Lock
 from typing import Optional
+from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, Response, status
 
@@ -21,27 +22,32 @@ logging.getLogger().setLevel(settings.log_level)
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPIOfflineDocs):
+    # Wait for elasticsearch server to be available
+    await wait_for_connection()
+    # initialize db if needed
+    await init_db()
+    yield
+
+
 description = """
 This API can be used for:
 - add/update collector definitions
 - add new datasets for indexing
 """
+
 app = FastAPIOfflineDocs(
     doc_cdon_files="static",
     title="SDS Indexer Service API",
     description=description,
     version="0.1",
+    lifespan=lifespan,
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    await wait_for_connection()
-    await init_db()
-
-
 # Collectors
-
 collectors_router = APIRouter()
 collectors_lock = Lock()
 requested_collectors = []

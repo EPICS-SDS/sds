@@ -113,9 +113,9 @@ class NexusFile:
                 sds_event_group = entry.require_group(name=sds_event_key)
                 sds_event_group.attrs["NX_class"] = "NXsubentry"
                 sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
-                sds_event_group.attrs["timestamp"] = (
-                    event.sds_event_timestamp.isoformat()
-                )
+                sds_event_group.attrs[
+                    "timestamp"
+                ] = event.sds_event_timestamp.isoformat()
                 sds_event_group.attrs["event_code"] = event.timing_event_code
 
                 entry[sds_event_key].require_group(name=pulse_key)

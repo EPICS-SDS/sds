@@ -8,11 +8,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiofiles
+from contextlib import asynccontextmanager
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from h5py import File
+
 
 from esds.common import crud, schemas
 from esds.common.db.connection import wait_for_connection
@@ -33,6 +35,14 @@ logger = logging.getLogger(__name__)
 
 HDF5_MIME_TYPE = "application/x-hdf5"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPIOfflineDocs):
+    # Wait for elasticsearch server to be available
+    await wait_for_connection()
+    yield
+
+
 description = """
 This API can be used for:
 - get collectors configuration by query or by ID
@@ -40,11 +50,13 @@ This API can be used for:
 - get files by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
 - get data as json by path, search query over datasets, by ID, or by a subset/combination of results from a dataset query
 """
+
 app = FastAPIOfflineDocs(
     doc_cdon_files="static",
     title="SDS Retriever Service API",
     description=description,
     version="0.2",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -59,11 +71,6 @@ app.add_middleware(
 class SortOrder(str, Enum):
     desc = "desc"
     asc = "asc"
-
-
-@app.on_event("startup")
-async def startup_event():
-    await wait_for_connection()
 
 
 # Collectors
@@ -251,7 +258,7 @@ async def get_nexus_by_dataset_id(
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    dataset = schemas.Dataset.from_orm(dataset)
+    dataset = schemas.Dataset.model_validate(dataset)
 
     if not (settings.storage_path / dataset.path).exists():
         raise HTTPException(status_code=404, detail="File not found")
@@ -308,7 +315,7 @@ async def get_nexus_by_dataset_query(
         raise HTTPException(status_code=404, detail="Datasets not found")
 
     return await get_nexus_with_multiple_datasets(
-        [schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets],
+        [schemas.DataseDefinition.model_validate(dataset) for dataset in datasets],
         include_pvs=include_pvs,
     )
 
@@ -479,7 +486,9 @@ async def get_json_by_dataset_query(
         raise HTTPException(status_code=404, detail="Datasets not found")
 
     return await get_json_with_multiple_datasets(
-        datasets=[schemas.DataseDefinition.parse_obj(dataset) for dataset in datasets],
+        datasets=[
+            schemas.DataseDefinition.model_validate(dataset) for dataset in datasets
+        ],
         include_pvs=include_pvs,
     )
 

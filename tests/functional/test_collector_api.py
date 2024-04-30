@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import pytest
@@ -9,8 +9,9 @@ from esds.collector.collector import Collector
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.collector_status import CollectorBasicStatus, CollectorFullStatus
 from esds.collector.config import settings
-from esds.common.files import AcqEvent, BeamInfo, CollectorDefinition, Event
+from esds.common.files import CollectorDefinition, Event
 from esds.common.schemas import CollectorBase
+from esds.common.p4p_type import P4pType
 from tests.functional.service_loader import indexer_service
 
 collector = Collector(
@@ -22,15 +23,15 @@ collector = Collector(
     host="0.0.0.0",
 )
 
-acq_event = AcqEvent(
-    timestamp=datetime.utcnow(),
+acq_event = dict(
+    timestamp=datetime.now(UTC),
     name="TestEvent",
     delay=0.0,
     code=0,
     evr="TestEVR",
 )
 
-beam_info = BeamInfo(
+beam_info = dict(
     mode="TestMode",
     state="ON",
     present="YES",
@@ -43,14 +44,14 @@ beam_info = BeamInfo(
 event = Event(
     pv_name="TEST:PV:3",
     value=1,
+    type=None,
     timing_event_code=2,
-    data_timestamp=datetime.utcnow(),
-    sds_event_timestamp=datetime.utcnow(),
-    pulse_id_timestamp=datetime.utcnow(),
+    data_timestamp=datetime.now(UTC),
+    sds_event_timestamp=datetime.now(UTC),
+    pulse_id_timestamp=datetime.now(UTC),
     pulse_id=1,
     sds_event_pulse_id=1,
-    acq_event=acq_event,
-    beam_info=beam_info,
+    attributes=dict(acq_event=acq_event, beam_info=beam_info),
 )
 
 NON_EXISTING = "non existing"
@@ -74,7 +75,8 @@ class TestCollectorApi:
     async def test_add_collector(self):
         cm = await CollectorManager.create([])
         await api.add_collector(
-            collector_in=CollectorDefinition.parse_obj(collector), start_collector=False
+            collector_in=CollectorDefinition.model_validate(collector.model_dump()),
+            start_collector=False,
         )
 
         assert collector.name in cm.collectors.keys()
@@ -87,14 +89,15 @@ class TestCollectorApi:
         cm = await CollectorManager.create([])
 
         await api.add_collector(
-            collector_in=CollectorDefinition.parse_obj(collector), start_collector=False
+            collector_in=CollectorDefinition.model_validate(collector.model_dump()),
+            start_collector=False,
         )
 
         assert collector.name in cm.collectors.keys()
 
         try:
             await api.add_collector(
-                collector_in=CollectorDefinition.parse_obj(collector),
+                collector_in=CollectorDefinition.model_validate(collector.model_dump()),
                 start_collector=False,
             )
         except HTTPException:
@@ -107,7 +110,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_remove_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
         assert collector.name in cm.collectors.keys()
 
         response = Response()
@@ -133,7 +138,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_collectors(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
         assert collector.name in cm.collectors.keys()
 
         response = await api.get_collectors()
@@ -146,7 +153,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
         assert collector.name in cm.collectors.keys()
 
         response = await api.get_collector_with_name(name=collector.name)
@@ -158,7 +167,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_non_existing_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
         assert collector.name in cm.collectors.keys()
 
         try:
@@ -173,7 +184,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_autosave(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.save_collectors_definition()
 
@@ -194,7 +207,9 @@ class TestCollectorApi:
         if os.path.exists(collector_definitions):
             os.remove(collector_definitions)
 
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.save_collectors_definition()
 
@@ -210,7 +225,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_status(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status()
 
@@ -223,7 +240,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_full_status(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_full_status()
 
@@ -236,7 +255,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_status_with_name(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status_with_name(name=collector.name)
 
@@ -248,7 +269,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_get_status_with_wrong_name(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         try:
             await api.get_status_with_name(name=NON_EXISTING)
@@ -262,7 +285,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_start_all_collectors(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
@@ -276,7 +301,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_start_all_collectors_twice(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
@@ -295,7 +322,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_stop_all_collectors(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         await api.start_all_collectors()
 
@@ -311,7 +340,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_stop_all_collectors_twice(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         await api.start_all_collectors()
 
@@ -331,7 +362,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_start_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
@@ -345,7 +378,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_start_collector_twice(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         response = await api.get_status_with_name(name=collector.name)
         assert not response.running
@@ -363,7 +398,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_stop_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         await api.start_collector(name=collector.name)
 
@@ -379,7 +416,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_start_non_existing_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         try:
             await api.start_collector(name=NON_EXISTING)
@@ -393,7 +432,9 @@ class TestCollectorApi:
 
     @pytest.mark.asyncio
     async def test_stop_non_existing_collector(self):
-        cm = await CollectorManager.create([CollectorDefinition.parse_obj(collector)])
+        cm = await CollectorManager.create(
+            [CollectorDefinition.model_validate(collector.model_dump())]
+        )
 
         try:
             await api.stop_collector(name=NON_EXISTING)

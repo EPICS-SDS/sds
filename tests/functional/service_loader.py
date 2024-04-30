@@ -103,9 +103,11 @@ class ConfigurableCollectorService:
                 "event_name": "data-on-demand",
                 "event_code": 1,
                 "pvs": [
-                    f"SDS:TEST:PV_{pv_len}_{j}"
-                    if n_pvs > 1
-                    else f"SDS:TEST:PV_{pv_len}"
+                    (
+                        f"SDS:TEST:PV_{pv_len}_{j}"
+                        if n_pvs > 1
+                        else f"SDS:TEST:PV_{pv_len}"
+                    )
                     for j in range(n_pvs)
                 ],
             }

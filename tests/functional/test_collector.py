@@ -1,9 +1,11 @@
 import asyncio
+import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
+from esds.common.files.collector import CollectorList
 import pytest
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.config import settings
@@ -14,7 +16,7 @@ from esds.common.files import CollectorDefinition
 from h5py import File
 from p4p.client.asyncio import Context, timesout
 from p4p.client.thread import Context as ThContext
-from pydantic import parse_file_as
+from pydantic import TypeAdapter
 
 from tests.functional.service_loader import collector_service, indexer_service
 
@@ -102,7 +104,12 @@ class TestCollector:
 
         # Check files
         collectors_path = settings.collector_definitions
-        for collector in parse_file_as(List[CollectorDefinition], collectors_path):
+        with open(collectors_path, "r") as settings_file:
+            collectors = TypeAdapter(Optional[CollectorList]).validate_python(
+                json.load(settings_file)
+            )
+
+        for collector in collectors:
             # Skip never triggered event
             if collector.event_code != 1:
                 continue
