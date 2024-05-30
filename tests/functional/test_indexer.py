@@ -83,9 +83,9 @@ class TestCollector:
 class TestDatasets:
     test_dataset = {
         "sds_event_timestamp": datetime.now(UTC).isoformat(),
-        "sds_event_pulse_id": 0,
+        "sds_event_cycle_id": 0,
         "data_timestamp": [datetime.now(UTC).isoformat()],
-        "data_pulse_id": [0],
+        "data_cycle_id": [0],
         "path": "/directory/file.h5",
         "beam_info": {
             "mode": "TestMode",
@@ -99,9 +99,9 @@ class TestDatasets:
     }
     test_dataset_bad_schema = {
         "sds_event_timestamp": "not a timestamp",
-        "sds_event_pulse_id": 0,
+        "sds_event_cycle_id": 0,
         "data_timestamp": ["not a timestamp"],
-        "data_pulse_id": [0],
+        "data_cycle_id": [0],
         "path": "/directory/file.h5",
     }
 

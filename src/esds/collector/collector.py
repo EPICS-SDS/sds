@@ -61,11 +61,11 @@ class Collector(CollectorBase):
             return
 
         with self._file_lock:
-            nexus_file = self.get_file(event.sds_event_pulse_id)
+            nexus_file = self.get_file(event.sds_event_cycle_id)
 
             if nexus_file is None:
-                # File name is build from the collector name, the event code, and the pulse ID of the first event
-                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_pulse_id)}"
+                # File name is build from the collector name, the event code, and the cycle ID of the first event
+                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_cycle_id)}"
                 # Path is generated from date
                 directory = Path(
                     event.sds_event_timestamp.strftime("%Y"),
@@ -87,13 +87,13 @@ class Collector(CollectorBase):
                     )
                     return
 
-                self._files[event.sds_event_pulse_id] = nexus_file
+                self._files[event.sds_event_cycle_id] = nexus_file
                 self._concurrent_datasets[nexus_file.file_name] = 0
 
             # One queue per sds_event_id
-            queue = self._queues.get(event.sds_event_pulse_id)
+            queue = self._queues.get(event.sds_event_cycle_id)
             if queue is None:
-                queue = self.create_queue(event.sds_event_pulse_id)
+                queue = self.create_queue(event.sds_event_cycle_id)
 
                 self._concurrent_datasets[nexus_file.file_name] += 1
 
@@ -102,7 +102,7 @@ class Collector(CollectorBase):
 
                 def task_done_cb(task):
                     self._tasks.discard(task)
-                    self.discard_queue(event.sds_event_pulse_id)
+                    self.discard_queue(event.sds_event_cycle_id)
 
                 task.add_done_callback(task_done_cb)
 

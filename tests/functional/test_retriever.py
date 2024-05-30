@@ -205,10 +205,10 @@ class TestDatasets:
     test_dataset_1 = [
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
-            "sds_event_pulse_id": 1,
-            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
+            "sds_event_cycle_id": 1,
+            "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
-            "data_pulse_id": [1],
+            "data_cycle_id": [1],
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         }
@@ -216,19 +216,19 @@ class TestDatasets:
     test_dataset_2 = [
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
-            "sds_event_pulse_id": 2,
-            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
+            "sds_event_cycle_id": 2,
+            "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
-            "data_pulse_id": [2],
+            "data_cycle_id": [2],
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         },
         {
             "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
-            "sds_event_pulse_id": 3,
-            "pulse_id_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
+            "sds_event_cycle_id": 3,
+            "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
             "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
-            "data_pulse_id": [3],
+            "data_cycle_id": [3],
             "acq_event": acq_event_dict,
             "beam_info": beam_info_dict,
         },
@@ -253,7 +253,7 @@ class TestDatasets:
 
         # Create the NeXus files
         for datasets in [self.test_dataset_1, self.test_dataset_2]:
-            file_name: str = f'{TestCollector.test_collector["name"]}_{str(TestCollector.test_collector["event_code"])}_{str(datasets[0]["sds_event_pulse_id"])}'
+            file_name: str = f'{TestCollector.test_collector["name"]}_{str(TestCollector.test_collector["event_code"])}_{str(datasets[0]["sds_event_cycle_id"])}'
             # Path is generated from date
             directory = Path(
                 datetime.now(UTC).strftime("%Y"),
@@ -276,9 +276,9 @@ class TestDatasets:
                         timing_event_code=TestCollector.test_collector["event_code"],
                         data_timestamp=datetime.now(UTC),
                         sds_event_timestamp=datetime.now(UTC),
-                        pulse_id_timestamp=dataset["pulse_id_timestamp"],
-                        pulse_id=dataset["sds_event_pulse_id"],
-                        sds_event_pulse_id=dataset["sds_event_pulse_id"],
+                        cycle_id_timestamp=dataset["cycle_id_timestamp"],
+                        cycle_id=dataset["sds_event_cycle_id"],
+                        sds_event_cycle_id=dataset["sds_event_cycle_id"],
                         attributes=dict(
                             acq_event=self.acq_event_dict, beam_info=self.beam_info_dict
                         ),
@@ -369,8 +369,8 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "sds_event_pulse_id_start": self.test_dataset_1[0][
-                        "sds_event_pulse_id"
+                    "sds_event_cycle_id_start": self.test_dataset_1[0][
+                        "sds_event_cycle_id"
                     ],
                 },
             ) as response:
@@ -384,8 +384,8 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "sds_event_pulse_id_end": self.test_dataset_1[0][
-                        "sds_event_pulse_id"
+                    "sds_event_cycle_id_end": self.test_dataset_1[0][
+                        "sds_event_cycle_id"
                     ],
                 },
             ) as response:
@@ -399,7 +399,7 @@ class TestDatasets:
                 RETRIEVER_URL + DATASETS_ENDPOINT,
                 params={
                     "collector_id": self.test_dataset_1[0]["collector_id"],
-                    "sds_event_pulse_id_end": 0,
+                    "sds_event_cycle_id_end": 0,
                 },
             ) as response:
                 assert response.status == 200

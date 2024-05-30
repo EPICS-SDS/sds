@@ -13,8 +13,8 @@ duration = 300  # seconds
 n_pvs = 10
 # Length of each array
 pv_len = int(10e3)
-# pulses per trigger
-n_pulses = 30
+# cycles per trigger
+n_cycles = 30
 
 events_per_file = 10
 
@@ -61,7 +61,7 @@ while time.time() - t0 < 60:
         continue
     break
 
-ctxt.put("SDS:TEST:N_PULSES", n_pulses)
+ctxt.put("SDS:TEST:N_CYCLES", n_cycles)
 
 t0 = time.time()
 

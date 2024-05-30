@@ -19,9 +19,9 @@ class SdsPVBase(SdsPVValue):
 
     pv_type: str
     pv_name: str
-    start_event_pulse_id: int
+    start_event_cycle_id: int
     start_event_ts: float
-    main_event_pulse_id: int
+    main_event_cycle_id: int
     main_event_ts: float
     acq_event_name: str
     acq_event_code: int
@@ -42,4 +42,4 @@ class SdsPV(SdsPVBase):
 
     sds_evt_code: int
     sds_ts: float
-    sds_pulse_id: float
+    sds_cycle_id: float

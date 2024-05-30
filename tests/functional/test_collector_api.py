@@ -48,9 +48,9 @@ event = Event(
     timing_event_code=2,
     data_timestamp=datetime.now(UTC),
     sds_event_timestamp=datetime.now(UTC),
-    pulse_id_timestamp=datetime.now(UTC),
-    pulse_id=1,
-    sds_event_pulse_id=1,
+    cycle_id_timestamp=datetime.now(UTC),
+    cycle_id=1,
+    sds_event_cycle_id=1,
     attributes=dict(acq_event=acq_event, beam_info=beam_info),
 )
 

@@ -147,7 +147,7 @@ class TestCollector:
             await ctxt.put(ASTRING_PV, [STRING_1, STRING_2])
 
             await asyncio.sleep(1)
-            # Second "pulse"
+            # Second "cycle"
             # Floating point (max negative value)
             await ctxt.put(FLOAT_PV, FLOAT_2)
             await ctxt.put(DOUBLE_PV, DOUBLE_2)
@@ -182,137 +182,137 @@ class TestCollector:
 
     # Tests for floats
     def test_float(self):
-        self.check_value(pulse=1, pv=FLOAT_PV, dtype=np.float32, value=FLOAT_1)
-        self.check_value(pulse=2, pv=FLOAT_PV, dtype=np.float32, value=FLOAT_2)
+        self.check_value(cycle=1, pv=FLOAT_PV, dtype=np.float32, value=FLOAT_1)
+        self.check_value(cycle=2, pv=FLOAT_PV, dtype=np.float32, value=FLOAT_2)
 
     def test_double(self):
-        self.check_value(pulse=1, pv=DOUBLE_PV, dtype=np.float64, value=DOUBLE_1)
-        self.check_value(pulse=2, pv=DOUBLE_PV, dtype=np.float64, value=DOUBLE_2)
+        self.check_value(cycle=1, pv=DOUBLE_PV, dtype=np.float64, value=DOUBLE_1)
+        self.check_value(cycle=2, pv=DOUBLE_PV, dtype=np.float64, value=DOUBLE_2)
 
     # Tests for signed integers
     def test_byte(self):
-        self.check_value(pulse=1, pv=BYTE_PV, dtype=np.int8, value=BYTE_1)
-        self.check_value(pulse=2, pv=BYTE_PV, dtype=np.int8, value=BYTE_2)
+        self.check_value(cycle=1, pv=BYTE_PV, dtype=np.int8, value=BYTE_1)
+        self.check_value(cycle=2, pv=BYTE_PV, dtype=np.int8, value=BYTE_2)
 
     def test_short(self):
-        self.check_value(pulse=1, pv=SHORT_PV, dtype=np.int16, value=SHORT_1)
-        self.check_value(pulse=2, pv=SHORT_PV, dtype=np.int16, value=SHORT_2)
+        self.check_value(cycle=1, pv=SHORT_PV, dtype=np.int16, value=SHORT_1)
+        self.check_value(cycle=2, pv=SHORT_PV, dtype=np.int16, value=SHORT_2)
 
     def test_int(self):
-        self.check_value(pulse=1, pv=INT_PV, dtype=np.int32, value=INT_1)
-        self.check_value(pulse=2, pv=INT_PV, dtype=np.int32, value=INT_2)
+        self.check_value(cycle=1, pv=INT_PV, dtype=np.int32, value=INT_1)
+        self.check_value(cycle=2, pv=INT_PV, dtype=np.int32, value=INT_2)
 
     def test_long(self):
-        self.check_value(pulse=1, pv=LONG_PV, dtype=np.int64, value=LONG_1)
-        self.check_value(pulse=2, pv=LONG_PV, dtype=np.int64, value=LONG_2)
+        self.check_value(cycle=1, pv=LONG_PV, dtype=np.int64, value=LONG_1)
+        self.check_value(cycle=2, pv=LONG_PV, dtype=np.int64, value=LONG_2)
 
     # Tests for unsigned integers
     def test_ubyte(self):
-        self.check_value(pulse=1, pv=UBYTE_PV, dtype=np.uint8, value=UBYTE_1)
-        self.check_value(pulse=2, pv=UBYTE_PV, dtype=np.uint8, value=UBYTE_2)
+        self.check_value(cycle=1, pv=UBYTE_PV, dtype=np.uint8, value=UBYTE_1)
+        self.check_value(cycle=2, pv=UBYTE_PV, dtype=np.uint8, value=UBYTE_2)
 
     def test_ushort(self):
-        self.check_value(pulse=1, pv=USHORT_PV, dtype=np.uint16, value=USHORT_1)
-        self.check_value(pulse=2, pv=USHORT_PV, dtype=np.uint16, value=USHORT_2)
+        self.check_value(cycle=1, pv=USHORT_PV, dtype=np.uint16, value=USHORT_1)
+        self.check_value(cycle=2, pv=USHORT_PV, dtype=np.uint16, value=USHORT_2)
 
     def test_uint(self):
-        self.check_value(pulse=1, pv=UINT_PV, dtype=np.uint32, value=UINT_1)
-        self.check_value(pulse=2, pv=UINT_PV, dtype=np.uint32, value=UINT_2)
+        self.check_value(cycle=1, pv=UINT_PV, dtype=np.uint32, value=UINT_1)
+        self.check_value(cycle=2, pv=UINT_PV, dtype=np.uint32, value=UINT_2)
 
     def test_ulong(self):
-        self.check_value(pulse=1, pv=ULONG_PV, dtype=np.uint64, value=ULONG_1)
-        self.check_value(pulse=2, pv=ULONG_PV, dtype=np.uint64, value=ULONG_2)
+        self.check_value(cycle=1, pv=ULONG_PV, dtype=np.uint64, value=ULONG_1)
+        self.check_value(cycle=2, pv=ULONG_PV, dtype=np.uint64, value=ULONG_2)
 
     # Tests for string
     def test_string(self):
-        self.check_value(pulse=1, pv=STRING_PV, dtype=np.object_, value=STRING_1)
-        self.check_value(pulse=2, pv=STRING_PV, dtype=np.object_, value=STRING_2)
+        self.check_value(cycle=1, pv=STRING_PV, dtype=np.object_, value=STRING_1)
+        self.check_value(cycle=2, pv=STRING_PV, dtype=np.object_, value=STRING_2)
 
     # Tests for enum
     def test_enum(self):
-        self.check_value(pulse=1, pv=ENUM_PV, dtype=np.int32, value=ENUM_1)
-        self.check_value(pulse=2, pv=ENUM_PV, dtype=np.int32, value=ENUM_2)
+        self.check_value(cycle=1, pv=ENUM_PV, dtype=np.int32, value=ENUM_1)
+        self.check_value(cycle=2, pv=ENUM_PV, dtype=np.int32, value=ENUM_2)
 
     # Arrays
 
     def test_afloat(self):
         self.check_value(
-            pulse=1, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_1, FLOAT_2]
+            cycle=1, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_1, FLOAT_2]
         )
         self.check_value(
-            pulse=2, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_2, FLOAT_1]
+            cycle=2, pv=AFLOAT_PV, dtype=np.float32, value=[FLOAT_2, FLOAT_1]
         )
 
     def test_adouble(self):
         self.check_value(
-            pulse=1, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_1, DOUBLE_2]
+            cycle=1, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_1, DOUBLE_2]
         )
         self.check_value(
-            pulse=2, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_2, DOUBLE_1]
+            cycle=2, pv=ADOUBLE_PV, dtype=np.float64, value=[DOUBLE_2, DOUBLE_1]
         )
 
     def test_abyte(self):
-        self.check_value(pulse=1, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_1, BYTE_2])
-        self.check_value(pulse=2, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_2, BYTE_1])
+        self.check_value(cycle=1, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_1, BYTE_2])
+        self.check_value(cycle=2, pv=ABYTE_PV, dtype=np.int8, value=[BYTE_2, BYTE_1])
 
     def test_ashort(self):
         self.check_value(
-            pulse=1, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_1, SHORT_2]
+            cycle=1, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_1, SHORT_2]
         )
         self.check_value(
-            pulse=2, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_2, SHORT_1]
+            cycle=2, pv=ASHORT_PV, dtype=np.int16, value=[SHORT_2, SHORT_1]
         )
 
     def test_aint(self):
-        self.check_value(pulse=1, pv=AINT_PV, dtype=np.int32, value=[INT_1, INT_2])
-        self.check_value(pulse=2, pv=AINT_PV, dtype=np.int32, value=[INT_2, INT_1])
+        self.check_value(cycle=1, pv=AINT_PV, dtype=np.int32, value=[INT_1, INT_2])
+        self.check_value(cycle=2, pv=AINT_PV, dtype=np.int32, value=[INT_2, INT_1])
 
     def test_along(self):
-        self.check_value(pulse=1, pv=ALONG_PV, dtype=np.int64, value=[LONG_1, LONG_2])
-        self.check_value(pulse=2, pv=ALONG_PV, dtype=np.int64, value=[LONG_2, LONG_1])
+        self.check_value(cycle=1, pv=ALONG_PV, dtype=np.int64, value=[LONG_1, LONG_2])
+        self.check_value(cycle=2, pv=ALONG_PV, dtype=np.int64, value=[LONG_2, LONG_1])
 
     def test_aubyte(self):
         self.check_value(
-            pulse=1, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_1, UBYTE_2]
+            cycle=1, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_1, UBYTE_2]
         )
         self.check_value(
-            pulse=2, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_2, UBYTE_1]
+            cycle=2, pv=AUBYTE_PV, dtype=np.uint8, value=[UBYTE_2, UBYTE_1]
         )
 
     def test_aushort(self):
         self.check_value(
-            pulse=1, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_1, USHORT_2]
+            cycle=1, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_1, USHORT_2]
         )
         self.check_value(
-            pulse=2, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_2, USHORT_1]
+            cycle=2, pv=AUSHORT_PV, dtype=np.uint16, value=[USHORT_2, USHORT_1]
         )
 
     def test_auint(self):
-        self.check_value(pulse=1, pv=AUINT_PV, dtype=np.uint32, value=[UINT_1, UINT_2])
-        self.check_value(pulse=2, pv=AUINT_PV, dtype=np.uint32, value=[UINT_2, UINT_1])
+        self.check_value(cycle=1, pv=AUINT_PV, dtype=np.uint32, value=[UINT_1, UINT_2])
+        self.check_value(cycle=2, pv=AUINT_PV, dtype=np.uint32, value=[UINT_2, UINT_1])
 
     def test_aulong(self):
         self.check_value(
-            pulse=1, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_1, ULONG_2]
+            cycle=1, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_1, ULONG_2]
         )
         self.check_value(
-            pulse=2, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_2, ULONG_1]
+            cycle=2, pv=AULONG_PV, dtype=np.uint64, value=[ULONG_2, ULONG_1]
         )
 
     def test_astring(self):
         self.check_value(
-            pulse=1, pv=ASTRING_PV, dtype=np.object_, value=[STRING_1, STRING_2]
+            cycle=1, pv=ASTRING_PV, dtype=np.object_, value=[STRING_1, STRING_2]
         )
         self.check_value(
-            pulse=2, pv=ASTRING_PV, dtype=np.object_, value=[STRING_2, STRING_1]
+            cycle=2, pv=ASTRING_PV, dtype=np.object_, value=[STRING_2, STRING_1]
         )
 
-    def check_value(self, pulse, pv, dtype, value):
+    def check_value(self, cycle, pv, dtype, value):
         directory = Path(
             datetime.now(UTC).strftime("%Y"),
             datetime.now(UTC).strftime("%Y-%m-%d"),
         )
-        file_path = file_settings.storage_path / directory / f"types-test_3_{pulse}.h5"
+        file_path = file_settings.storage_path / directory / f"types-test_3_{cycle}.h5"
 
         assert file_path.exists(), f"File {file_path} not found."
 
@@ -320,20 +320,20 @@ class TestCollector:
         entry = h5file.get("entry", None)
         assert entry is not None, f"File {file_path} does not contain an entry group."
 
-        sds_event = entry.get(f"sds_event_{pulse}", None)
+        sds_event = entry.get(f"sds_event_{cycle}", None)
         assert (
             sds_event is not None
-        ), f"File {file_path} does not contain the sds event for pulse {pulse}."
+        ), f"File {file_path} does not contain the sds event for cycle {cycle}."
 
-        pulse = sds_event.get(f"pulse_{pulse}", None)
+        cycle = sds_event.get(f"cycle_{cycle}", None)
         assert (
-            pulse is not None
-        ), f"File {file_path} does not contain the pulse {pulse}."
+            cycle is not None
+        ), f"File {file_path} does not contain the cycle {cycle}."
 
-        pv_field = pulse.get(pv, None)
+        pv_field = cycle.get(pv, None)
         assert (
             pv_field is not None
-        ), f"PV {pv} not found in file {file_path} for pulse {pulse}"
+        ), f"PV {pv} not found in file {file_path} for cycle {cycle}"
 
         assert pv_field.dtype == dtype
 

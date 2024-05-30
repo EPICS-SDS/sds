@@ -14,9 +14,9 @@ class Event(BaseModel):
     type: Any
     timing_event_code: int
     data_timestamp: datetime
-    pulse_id_timestamp: datetime
+    cycle_id_timestamp: datetime
     sds_event_timestamp: datetime
-    pulse_id: int
-    sds_event_pulse_id: int
+    cycle_id: int
+    sds_event_cycle_id: int
 
     attributes: Optional[Dict[str, Any]]

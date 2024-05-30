@@ -64,17 +64,17 @@ class NexusFile:
         """
         Add an event to the NeXus file
         """
-        dataset = self.datasets.get(event.sds_event_pulse_id)
-        # If the event belongs to a different dataset (different sds_event_pulse_id), create a new Dataset
+        dataset = self.datasets.get(event.sds_event_cycle_id)
+        # If the event belongs to a different dataset (different sds_event_cycle_id), create a new Dataset
         if dataset is None:
             dataset = Dataset(
                 collector_id=self.collector_id,
                 sds_event_timestamp=event.sds_event_timestamp,
-                sds_event_pulse_id=event.sds_event_pulse_id,
+                sds_event_cycle_id=event.sds_event_cycle_id,
                 path=self.path,
                 beam_info=event.attributes.get("beamInfo", None),
             )
-            self.datasets.update({event.sds_event_pulse_id: dataset})
+            self.datasets.update({event.sds_event_cycle_id: dataset})
 
         self.events.append(event)
 
@@ -85,7 +85,7 @@ class NexusFile:
         self.events.clear()
 
     def add_dataset(self, dataset: Dataset):
-        self.datasets.update({dataset.sds_event_pulse_id: dataset})
+        self.datasets.update({dataset.sds_event_cycle_id: dataset})
 
     def write_from_events(self):
         """
@@ -107,47 +107,47 @@ class NexusFile:
                     event = self.events.pop(0)
                 except IndexError:
                     break
-                sds_event_key = f"sds_event_{event.sds_event_pulse_id}"
-                pulse_key = f"pulse_{event.pulse_id}"
+                sds_event_key = f"sds_event_{event.sds_event_cycle_id}"
+                cycle_key = f"cycle_{event.cycle_id}"
 
                 sds_event_group = entry.require_group(name=sds_event_key)
                 sds_event_group.attrs["NX_class"] = "NXsubentry"
-                sds_event_group.attrs["pulse_id"] = event.sds_event_pulse_id
+                sds_event_group.attrs["cycle_id"] = event.sds_event_cycle_id
                 sds_event_group.attrs[
                     "timestamp"
                 ] = event.sds_event_timestamp.isoformat()
                 sds_event_group.attrs["event_code"] = event.timing_event_code
 
-                entry[sds_event_key].require_group(name=pulse_key)
-                # Adding attributes about pulse (should be the same for all events)
-                pulse_attributes = entry[sds_event_key][pulse_key].attrs
-                pulse_attributes["NX_class"] = "NXdata"
-                pulse_attributes["pulse_id"] = event.pulse_id
-                pulse_attributes["timestamp"] = event.pulse_id_timestamp.isoformat()
+                entry[sds_event_key].require_group(name=cycle_key)
+                # Adding attributes about cycle (should be the same for all events)
+                cycle_attributes = entry[sds_event_key][cycle_key].attrs
+                cycle_attributes["NX_class"] = "NXdata"
+                cycle_attributes["cycle_id"] = event.cycle_id
+                cycle_attributes["timestamp"] = event.cycle_id_timestamp.isoformat()
 
                 if "beamInfo" in event.attributes:
                     self._recursively_add_attributes(
-                        pulse_attributes,
+                        cycle_attributes,
                         event.attributes.pop("beamInfo"),
                         prefix="beamInfo",
                     )
 
                 try:
                     self._parse_value(
-                        entry[sds_event_key][pulse_key],
+                        entry[sds_event_key][cycle_key],
                         event.pv_name,
                         event.value,
                         event.type,
                     )
                 except ValueError:
                     logger.error(
-                        f"Duplicated value for PV {event.pv_name}. SDS event {sds_event_key}. Pulse ID {pulse_key}"
+                        f"Duplicated value for PV {event.pv_name}. SDS event {sds_event_key}. Pulse ID {cycle_key}"
                     )
 
                     continue
 
                 # Acq info and event metadata
-                acquisition_attributes = entry[sds_event_key][pulse_key][
+                acquisition_attributes = entry[sds_event_key][cycle_key][
                     event.pv_name
                 ].attrs
                 acquisition_attributes["timestamp"] = event.data_timestamp.isoformat()
@@ -242,25 +242,25 @@ class NexusFile:
                 origin = File(settings.storage_path / dataset.path, "r")
                 entry_origin = origin["entry"]
                 sds_event_origin = entry_origin[
-                    f"sds_event_{dataset.sds_event_pulse_id}"
+                    f"sds_event_{dataset.sds_event_cycle_id}"
                 ]
                 if include_pvs is None:
                     h5file.copy(sds_event_origin, entry)
                 else:
                     sds_event = entry.require_group(
-                        f"sds_event_{dataset.sds_event_pulse_id}"
+                        f"sds_event_{dataset.sds_event_cycle_id}"
                     )
 
                     for att in sds_event_origin.attrs:
                         sds_event.attrs[att] = sds_event_origin.attrs[att]
-                    for pulse_id in sds_event_origin:
-                        pulse = sds_event.require_group(pulse_id)
-                        pulse_origin = sds_event_origin[pulse_id]
-                        for att in pulse_origin.attrs:
-                            pulse.attrs[att] = pulse_origin.attrs[att]
-                        for pv in pulse_origin:
+                    for cycle_id in sds_event_origin:
+                        cycle = sds_event.require_group(cycle_id)
+                        cycle_origin = sds_event_origin[cycle_id]
+                        for att in cycle_origin.attrs:
+                            cycle.attrs[att] = cycle_origin.attrs[att]
+                        for pv in cycle_origin:
                             if pv in include_pvs:
-                                h5file.copy(pulse_origin[pv], pulse)
+                                h5file.copy(cycle_origin[pv], cycle)
                 origin.close()
 
             h5file.close()

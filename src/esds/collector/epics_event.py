@@ -30,17 +30,17 @@ class EpicsEvent(Event):
         attributes.pop("value")
         attributes.pop("timeStamp")
 
-        # pulse_id
-        pulse_id = value.get("pulseId")
-        if pulse_id is not None:
+        # cycle_id
+        cycle_id = value.get("cycleId")
+        if cycle_id is not None:
             values.update(
-                pulse_id=pulse_id.value,
-                pulse_id_timestamp=datetime.fromtimestamp(
-                    pulse_id.timeStamp.secondsPastEpoch
-                    + pulse_id.timeStamp.nanoseconds * 1e-9
+                cycle_id=cycle_id.value,
+                cycle_id_timestamp=datetime.fromtimestamp(
+                    cycle_id.timeStamp.secondsPastEpoch
+                    + cycle_id.timeStamp.nanoseconds * 1e-9
                 ),
             )
-        attributes.pop("pulseId")
+        attributes.pop("cycleId")
 
         # eventCode
         sds_info = value.get("sdsInfo")
@@ -50,12 +50,12 @@ class EpicsEvent(Event):
                     sds_info.timeStamp.secondsPastEpoch
                     + sds_info.timeStamp.nanoseconds * 1e-9
                 ),
-                sds_event_pulse_id=sds_info.pulseId,
+                sds_event_cycle_id=sds_info.cycleId,
                 timing_event_code=int(sds_info.evtCode),
             )
 
         attributes["sdsInfo"].pop("timeStamp")
-        attributes["sdsInfo"].pop("pulseId")
+        attributes["sdsInfo"].pop("cycleId")
         attributes["sdsInfo"].pop("evtCode")
 
         values.update(

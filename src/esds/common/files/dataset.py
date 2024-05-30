@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 class Dataset(BaseModel):
     """
     Model for a file containing Event objects that belong to the same timing
-    event (same sds_event_pulse_id) and share the same collector.
+    event (same sds_event_cycle_id) and share the same collector.
     """
 
     collector_id: str
     sds_event_timestamp: datetime
-    sds_event_pulse_id: int
+    sds_event_cycle_id: int
     path: Path
     beam_info: Optional[Dict[str, Any]]
 

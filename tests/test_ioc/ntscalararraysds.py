@@ -47,7 +47,7 @@ class NTScalarArraySDS(NTScalar):
                         "S",
                         None,
                         [
-                            ("pulseId", "l"),
+                            ("cycleId", "l"),
                             ("id", "d"),
                             ("evtCode", "i"),
                             ("alarm", alarm),
@@ -60,7 +60,7 @@ class NTScalarArraySDS(NTScalar):
         F.extend(
             [
                 (
-                    "pulseId",
+                    "cycleId",
                     (
                         "S",
                         None,
@@ -129,8 +129,8 @@ class NTScalarArraySDS(NTScalar):
             mainevent_timestamp["secondsPastEpoch"] = sds_pv.pv_ts // 1e9
             mainevent_timestamp["nanoseconds"] = sds_pv.pv_ts % 1e9
 
-            wrapped_value["pulseId"]["value"] = sds_pv.main_event_pulse_id
-            wrapped_value["pulseId"]["timeStamp"] = mainevent_timestamp
+            wrapped_value["cycleId"]["value"] = sds_pv.main_event_cycle_id
+            wrapped_value["cycleId"]["timeStamp"] = mainevent_timestamp
 
             # Acq info comes from start acq. event
             start_event_ts = timeStamp()
@@ -147,7 +147,7 @@ class NTScalarArraySDS(NTScalar):
             sds_timestamp["secondsPastEpoch"] = sds_pv.sds_ts // 1e9
             sds_timestamp["nanoseconds"] = sds_pv.sds_ts % 1e9
 
-            wrapped_value["sdsInfo"]["pulseId"] = sds_pv.sds_pulse_id  # long int (64b)
+            wrapped_value["sdsInfo"]["cycleId"] = sds_pv.sds_cycle_id  # long int (64b)
             wrapped_value["sdsInfo"]["evtCode"] = sds_pv.sds_evt_code
             wrapped_value["sdsInfo"]["timeStamp"] = sds_timestamp
 

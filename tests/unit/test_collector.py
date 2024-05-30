@@ -38,9 +38,9 @@ event = Event(
     timing_event_code=2,
     data_timestamp=datetime.now(UTC),
     sds_event_timestamp=datetime.now(UTC),
-    pulse_id_timestamp=datetime.now(UTC),
-    pulse_id=1,
-    sds_event_pulse_id=1,
+    cycle_id_timestamp=datetime.now(UTC),
+    cycle_id=1,
+    sds_event_cycle_id=1,
     attributes=dict(acq_event=acq_event, beam_info=beam_info),
 )
 
@@ -57,8 +57,8 @@ class TestDataset:
         dataset = Dataset(
             collector_id=collector.id,
             sds_event_timestamp=datetime.now(UTC),
-            sds_event_pulse_id=event.sds_event_pulse_id,
-            path=f"{collector.name}_{event.timing_event_code}_{event.sds_event_pulse_id}",
+            sds_event_cycle_id=event.sds_event_cycle_id,
+            path=f"{collector.name}_{event.timing_event_code}_{event.sds_event_cycle_id}",
             acq_event=acq_event,
             beam_info=beam_info,
         )

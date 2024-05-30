@@ -154,8 +154,8 @@ async def query_datasets(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    sds_event_pulse_id_start: Optional[int] = None,
-    sds_event_pulse_id_end: Optional[int] = None,
+    sds_event_cycle_id_start: Optional[int] = None,
+    sds_event_cycle_id_end: Optional[int] = None,
     sort: Optional[SortOrder] = SortOrder.desc,
     search_after: Optional[int] = None,
 ):
@@ -165,8 +165,8 @@ async def query_datasets(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
-    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
+    - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
     - **sort** (SortOrder, optional): to sort results in ascending or descending order in time
     - **search_after** (int, optional): to scroll over a large number of hits
 
@@ -187,13 +187,13 @@ async def query_datasets(
             timestamp_range["lte"] = end
 
         filters.append({"range": {"sds_event_timestamp": timestamp_range}})
-    if sds_event_pulse_id_start is not None or sds_event_pulse_id_end is not None:
-        pulse_id_range = {}
-        if sds_event_pulse_id_start is not None:
-            pulse_id_range["gte"] = sds_event_pulse_id_start
-        if sds_event_pulse_id_end is not None:
-            pulse_id_range["lte"] = sds_event_pulse_id_end
-        filters.append({"range": {"sds_event_pulse_id": pulse_id_range}})
+    if sds_event_cycle_id_start is not None or sds_event_cycle_id_end is not None:
+        cycle_id_range = {}
+        if sds_event_cycle_id_start is not None:
+            cycle_id_range["gte"] = sds_event_cycle_id_start
+        if sds_event_cycle_id_end is not None:
+            cycle_id_range["lte"] = sds_event_cycle_id_end
+        filters.append({"range": {"sds_event_cycle_id": cycle_id_range}})
 
     sort = {"sds_event_timestamp": {"order": sort.value}}
 
@@ -275,8 +275,8 @@ async def get_nexus_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    sds_event_pulse_id_start: Optional[int] = None,
-    sds_event_pulse_id_end: Optional[int] = None,
+    sds_event_cycle_id_start: Optional[int] = None,
+    sds_event_cycle_id_end: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -285,8 +285,8 @@ async def get_nexus_by_dataset_query(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
-    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
+    - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
     - **search_after** (int, optional): to scroll over a large number of hits
     - **include_pvs** (List[str], optional): list of PVs to return
 
@@ -300,8 +300,8 @@ async def get_nexus_by_dataset_query(
             collector_id,
             start,
             end,
-            sds_event_pulse_id_start,
-            sds_event_pulse_id_end,
+            sds_event_cycle_id_start,
+            sds_event_cycle_id_end,
             search_after=search_after,
         )
 
@@ -446,8 +446,8 @@ async def get_json_by_dataset_query(
     collector_id: Optional[List[str]] = Query(default=None),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    sds_event_pulse_id_start: Optional[int] = None,
-    sds_event_pulse_id_end: Optional[int] = None,
+    sds_event_cycle_id_start: Optional[int] = None,
+    sds_event_cycle_id_end: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -456,8 +456,8 @@ async def get_json_by_dataset_query(
       consider for the search
     - **start** (int, optional): UTC timestamp for interval start
     - **end** (int, optional): UTC timestamp for interval end
-    - **sds_event_pulse_id_start** (int, optional): SDS event pulse ID for interval start
-    - **sds_event_pulse_id_end** (int, optional): SDS event pulse ID for interval end
+    - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
+    - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
     - **search_after** (int, optional): to scroll over a large number of hits
     - **include_pvs** (List[str], optional): list of PVs to return
 
@@ -471,8 +471,8 @@ async def get_json_by_dataset_query(
             collector_id,
             start,
             end,
-            sds_event_pulse_id_start,
-            sds_event_pulse_id_end,
+            sds_event_cycle_id_start,
+            sds_event_cycle_id_end,
             search_after=search_after,
         )
 

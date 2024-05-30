@@ -39,9 +39,9 @@ class ScalarHandler(object):
 
 
 class MyServer(object):
-    def __init__(self, event, n_pulses, freq):
+    def __init__(self, event, n_cycles, freq):
         self.event = event
-        self.n_pulses = n_pulses
+        self.n_cycles = n_cycles
         self.freq = freq
 
         self.pvdb = dict()
@@ -87,7 +87,7 @@ class MyServer(object):
                 self._add_pv(*args)
 
     def _start_server(self):
-        pulse_id = 0
+        cycle_id = 0
         self.provider = StaticProvider()
 
         server = Server(providers=[self.provider])
@@ -102,13 +102,13 @@ class MyServer(object):
                 if self.stop_flag.is_set():
                     break
 
-                sds_event_pulse_id = pulse_id
+                sds_event_cycle_id = cycle_id
                 sds_event_timestamp = time.time_ns()
-                for i in range(int(self.n_pulses[0])):
+                for i in range(int(self.n_cycles[0])):
                     with self.pvdb_lock:
                         for pv in self.pvdb:
                             arr = np.random.random(self.pvdb[pv].current().shape[0])
-                            arr[0] = pulse_id
+                            arr[0] = cycle_id
 
                             try:
                                 sds_pv = SdsPV(
@@ -116,9 +116,9 @@ class MyServer(object):
                                     pv_value=arr,
                                     pv_type="ad",
                                     pv_name=pv,
-                                    start_event_pulse_id=pulse_id,
+                                    start_event_cycle_id=cycle_id,
                                     start_event_ts=time.time_ns(),
-                                    main_event_pulse_id=pulse_id,
+                                    main_event_cycle_id=cycle_id,
                                     main_event_ts=time.time_ns(),
                                     acq_event_name="TestAcqEvent",
                                     acq_event_code=0,
@@ -132,18 +132,18 @@ class MyServer(object):
                                     beam_curr=62.5e-3,
                                     sds_evt_code=1,
                                     sds_ts=sds_event_timestamp,
-                                    sds_pulse_id=sds_event_pulse_id,
+                                    sds_cycle_id=sds_event_cycle_id,
                                 )
                                 self.pvdb[pv].post(sds_pv)
                             except Exception as e:
                                 print("error received", e)
                                 pass
-                        # Wait to process the next pulse at the right frequency
-                        if i < int(self.n_pulses[0]) - 1:
+                        # Wait to process the next cycle at the right frequency
+                        if i < int(self.n_cycles[0]) - 1:
                             time.sleep(1 / self.freq[0])
                         else:
                             time.sleep(0.001)
-                        pulse_id += 1
+                        cycle_id += 1
 
         print("Server stopped")
         queue_thread.join()
@@ -159,21 +159,21 @@ def run_server(n_pvs, n_elem, prefix):
 
     mngr = mp_ctxt.Manager()
     events = [mngr.Event() for i in range(N_PROC)]
-    n_pulses = shared_memory.ShareableList([1])
+    n_cycles = shared_memory.ShareableList([1])
     freq = shared_memory.ShareableList([14])
 
     servers = []
     for i in range(N_PROC):
-        servers.append(MyServer(events[i], n_pulses, freq))
+        servers.append(MyServer(events[i], n_cycles, freq))
 
     provider = StaticProvider("trigger")
     trigger_pv = SharedPV(
         handler=TriggerHandler(events), nt=NTScalar("?"), initial=False
     )
-    n_pulses_pv = SharedPV(handler=ScalarHandler(n_pulses), nt=NTScalar("i"), initial=1)
+    n_cycles_pv = SharedPV(handler=ScalarHandler(n_cycles), nt=NTScalar("i"), initial=1)
     freq_pv = SharedPV(handler=ScalarHandler(freq), nt=NTScalar("d"), initial=14.0)
 
-    provider.add(prefix + "N_PULSES", n_pulses_pv)
+    provider.add(prefix + "N_CYCLES", n_cycles_pv)
     provider.add(prefix + "TRIG", trigger_pv)
     provider.add(prefix + "FREQ", freq_pv)
 
