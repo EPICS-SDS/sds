@@ -124,7 +124,7 @@ class NTScalarArraySDS(NTScalar):
             pv_timestamp["nanoseconds"] = sds_pv.pv_ts % 1e9
             wrapped_value["timeStamp"] = pv_timestamp
 
-            # Pulse ID information comes from the 14 Hz event
+            # Cycle ID information comes from the 14 Hz event
             mainevent_timestamp = timeStamp()
             mainevent_timestamp["secondsPastEpoch"] = sds_pv.pv_ts // 1e9
             mainevent_timestamp["nanoseconds"] = sds_pv.pv_ts % 1e9
