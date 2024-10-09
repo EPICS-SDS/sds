@@ -1,4 +1,4 @@
-FROM condaforge/miniforge3:24.3.0-0
+FROM condaforge/miniforge3:24.7.1-2
 
 RUN groupadd -r -g 10058 sds_group \
   && useradd --no-log-init -r -g sds_group -u 10057 sds-user
