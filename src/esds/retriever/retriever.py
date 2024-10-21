@@ -34,6 +34,7 @@ logging.getLogger().setLevel(settings.log_level)
 logger = logging.getLogger(__name__)
 
 HDF5_MIME_TYPE = "application/x-hdf5"
+ELASTIC_SIZE_LIMIT = 10_000
 
 
 @asynccontextmanager
@@ -156,6 +157,7 @@ async def query_datasets(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     sort: Optional[SortOrder] = SortOrder.desc,
     search_after: Optional[int] = None,
 ):
@@ -167,7 +169,8 @@ async def query_datasets(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
-    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
+    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time (descending by default)
     - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
@@ -195,10 +198,17 @@ async def query_datasets(
             cycle_id_range["lte"] = sds_event_cycle_id_end
         filters.append({"range": {"sds_event_cycle_id": cycle_id_range}})
 
+    if size is not None:
+        if size < 0 or size > ELASTIC_SIZE_LIMIT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Query with 'size' parameter must be positive and smaller than {ELASTIC_SIZE_LIMIT}.",
+            )
+
     sort = {"sds_event_timestamp": {"order": sort.value}}
 
     total, datasets, search_after = await crud.dataset.get_multi(
-        filters=filters, sort=sort, search_after=search_after
+        filters=filters, sort=sort, search_after=search_after, size=size
     )
 
     return MultiResponseDataset(
