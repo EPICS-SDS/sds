@@ -23,18 +23,21 @@ swagger_redoc_files.lock: pull_swagger_redoc
 
 pull_swagger_redoc:
 	mkdir src/static | true
-	curl -o src/static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js
-	curl -o src/static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui.css
+	curl -o src/static/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js
+	curl -o src/static/swagger-ui.css https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
 	curl -o src/static/redoc.standalone.js https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js
 	touch swagger_redoc_files.lock
 
-build: clean_docker_image_lock docker_image pull_elastic pull_swagger_redoc
+build: clean_docker_image_lock docker_image pull_elastic swagger_redoc_files.lock
 
 run:
-	docker compose -f docker-compose.yml up
+	docker compose -f docker-compose.yml up -d
 
 debug:
-	docker compose up
+	docker compose up -d
+
+stop:
+	docker compose down
 
 test_image: test_image.lock
 
@@ -72,7 +75,11 @@ test: test_services.lock
 
 test_ioc: test_image.lock
 	@echo "Starting IOC for performance tests"
-	@docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d sds_test_ioc
+	@docker compose up -d test_ioc
+
+stop_test_ioc: test_image.lock
+	@echo "Stoping IOC for performance tests"
+	@docker compose down test_ioc
 
 ifndef IOC_ADDR
 test_perf: test_ioc test_services.lock
