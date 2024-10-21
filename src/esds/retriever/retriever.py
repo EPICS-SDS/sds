@@ -287,6 +287,7 @@ async def get_nexus_by_dataset_query(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -297,6 +298,7 @@ async def get_nexus_by_dataset_query(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
     - **search_after** (int, optional): to scroll over a large number of hits
     - **include_pvs** (List[str], optional): list of PVs to return
 
@@ -313,6 +315,7 @@ async def get_nexus_by_dataset_query(
             sds_event_cycle_id_start,
             sds_event_cycle_id_end,
             search_after=search_after,
+            size=size,
         )
 
         if dataset_respone.datasets == []:
@@ -458,6 +461,7 @@ async def get_json_by_dataset_query(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -468,7 +472,7 @@ async def get_json_by_dataset_query(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
-    - **search_after** (int, optional): to scroll over a large number of hits
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
     - **include_pvs** (List[str], optional): list of PVs to return
 
     To search for a set of PVs, first one needs to search for collectors
@@ -484,6 +488,7 @@ async def get_json_by_dataset_query(
             sds_event_cycle_id_start,
             sds_event_cycle_id_end,
             search_after=search_after,
+            size=size,
         )
 
         if dataset_respone.datasets == []:
