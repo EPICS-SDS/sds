@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+import signal
 import string
 import time
 from multiprocessing import cpu_count, get_context, shared_memory
@@ -272,6 +273,7 @@ class MyServer(object):
 
 
 def run_server(prefix, pvs_def):
+
     mp_ctxt = get_context("spawn")
     N_PROC = cpu_count()
 
@@ -279,6 +281,18 @@ def run_server(prefix, pvs_def):
     events = [mngr.Event() for i in range(N_PROC)]
     n_cycles = shared_memory.ShareableList([1])
     freq = shared_memory.ShareableList([14])
+
+    # Add hooks to make sure the server processed are handled appropiately.
+    def terminate_all_servers(signum, frame):
+        for server in servers:
+            server.process.terminate()
+        n_cycles.shm.unlink()
+        freq.shm.unlink()
+
+    signal.signal(
+        signal.SIGTERM, terminate_all_servers
+    )  # SIGTERM (external termination)
+    signal.signal(signal.SIGINT, terminate_all_servers)  # SIGINT (Ctrl+C)
 
     servers = []
     for i in range(N_PROC):

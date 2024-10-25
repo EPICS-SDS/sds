@@ -16,6 +16,7 @@ DATASETS_ENDPOINT = "/datasets"
 INDEXER_URL = "http://0.0.0.0:" + str(INDEXER_PORT)
 
 
+@pytest.mark.usefixtures("indexer_service")
 class TestCollector:
     test_collector = {
         "name": "indexer_test",
@@ -30,10 +31,6 @@ class TestCollector:
         "event_code": 2,
     }
 
-    @pytest.fixture(autouse=True)
-    def _start_indexer_service(self, indexer_service):
-        pass
-
     @classmethod
     def setup_class(cls):
         # Make sure there is no collector that matches the collector that is created in the test_create test
@@ -41,7 +38,6 @@ class TestCollector:
         requests.post(ELASTIC_URL + "/collector/_delete_by_query", json=query)
         requests.post(ELASTIC_URL + "/collector/_refresh")
 
-    @pytest.mark.asyncio
     async def test_create(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -49,7 +45,6 @@ class TestCollector:
             ) as response:
                 assert response.status == 201
 
-    @pytest.mark.asyncio
     async def test_create_bad_schema(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -57,7 +52,6 @@ class TestCollector:
             ) as response:
                 assert response.status == 422
 
-    @pytest.mark.asyncio
     async def test_get(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -65,7 +59,6 @@ class TestCollector:
             ) as response:
                 assert response.status == 200
 
-    @pytest.mark.asyncio
     async def test_validate_schema(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -80,6 +73,7 @@ class TestCollector:
                 assert True
 
 
+@pytest.mark.usefixtures("indexer_service")
 class TestDatasets:
     test_dataset = {
         "sds_event_timestamp": datetime.now(UTC).isoformat(),
@@ -105,8 +99,7 @@ class TestDatasets:
         "path": "/directory/file.h5",
     }
 
-    @pytest_asyncio.fixture(autouse=True)
-    async def _start_indexer_service(self, indexer_service):
+    async def test_add_collector(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
@@ -114,7 +107,6 @@ class TestDatasets:
                 collector = json.loads(await response.content.read())
                 self.test_dataset["collector_id"] = collector["id"]
 
-    @pytest.mark.asyncio
     async def test_create(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -122,7 +114,6 @@ class TestDatasets:
             ) as response:
                 assert response.status == 201
 
-    @pytest.mark.asyncio
     async def test_create_ttl(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -132,7 +123,6 @@ class TestDatasets:
             ) as response:
                 assert response.status == 201
 
-    @pytest.mark.asyncio
     async def test_create_bad_schema(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -140,7 +130,6 @@ class TestDatasets:
             ) as response:
                 assert response.status == 422
 
-    @pytest.mark.asyncio
     async def test_validate_schema(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(

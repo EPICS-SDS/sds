@@ -78,42 +78,34 @@ ENUM_1 = 1
 ENUM_2 = 2
 
 
+@pytest.mark.usefixtures("indexer_service")
 class TestCollector:
     @classmethod
     def setup_class(cls):
         cls.p = subprocess.Popen(
-            ["python", "test_ioc/pva_server_multi_type.py"],
+            ["python", "tests/test_ioc/pva_server_multi_type.py"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
-        ctxt = ThContext()
-        ctxt.get("SDS:TYPES_TEST:TRIG", timeout=5)
-
-        ctxt.close()
+        with ThContext() as ctxt:
+            try:
+                ctxt.get("SDS:TYPES_TEST:TRIG", timeout=15)
+            except TimeoutError:
+                cls.p.terminate()
+                cls.p.communicate()
+                cls.p.wait()
+                raise RuntimeError("Timeout waiting for test IOC to start...")
 
     @classmethod
     def teardown_class(cls):
-        cls.p.kill()
+        cls.p.terminate()
+        cls.p.communicate()
+        cls.p.wait()
 
-    async def wait_for_pv_value(self, new_value):
-        queue = asyncio.Queue()
-        mon = None
-
-        async def cb(value):
-            if value[0] == new_value:
-                await queue.put(value)
-                if mon is not None:
-                    mon.close()
-
-        ctxt = Context()
-        mon = ctxt.monitor(self.test_pv, cb=cb)
-        return mon, queue
-
-    @pytest.mark.asyncio
-    async def test_acquisition(self, indexer_service, collector_service):
+    async def test_acquisition(self, collector_service):
         # Adding a short wait to allow collector service to start correctly before pushing new PV updates
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
 
         with Context() as ctxt:
             # Floating point (max value)

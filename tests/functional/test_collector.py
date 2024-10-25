@@ -21,11 +21,8 @@ from pydantic import TypeAdapter
 from tests.functional.service_loader import collector_service, indexer_service
 
 
+@pytest.mark.usefixtures("indexer_service", "collector_service")
 class TestCollector:
-    @pytest.fixture(autouse=True)
-    def _start_collector_service(self, indexer_service, collector_service):
-        pass
-
     @classmethod
     def setup_class(cls):
         cls.p = subprocess.Popen(
@@ -34,27 +31,32 @@ class TestCollector:
             stderr=subprocess.DEVNULL,
         )
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
-        ctxt = ThContext()
-        ctxt.get("SDS:TEST:TRIG", timeout=15)
+        with ThContext() as ctxt:
+            try:
+                ctxt.get("SDS:TEST:TRIG", timeout=15)
 
-        pv_len = 100
-        n_pvs = 10
-        cls.test_pv = f"SDS:TEST:PV_{pv_len}_0"
-        ctxt.put("SDS:TEST:N_ELEM", pv_len)
-        ctxt.put("SDS:TEST:N_PVS", n_pvs)
-        ctxt.close()
+                pv_len = 100
+                n_pvs = 10
+                cls.test_pv = f"SDS:TEST:PV_{pv_len}_0"
+                ctxt.put("SDS:TEST:N_ELEM", pv_len)
+                ctxt.put("SDS:TEST:N_PVS", n_pvs)
+            except TimeoutError:
+                cls.p.terminate()
+                cls.p.communicate()
+                cls.p.wait()
+                raise RuntimeError("Timeout waiting for test IOC to start...")
 
     @classmethod
     def teardown_class(cls):
-        cls.p.kill()
+        cls.p.terminate()
+        cls.p.communicate()
+        cls.p.wait()
 
-    @pytest.mark.asyncio
     @timesout()
     async def trigger(self, timeout=10):
         with Context() as ctxt:
             await ctxt.put("SDS:TEST:TRIG", True)
 
-    @pytest.mark.asyncio
     @timesout()
     async def set_n_cycles(self, n_cycles, timeout=10):
         with Context() as ctxt:
@@ -155,19 +157,15 @@ class TestCollector:
 
                 h5file.close()
 
-    @pytest.mark.asyncio
     async def test_sds_event_1_cycle(self):
         await self.sds_event_n_cycles(1)
 
-    @pytest.mark.asyncio
     async def test_sds_event_3_cycles(self):
         await self.sds_event_n_cycles(3)
 
-    @pytest.mark.asyncio
     async def test_sds_event_3_independent_cycles(self):
         await self.sds_event_n_cycles(3, same_event=False)
 
-    @pytest.mark.asyncio
     async def test_collector_manager_as_context_manager(self):
         await wait_for_indexer()
         collectors = await load_collectors()
@@ -182,7 +180,6 @@ class TestCollectorServer:
         except asyncio.CancelledError:
             pass
 
-    @pytest.mark.asyncio
     async def test_main_and_wait(self):
         task = asyncio.create_task(self.main_no_cancelled_error())
         await asyncio.sleep(1)
