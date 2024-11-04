@@ -7,7 +7,7 @@ from p4p.nt.common import alarm, timeStamp
 from p4p.nt.scalar import _metaHelper
 from p4p.wrapper import Type
 
-from sds_pv import SdsPV
+from test_ioc.sds_pv import SdsPV
 
 
 class NTScalarArraySDS(NTScalar):
@@ -160,5 +160,6 @@ class NTScalarArraySDS(NTScalar):
             wrapped_value["beamInfo"]["dest"] = sds_pv.beam_dest
             wrapped_value["beamInfo"]["curr"] = sds_pv.beam_curr
         else:
+            print(f"PV type is {type(sds_pv)}")
             wrapped_value = super().wrap(sds_pv)
         return wrapped_value

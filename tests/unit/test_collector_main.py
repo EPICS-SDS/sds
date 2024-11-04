@@ -2,6 +2,7 @@ import asyncio
 from asyncio import CancelledError
 
 import pytest
+
 from esds.collector.config import settings
 from esds.collector.main import load_collectors, main, wait_for_indexer
 

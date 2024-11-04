@@ -1,6 +1,7 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 import pytest
+
 from esds.collector.collector import Collector
 from esds.common.files import Dataset, Event
 

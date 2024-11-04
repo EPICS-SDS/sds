@@ -2,10 +2,10 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urljoin
 
 import aiohttp
 from pydantic import BaseModel
-from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 

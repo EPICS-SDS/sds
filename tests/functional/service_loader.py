@@ -1,12 +1,14 @@
 import asyncio
 import json
+from multiprocessing import Process
 from typing import List, Optional
 
 import pytest_asyncio
 import uvicorn
+
 from esds.collector.collector_manager import CollectorManager
-from esds.collector.main import load_collectors, wait_for_indexer
 from esds.collector.config import settings
+from esds.collector.main import load_collectors, wait_for_indexer
 from esds.indexer import app as indexer_app
 from esds.retriever import app as retriever_app
 
@@ -14,73 +16,42 @@ INDEXER_PORT = 8000
 RETRIEVER_PORT = 8001
 
 
-class UvicornTestServer(uvicorn.Server):
-    """Uvicorn test server
-
-    Usage:
-        @pytest.fixture
-        server = UvicornTestServer()
-        await server.up()
-        yield
-        await server.down()
-    """
-
-    def __init__(self, app, host="0.0.0.0", port=8000):
-        """Create a Uvicorn test server
-
-        Args:
-            app (FastAPI, optional): the FastAPI app. Defaults to main.app.
-            host (str, optional): the host ip. Defaults to '127.0.0.1'.
-            port (int, optional): the port. Defaults to PORT.
-        """
-        self._startup_done = asyncio.Event()
-        super().__init__(
-            config=uvicorn.Config(
-                app,
-                host=host,
-                port=port,
-            )
-        )
-
-    async def startup(self, sockets: Optional[List] = None) -> None:
-        """Override uvicorn startup"""
-        await super().startup(sockets=sockets)
-        self.config.setup_event_loop()
-        self._startup_done.set()
-
-    async def up(self) -> None:
-        """Start up server asynchronously"""
-        self._serve_task = asyncio.create_task(self.serve())
-        await self._startup_done.wait()
-
-    async def down(self) -> None:
-        """Shut down server asynchronously"""
-        self.should_exit = True
-        await self._serve_task
-
-
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(loop_scope="class", scope="class")
 async def indexer_service():
-    """Start indexer service as test fixture and tear down after test"""
-    server = UvicornTestServer(indexer_app, port=INDEXER_PORT)
-    await server.up()
-    yield
-    await server.down()
+    async for _ in _start_uvicorn(indexer_app, port=INDEXER_PORT):
+        yield
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(loop_scope="class", scope="class")
 async def retriever_service():
-    """Start retriever service as test fixture and tear down after test"""
-    server = UvicornTestServer(retriever_app, port=RETRIEVER_PORT)
-    await server.up()
+    async for _ in _start_uvicorn(retriever_app, port=RETRIEVER_PORT):
+        yield
+
+
+async def _start_uvicorn(app, port):
+    """Start service as test fixture and tear down after test"""
+
+    def run_server():
+        uvicorn.run(app, port=port)
+
+    # Start Uvicorn in a separate process
+    process = Process(target=run_server, daemon=True)
+    process.start()
+
+    # Wait for the server to start
+    await asyncio.sleep(1)
+
+    # Yield control back to the test
     yield
-    await server.down()
+
+    # Stop the server after the test
+    process.terminate()
+    process.join()
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def collector_service():
     """Start server as test fixture and tear down after test"""
-
     await wait_for_indexer()
     collectors = await load_collectors()
     print("Starting collectors...")

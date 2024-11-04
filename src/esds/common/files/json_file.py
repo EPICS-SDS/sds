@@ -1,11 +1,11 @@
 from traceback import print_exc
 from typing import Dict, List
-from h5py import File, Group
-from esds.common.files.config import settings
-from esds.common.files.dataset import Dataset
 
 import numpy as np
+from h5py import File, Group
 
+from esds.common.files.config import settings
+from esds.common.files.dataset import Dataset
 
 numpy_encoder = {
     np.integer: int,
