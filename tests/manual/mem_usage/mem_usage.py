@@ -1,8 +1,9 @@
 import json
 import os
-from p4p.client.thread import Context
-import time
 import subprocess
+import time
+
+from p4p.client.thread import Context
 
 # Duration of the test
 duration = 300  # seconds

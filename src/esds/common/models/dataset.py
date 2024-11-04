@@ -1,9 +1,8 @@
 import logging
 from typing import Any, ClassVar, Dict
 
-from pydantic import AliasGenerator, ConfigDict
-
 from elasticsearch import AsyncElasticsearch, NotFoundError
+from pydantic import AliasGenerator, ConfigDict
 
 from esds.common.db import settings
 from esds.common.db.base_class import Base

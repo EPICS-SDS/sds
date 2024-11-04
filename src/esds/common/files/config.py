@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings
 from pydantic import DirectoryPath
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):

@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Tuple
 
 from elasticsearch import BadRequestError, NotFoundError
-from pydantic import BaseModel, ConfigDict, model_validator, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 from esds.common.db import settings
 from esds.common.db.connection import get_connection
