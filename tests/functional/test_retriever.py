@@ -418,6 +418,59 @@ class TestDatasets:
                 assert response.status == 200
                 assert len((await response.json())["datasets"]) == 0
 
+    async def test_query_latest_dataset_by_collector_id(self):
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": test_dataset_1[0]["collector_id"],
+                    "size": 1,
+                },
+            ) as response:
+                assert response.status == 200
+                datasets = (await response.json())["datasets"]
+                assert len(datasets) == 1
+                assert (
+                    datasets[0]["sds_event_timestamp"]
+                    == test_dataset_2[-1]["sds_event_timestamp"]
+                )
+
+    async def test_query_latest_3_datasets_by_collector_id(self):
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": test_dataset_1[0]["collector_id"],
+                    "size": 3,
+                },
+            ) as response:
+                assert response.status == 200
+                datasets = (await response.json())["datasets"]
+                assert len(datasets) == 3
+                for i in range(3):
+                    assert (
+                        datasets[i]["sds_event_timestamp"]
+                        == test_dataset_2[-1 - i]["sds_event_timestamp"]
+                    )
+
+    async def test_query_first_dataset_by_collector_id(self):
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                RETRIEVER_URL + DATASETS_ENDPOINT,
+                params={
+                    "collector_id": test_dataset_1[0]["collector_id"],
+                    "size": 1,
+                    "sort": "asc",
+                },
+            ) as response:
+                assert response.status == 200
+                datasets = (await response.json())["datasets"]
+                assert len(datasets) == 1
+                assert (
+                    datasets[0]["sds_event_timestamp"]
+                    == test_dataset_1[0]["sds_event_timestamp"]
+                )
+
     async def test_get_existing_dataset(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(
