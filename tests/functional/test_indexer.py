@@ -5,9 +5,10 @@ import aiohttp
 import pytest
 import pytest_asyncio
 import requests
-from esds.common import schemas
 from pydantic import ValidationError
 from tests.functional.service_loader import INDEXER_PORT, indexer_service
+
+from esds.common import schemas
 
 ELASTIC_URL = "http://elasticsearch:9200"
 COLLECTORS_ENDPOINT = "/collectors"
@@ -16,7 +17,9 @@ DATASETS_ENDPOINT = "/datasets"
 INDEXER_URL = "http://0.0.0.0:" + str(INDEXER_PORT)
 
 
-@pytest.mark.usefixtures("indexer_service")
+pytestmark = pytest.mark.usefixtures("indexer_service")
+
+
 class TestCollector:
     test_collector = {
         "name": "indexer_test",
@@ -73,7 +76,6 @@ class TestCollector:
                 assert True
 
 
-@pytest.mark.usefixtures("indexer_service")
 class TestDatasets:
     test_dataset = {
         "sds_event_timestamp": datetime.now(UTC).isoformat(),

@@ -1,15 +1,16 @@
 import asyncio
 import json
+from multiprocessing import Process
 from typing import List, Optional
 
 import pytest_asyncio
 import uvicorn
+
 from esds.collector.collector_manager import CollectorManager
-from esds.collector.main import load_collectors, wait_for_indexer
 from esds.collector.config import settings
+from esds.collector.main import load_collectors, wait_for_indexer
 from esds.indexer import app as indexer_app
 from esds.retriever import app as retriever_app
-from multiprocessing import Process
 
 INDEXER_PORT = 8000
 RETRIEVER_PORT = 8001
@@ -38,7 +39,7 @@ async def _start_uvicorn(app, port):
     process.start()
 
     # Wait for the server to start
-    await asyncio.sleep(1)  # Give the server some time to start
+    await asyncio.sleep(1)
 
     # Yield control back to the test
     yield

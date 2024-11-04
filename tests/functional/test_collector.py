@@ -1,37 +1,39 @@
 import asyncio
 import json
-import subprocess
 from datetime import datetime
+from multiprocessing import Process
 from pathlib import Path
 from typing import List, Optional
 
-from esds.common.files.collector import CollectorList
 import pytest
+from h5py import File
+from p4p.client.asyncio import Context, timesout
+from p4p.client.thread import Context as ThreadedContext
+from pydantic import TypeAdapter
+from tests.functional.service_loader import collector_service, indexer_service
+from tests.test_ioc.pva_server import run_server
+
 from esds.collector.collector_manager import CollectorManager
 from esds.collector.config import settings
 from esds.collector.main import load_collectors, main, wait_for_indexer
-from esds.common.files.config import settings as file_settings
 from esds.common.files import CollectorDefinition
-
-from h5py import File
-from p4p.client.asyncio import Context, timesout
-from p4p.client.thread import Context as ThContext
-from pydantic import TypeAdapter
-
-from tests.functional.service_loader import collector_service, indexer_service
+from esds.common.files.collector import CollectorList
+from esds.common.files.config import settings as file_settings
 
 
 @pytest.mark.usefixtures("indexer_service", "collector_service")
 class TestCollector:
     @classmethod
     def setup_class(cls):
-        cls.p = subprocess.Popen(
-            ["python", "test_ioc/pva_server.py"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        n_pvs = 10
+        n_elem = 100
+        prefix = "SDS:TEST:"
+
+        cls.ioc_process = Process(target=run_server, args=[n_pvs, n_elem, prefix])
+        cls.ioc_process.start()
+
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
-        with ThContext() as ctxt:
+        with ThreadedContext() as ctxt:
             try:
                 ctxt.get("SDS:TEST:TRIG", timeout=15)
 
@@ -41,16 +43,13 @@ class TestCollector:
                 ctxt.put("SDS:TEST:N_ELEM", pv_len)
                 ctxt.put("SDS:TEST:N_PVS", n_pvs)
             except TimeoutError:
-                cls.p.terminate()
-                cls.p.communicate()
-                cls.p.wait()
+                TestCollector.teardown_class()
                 raise RuntimeError("Timeout waiting for test IOC to start...")
 
     @classmethod
     def teardown_class(cls):
-        cls.p.terminate()
-        cls.p.communicate()
-        cls.p.wait()
+        cls.ioc_process.terminate()
+        cls.ioc_process.join()
 
     @timesout()
     async def trigger(self, timeout=10):

@@ -11,9 +11,8 @@ from common.files.config import settings as file_settings
 from common.schemas import CollectorBase
 from nexusformat.nexus import NXFile
 from p4p.client.asyncio import Context, timesout
-from p4p.client.thread import Context as ThContext
+from p4p.client.thread import Context as ThreadedContext
 from pydantic import parse_file_as
-
 from tests.functional.service_loader import (
     configurable_collector_service,
     indexer_service,
@@ -34,7 +33,7 @@ class TestCollector:
             )
 
         # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
-        ctxt = ThContext()
+        ctxt = ThreadedContext()
         ctxt.get("SDS:TEST:TRIG")
         ctxt.close()
 

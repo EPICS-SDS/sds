@@ -56,7 +56,7 @@ services:
       xpack.security.http.ssl.enabled: "false"
       discovery.type: single-node
       bootstrap.memory_lock: "true"
-      ES_JAVA_OPTS: -Xms512m -Xmx512m    
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
     ulimits:
       memlock: -1
       nofile: 65536

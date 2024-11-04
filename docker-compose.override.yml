@@ -34,7 +34,7 @@ services:
   test_ioc:
     build: "."
     image: sds
-    command: python test_ioc/pva_server.py 5 10
+    command: python -m test_ioc.pva_server 5 10
     volumes:
       - ./tests/test_ioc/:/app/test_ioc/
     network_mode: "host"
@@ -42,7 +42,7 @@ services:
   test_ioc_types:
     build: "."
     image: sds
-    command: python test_ioc/pva_server_multi_type.py
+    command: python -m test_ioc.pva_server_multi_type
     volumes:
       - ./tests/test_ioc/:/app/test_ioc/
     network_mode: "host"

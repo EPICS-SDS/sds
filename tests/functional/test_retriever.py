@@ -10,15 +10,16 @@ import pytest
 import pytest_asyncio
 import requests
 from pydantic import ValidationError
-from esds.common import schemas
-from esds.common.files import Event, NexusFile
-from esds.retriever.config import settings
 from tests.functional.service_loader import (
     INDEXER_PORT,
     RETRIEVER_PORT,
     indexer_service,
     retriever_service,
 )
+
+from esds.common import schemas
+from esds.common.files import Event, NexusFile
+from esds.retriever.config import settings
 
 ELASTIC_URL = "http://elasticsearch:9200"
 INDEXER_URL = "http://0.0.0.0:" + str(INDEXER_PORT)

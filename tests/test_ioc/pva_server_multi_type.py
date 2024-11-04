@@ -1,24 +1,57 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
 import signal
 import string
 import time
+from datetime import datetime
 from multiprocessing import cpu_count, get_context, shared_memory
 from threading import Thread
 
 import numpy as np
-from ntscalararraysds import NTScalarArraySDS
 from numpy.random import rand, randint
 from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
-from sds_pv import SdsPV
+
+from test_ioc.ntscalararraysds import NTScalarArraySDS
+from test_ioc.sds_pv import SdsPV
 
 letters = string.ascii_letters
 
 sds_evt_code = 3
+
+# Default configuration
+prefix = "SDS:TYPES_TEST:"
+
+pvs_def = {
+    "PV:STRING": {"type": "s", "len": 10},
+    "PV:ASTRING": {"type": "as", "len": 10},
+    "PV:BYTE": {"type": "b", "len": 1},
+    "PV:SHORT": {"type": "h", "len": 1},
+    "PV:INT": {"type": "i", "len": 1},
+    "PV:LONG": {"type": "l", "len": 1},
+    "PV:ABYTE": {"type": "ab", "len": 10},
+    "PV:ASHORT": {"type": "ah", "len": 10},
+    "PV:AINT": {"type": "ai", "len": 10},
+    "PV:ALONG": {"type": "al", "len": 10},
+    "PV:UBYTE": {"type": "B", "len": 1},
+    "PV:USHORT": {"type": "H", "len": 1},
+    "PV:UINT": {"type": "I", "len": 1},
+    "PV:ULONG": {"type": "L", "len": 1},
+    "PV:AUBYTE": {"type": "aB", "len": 10},
+    "PV:AUSHORT": {"type": "aH", "len": 10},
+    "PV:AUINT": {"type": "aI", "len": 10},
+    "PV:AULONG": {"type": "aL", "len": 10},
+    "PV:FLOAT": {"type": "f", "len": 1},
+    "PV:DOUBLE": {"type": "d", "len": 1},
+    "PV:AFLOAT": {"type": "af", "len": 10},
+    "PV:ADOUBLE": {"type": "ad", "len": 10},
+    "PV:ENUM": {
+        "type": ("S", "enum_t", [("index", "i"), ("choices", "as")]),
+        "len": 5,
+    },
+}
 
 
 class Choices:
@@ -347,35 +380,4 @@ def create_pvs(servers, pvs_def, prefix):
 
 
 if __name__ == "__main__":
-    prefix = "SDS:TYPES_TEST:"
-
-    pvs_def = {
-        "PV:STRING": {"type": "s", "len": 10},
-        "PV:ASTRING": {"type": "as", "len": 10},
-        "PV:BYTE": {"type": "b", "len": 1},
-        "PV:SHORT": {"type": "h", "len": 1},
-        "PV:INT": {"type": "i", "len": 1},
-        "PV:LONG": {"type": "l", "len": 1},
-        "PV:ABYTE": {"type": "ab", "len": 10},
-        "PV:ASHORT": {"type": "ah", "len": 10},
-        "PV:AINT": {"type": "ai", "len": 10},
-        "PV:ALONG": {"type": "al", "len": 10},
-        "PV:UBYTE": {"type": "B", "len": 1},
-        "PV:USHORT": {"type": "H", "len": 1},
-        "PV:UINT": {"type": "I", "len": 1},
-        "PV:ULONG": {"type": "L", "len": 1},
-        "PV:AUBYTE": {"type": "aB", "len": 10},
-        "PV:AUSHORT": {"type": "aH", "len": 10},
-        "PV:AUINT": {"type": "aI", "len": 10},
-        "PV:AULONG": {"type": "aL", "len": 10},
-        "PV:FLOAT": {"type": "f", "len": 1},
-        "PV:DOUBLE": {"type": "d", "len": 1},
-        "PV:AFLOAT": {"type": "af", "len": 10},
-        "PV:ADOUBLE": {"type": "ad", "len": 10},
-        "PV:ENUM": {
-            "type": ("S", "enum_t", [("index", "i"), ("choices", "as")]),
-            "len": 5,
-        },
-    }
-
     servers = run_server(prefix, pvs_def)
