@@ -1,8 +1,8 @@
+from datetime import datetime
 from typing import Any, ClassVar, Iterable, List, Union
 
-from pydantic_core import CoreSchema, core_schema
 from pydantic import GetCoreSchemaHandler, TypeAdapter
-from datetime import datetime
+from pydantic_core import CoreSchema, core_schema
 
 
 class ESField:

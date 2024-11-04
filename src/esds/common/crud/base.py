@@ -1,6 +1,7 @@
 from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseModel
+
 from esds.common.db.base_class import Base
 
 ModelType = TypeVar("ModelType", bound=Base)

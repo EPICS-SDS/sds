@@ -1,14 +1,15 @@
 import asyncio
-import subprocess
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from multiprocessing import Process
 from pathlib import Path
 
 import numpy as np
 import pytest
 from h5py import File
 from p4p.client.asyncio import Context
-from p4p.client.thread import Context as ThContext
+from p4p.client.thread import Context as ThreadedContext
 from tests.functional.service_loader import collector_service, indexer_service
+from tests.test_ioc.pva_server_multi_type import prefix, pvs_def, run_server
 
 from esds.collector.config import settings
 from esds.common.files.config import settings as file_settings
@@ -78,42 +79,29 @@ ENUM_1 = 1
 ENUM_2 = 2
 
 
+@pytest.mark.usefixtures("indexer_service")
 class TestCollector:
     @classmethod
     def setup_class(cls):
-        cls.p = subprocess.Popen(
-            ["python", "test_ioc/pva_server_multi_type.py"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
-        ctxt = ThContext()
-        ctxt.get("SDS:TYPES_TEST:TRIG", timeout=5)
+        cls.ioc_process = Process(target=run_server, args=[prefix, pvs_def])
+        cls.ioc_process.start()
 
-        ctxt.close()
+        # Waiting to connect to the SDS:TEST:TRIG, which is the last one to be created
+        with ThreadedContext() as ctxt:
+            try:
+                ctxt.get("SDS:TYPES_TEST:TRIG", timeout=15)
+            except TimeoutError:
+                TestCollector.teardown_class()
+                raise RuntimeError("Timeout waiting for test IOC to start...")
 
     @classmethod
     def teardown_class(cls):
-        cls.p.kill()
+        cls.ioc_process.terminate()
+        cls.ioc_process.join()
 
-    async def wait_for_pv_value(self, new_value):
-        queue = asyncio.Queue()
-        mon = None
-
-        async def cb(value):
-            if value[0] == new_value:
-                await queue.put(value)
-                if mon is not None:
-                    mon.close()
-
-        ctxt = Context()
-        mon = ctxt.monitor(self.test_pv, cb=cb)
-        return mon, queue
-
-    @pytest.mark.asyncio
-    async def test_acquisition(self, indexer_service, collector_service):
+    async def test_acquisition(self, collector_service):
         # Adding a short wait to allow collector service to start correctly before pushing new PV updates
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
 
         with Context() as ctxt:
             # Floating point (max value)

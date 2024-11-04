@@ -1,7 +1,7 @@
-from typing import Any
-from pydantic import BaseModel
-
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class SdsPVValue(BaseModel):

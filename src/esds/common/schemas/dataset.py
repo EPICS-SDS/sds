@@ -1,15 +1,15 @@
+from datetime import UTC, datetime
+from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 from typing import Any, Dict, Optional
 
-from datetime import datetime, UTC
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
-    Field,
 )
 from pydantic_core import CoreSchema, core_schema
-from pathlib import PurePosixPath as UnvalidatedPurePosixPath
 
 
 class PurePosixPath(UnvalidatedPurePosixPath):

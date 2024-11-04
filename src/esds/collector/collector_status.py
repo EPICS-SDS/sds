@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
+
 from esds.collector.config import settings
 from esds.common.schemas import CollectorBase
 

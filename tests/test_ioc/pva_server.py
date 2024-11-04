@@ -7,11 +7,12 @@ from multiprocessing import cpu_count, get_context, shared_memory
 from threading import Thread
 
 import numpy as np
-from ntscalararraysds import NTScalarArraySDS
 from p4p.nt import NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.thread import SharedPV
-from sds_pv import SdsPV
+
+from test_ioc.ntscalararraysds import NTScalarArraySDS
+from test_ioc.sds_pv import SdsPV
 
 
 class TriggerHandler(object):
