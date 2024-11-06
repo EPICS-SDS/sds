@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from h5py import File
 
 from esds.common import crud, schemas
+from esds.common.db import settings as db_settings
 from esds.common.db.connection import wait_for_connection
 from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.common.files import NexusFile
@@ -33,7 +34,6 @@ logging.getLogger().setLevel(settings.log_level)
 logger = logging.getLogger(__name__)
 
 HDF5_MIME_TYPE = "application/x-hdf5"
-ELASTIC_SIZE_LIMIT = 10_000
 
 
 @asynccontextmanager
@@ -198,10 +198,10 @@ async def query_datasets(
         filters.append({"range": {"sds_event_cycle_id": cycle_id_range}})
 
     if size is not None:
-        if size < 0 or size > ELASTIC_SIZE_LIMIT:
+        if size < 0 or size > db_settings.max_query_size:
             raise HTTPException(
                 status_code=400,
-                detail=f"Query with 'size' parameter must be positive and smaller than {ELASTIC_SIZE_LIMIT}.",
+                detail=f"Query with 'size' parameter must be positive and smaller than {db_settings.max_query_size}.",
             )
 
     sort = {"sds_event_timestamp": {"order": sort.value}}
