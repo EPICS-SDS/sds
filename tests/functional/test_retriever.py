@@ -208,50 +208,15 @@ test_dataset_1 = [
 # several datasets in another file
 test_dataset_2 = [
     {
-        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
-        "sds_event_cycle_id": 2,
-        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 1).isoformat(),
-        "data_timestamp": [datetime(2022, 1, 1, 0, 0, 1).isoformat()],
-        "data_cycle_id": [2],
+        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, i).isoformat(),
+        "sds_event_cycle_id": i + 1,
+        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, i).isoformat(),
+        "data_timestamp": [datetime(2022, 1, 1, 0, 0, i).isoformat()],
+        "data_cycle_id": [i + 1],
         "acq_event": acq_event_dict,
         "beam_info": beam_info_dict,
-    },
-    {
-        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
-        "sds_event_cycle_id": 3,
-        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 2).isoformat(),
-        "data_timestamp": [datetime(2022, 1, 1, 0, 0, 2).isoformat()],
-        "data_cycle_id": [3],
-        "acq_event": acq_event_dict,
-        "beam_info": beam_info_dict,
-    },
-    {
-        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 3).isoformat(),
-        "sds_event_cycle_id": 4,
-        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 3).isoformat(),
-        "data_timestamp": [datetime(2022, 1, 1, 0, 0, 3).isoformat()],
-        "data_cycle_id": [4],
-        "acq_event": acq_event_dict,
-        "beam_info": beam_info_dict,
-    },
-    {
-        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 4).isoformat(),
-        "sds_event_cycle_id": 5,
-        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 4).isoformat(),
-        "data_timestamp": [datetime(2022, 1, 1, 0, 0, 4).isoformat()],
-        "data_cycle_id": [5],
-        "acq_event": acq_event_dict,
-        "beam_info": beam_info_dict,
-    },
-    {
-        "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 5).isoformat(),
-        "sds_event_cycle_id": 6,
-        "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 5).isoformat(),
-        "data_timestamp": [datetime(2022, 1, 1, 0, 0, 5).isoformat()],
-        "data_cycle_id": [6],
-        "acq_event": acq_event_dict,
-        "beam_info": beam_info_dict,
-    },
+    }
+    for i in range(1, 6)
 ]
 
 
