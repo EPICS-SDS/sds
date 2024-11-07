@@ -103,6 +103,7 @@ class Base(BaseModel):
         query: Optional[dict] = None,
         sort: Optional[dict] = None,
         search_after: Optional[int] = None,
+        size: Optional[int] = None,
     ) -> Tuple[int, List[Base], int]:
         if not query and filters:
             query = {"bool": {"must": list(filters)}}
@@ -114,7 +115,7 @@ class Base(BaseModel):
                 response = await es.search(
                     index=cls.get_index(),
                     query=query,
-                    size=settings.max_query_size,
+                    size=size or settings.max_query_size,
                     sort=sort,
                     search_after=search_after,
                 )

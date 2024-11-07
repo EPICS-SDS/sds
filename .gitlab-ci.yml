@@ -63,7 +63,3 @@ test:
         path: src/coverage.xml
 
     expire_in: 1 hour
-
-run-sonar-scanner:
-  only:
-    - main

@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from h5py import File
 
 from esds.common import crud, schemas
+from esds.common.db import settings as db_settings
 from esds.common.db.connection import wait_for_connection
 from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.common.files import NexusFile
@@ -155,6 +156,7 @@ async def query_datasets(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     sort: Optional[SortOrder] = SortOrder.desc,
     search_after: Optional[int] = None,
 ):
@@ -166,7 +168,8 @@ async def query_datasets(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
-    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
+    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time (descending by default)
     - **search_after** (int, optional): to scroll over a large number of hits
 
     To search for a set of PVs, first one needs to search for collectors
@@ -194,10 +197,17 @@ async def query_datasets(
             cycle_id_range["lte"] = sds_event_cycle_id_end
         filters.append({"range": {"sds_event_cycle_id": cycle_id_range}})
 
+    if size is not None:
+        if size < 0 or size > db_settings.max_query_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Query with 'size' parameter must be positive and smaller than {db_settings.max_query_size}.",
+            )
+
     sort = {"sds_event_timestamp": {"order": sort.value}}
 
     total, datasets, search_after = await crud.dataset.get_multi(
-        filters=filters, sort=sort, search_after=search_after
+        filters=filters, sort=sort, search_after=search_after, size=size
     )
 
     return MultiResponseDataset(
@@ -276,6 +286,7 @@ async def get_nexus_by_dataset_query(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -286,6 +297,7 @@ async def get_nexus_by_dataset_query(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
     - **search_after** (int, optional): to scroll over a large number of hits
     - **include_pvs** (List[str], optional): list of PVs to return
 
@@ -302,6 +314,7 @@ async def get_nexus_by_dataset_query(
             sds_event_cycle_id_start,
             sds_event_cycle_id_end,
             search_after=search_after,
+            size=size,
         )
 
         if dataset_respone.datasets == []:
@@ -447,6 +460,7 @@ async def get_json_by_dataset_query(
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
     sds_event_cycle_id_end: Optional[int] = None,
+    size: Optional[int] = None,
     include_pvs: Optional[List[str]] = Query(default=None),
 ):
     """
@@ -457,7 +471,7 @@ async def get_json_by_dataset_query(
     - **end** (int, optional): UTC timestamp for interval end
     - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
     - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
-    - **search_after** (int, optional): to scroll over a large number of hits
+    - **size** (int, optional): Limit the number of results. If used alone, it will return the latest *size* datasets
     - **include_pvs** (List[str], optional): list of PVs to return
 
     To search for a set of PVs, first one needs to search for collectors
@@ -473,6 +487,7 @@ async def get_json_by_dataset_query(
             sds_event_cycle_id_start,
             sds_event_cycle_id_end,
             search_after=search_after,
+            size=size,
         )
 
         if dataset_respone.datasets == []:
