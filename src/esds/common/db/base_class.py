@@ -101,12 +101,16 @@ class Base(BaseModel):
         *,
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
+        script: Optional[dict] = None,
         sort: Optional[dict] = None,
         search_after: Optional[int] = None,
         size: Optional[int] = None,
     ) -> Tuple[int, List[Base], int]:
         if not query and filters:
             query = {"bool": {"must": list(filters)}}
+            if script:
+                query["bool"]["filter"] = {"script": {"script": script}}
+
         async with get_connection() as es:
             try:
                 if search_after is not None:

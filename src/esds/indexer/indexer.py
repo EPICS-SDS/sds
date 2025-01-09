@@ -73,7 +73,20 @@ async def create_collector(
 
     filters = dict_to_filters(collector_in.model_dump(exclude={"created"}))
 
-    (_, collectors, _) = await crud.collector.get_multi(filters=filters)
+    # Since the list of PVs can be rather long and elasticsearch limits the length of the query, the query checks for equal pvs array length and the exact match is verified in here
+    script = f"return doc['pvs'].length == {len(collector_in.pvs)};"
+
+    (_, collectors, _) = await crud.collector.get_multi(filters=filters, script=script)
+
+    # Remove occurrences with different lists of PVs
+    if len(collectors) > 0:
+        sorted_pv_list = sorted(collector_in.pvs)
+        collectors = [
+            collector
+            for collector in collectors
+            if sorted(collector.pvs) == sorted_pv_list
+        ]
+
     # HTTP 200 if the collector already exists
     if len(collectors) > 0:
         response.status_code = status.HTTP_200_OK

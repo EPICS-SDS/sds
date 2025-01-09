@@ -4,7 +4,7 @@ USER root
 
 RUN pip install pytest \
     && pip install pytest-cov \
-    && pip install pytest-asyncio \
+    && pip install pytest-asyncio==0.24 \
     && pip install coverage \
     && pip install aiofiles
 
