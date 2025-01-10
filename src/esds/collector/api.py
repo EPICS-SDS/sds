@@ -182,9 +182,13 @@ async def add_collectors(
 
         if errors != []:
             continue
-
-        collector = await cm.add_collector(collector_in)
-        collectors.append(collector)
+        try:
+            collector = await cm.add_collector(collector_in)
+            collectors.append(collector)
+        except Exception:
+            # already logged exception
+            errors.append(collector_in.name)
+            continue
         if start_collector:
             await cm.start_collector(collector.collector_id)
 
