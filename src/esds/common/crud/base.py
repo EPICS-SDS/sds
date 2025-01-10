@@ -25,7 +25,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         size: Optional[int] = None,
     ) -> Tuple[int, List[ModelType], int]:
         return await self.model.mget(
-            filters=filters, script=script, sort=sort, search_after=search_after, size=size,
+            filters=filters,
+            script=script,
+            sort=sort,
+            search_after=search_after,
+            size=size,
         )
 
     async def create(self, obj_in: CreateSchemaType) -> ModelType:

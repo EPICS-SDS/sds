@@ -43,11 +43,13 @@ class NexusFile:
         self,
         collector_id: str,
         collector_name: str,
+        parent_path: str,
         file_name: str,
         directory: Path,
     ):
         self.collector_id: str = collector_id
         self.collector_name: str = collector_name
+        self.parent_path: str = parent_path
         self.file_name: str = file_name
         self.path: Path = directory / f"{self.file_name}.h5"
 
@@ -70,11 +72,16 @@ class NexusFile:
             dataset = Dataset(
                 collector_id=self.collector_id,
                 sds_event_timestamp=event.sds_event_timestamp,
+                sds_cycle_start_timestamp=datetime(1970, 1, 1),
                 sds_event_cycle_id=event.sds_event_cycle_id,
                 path=self.path,
                 beam_info=event.attributes.get("beamInfo", None),
             )
             self.datasets.update({event.sds_event_cycle_id: dataset})
+
+        # Update the timestamp of the start of the cycle when the SDS event happened
+        if event.cycle_id == event.sds_event_cycle_id and dataset.sds_cycle_start_timestamp != datetime(1970, 1, 1):
+            dataset.sds_cycle_start_timestamp = event.cycle_id_timestamp
 
         self.events.append(event)
 
@@ -100,6 +107,7 @@ class NexusFile:
             entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
+            entry.attrs["collector_parent_path"] = self.parent_path
 
             while True:
                 # Pop elements from the list
@@ -237,6 +245,7 @@ class NexusFile:
             entry = h5file.require_group(name="entry")
             entry.attrs["NX_class"] = "NXentry"
             entry.attrs["collector_name"] = self.collector_name
+            entry.attrs["collector_parent_path"] = self.parent_path
 
             for dataset in self.datasets.values():
                 origin = File(settings.storage_path / dataset.path, "r")

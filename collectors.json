@@ -9,7 +9,8 @@
             "SDS:TEST:PV_10_3"
         ],
         "event_name": "data-on-demand",
-        "event_code": 1
+        "event_code": 1,
+        "parent_path": "/Test"
     },
     {
         "name": "Test",
@@ -21,7 +22,8 @@
             "SDS:TEST:PV_10_3"
         ],
         "event_name": "data-on-demand",
-        "event_code": 1
+        "event_code": 1,
+        "parent_path": "/Test"
     },
     {
         "name": "CSLab-RF-Test",
@@ -44,7 +46,8 @@
             "LLRF-DAQ2:DIG1:Dwn6-SDSData"
         ],
         "event_name": "sds",
-        "event_code": 44
+        "event_code": 44,
+        "parent_path": "/"
     },
     {
         "name": "BCM",
@@ -56,6 +59,7 @@
             "RFQ-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS"
         ],
         "event_name": "sds",
-        "event_code": 44
+        "event_code": 44,
+        "parent_path": "/PBI"
     }
 ]

@@ -1,18 +1,31 @@
 from datetime import UTC, datetime
 from typing import Set
-
+import uuid
+import base64
 from pydantic import BaseModel, ConfigDict, Field
+
+
+def generate_base64_uuid():
+    """
+    Generates an ID for the collectors using a similar algorithm as elastic does
+    """
+    # Generate a random UUID
+    random_uuid = uuid.uuid4()
+    # Convert UUID to bytes, encode in Base64, and decode to a string
+    base64_id = base64.urlsafe_b64encode(random_uuid.bytes).rstrip(b"=").decode("utf-8")
+    return base64_id
 
 
 class CollectorDefinition(BaseModel):
     name: str
-    event_name: str
     event_code: int
     pvs: Set[str]
+    parent_path: str = "/"
+    collector_id: str = Field(default_factory=generate_base64_uuid)
 
 
 class CollectorBase(CollectorDefinition):
-    host: str
+    version: int = 1
 
 
 class CollectorCreate(CollectorBase):
@@ -20,7 +33,6 @@ class CollectorCreate(CollectorBase):
 
 
 class CollectorInDBBase(CollectorBase):
-    id: str
     created: datetime
 
     model_config = ConfigDict(from_attributes=True)

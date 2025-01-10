@@ -78,13 +78,13 @@ async def get_collectors():
     return list(collector_settings.collectors.values())
 
 
-@settings_router.get("/collectors/{name}", response_model=schemas.CollectorBase)
-async def get_collector_with_name(*, name: str):
+@settings_router.get("/collectors/{collector_id}", response_model=schemas.CollectorBase)
+async def get_collector_with_collector_id(*, collector_id: str):
     """
     Get the settings for a given collector.
     Returns a 404 error if the collector is not loaded.
     """
-    collector = collector_settings.collectors.get(name, None)
+    collector = collector_settings.collectors.get(collector_id, None)
     if collector is not None:
         return collector
     raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
@@ -116,17 +116,31 @@ async def add_collector(
 ):
     """
     Load a collector to the service. Optionally, select if the collector should be started or not after adding it.
-    Returns a 409 error if a collector with the same name is already loaded.
+    Returns a 409 error if a collector with the same `collector_id` is already loaded.
     """
     cm = CollectorManager.get_instance()
-    if collector_in.name in cm.collectors.keys():
+    if collector_in.collector_id in cm.collectors.keys():
         raise HTTPException(
             status_code=409,
-            detail="The service already contains a collector with the requested name.",
+            detail="The service already contains a collector with the requested collector_id.",
         )
+
+    for collector in cm.collectors.values():
+        if (
+            collector_in.name == collector.name
+            and collector_in.parent_path == collector.parent_path
+            and collector_in.event_code == collector.event_code
+            and sorted(collector_in.pvs) == sorted(collector.pvs)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="The service already contains a collector with the requested configuration.",
+            )
+
     collector = await cm.add_collector(collector_in)
+
     if start_collector:
-        await cm.start_collector(collector_in.name)
+        await cm.start_collector(collector.collector_id)
 
     if settings.autosave_collectors_definition:
         await cm.save_configuration()
@@ -147,19 +161,32 @@ async def add_collectors(
 ):
     """
     Load several collectors to the service. Optionally, select if the collectors should be started or not after adding it.
-    Returns a 206 status if a collector with the same name is already loaded.
+    Returns a 206 status if a collector with the same collector_id is already loaded.
     """
     cm = CollectorManager.get_instance()
     errors = []
     collectors = []
     for collector_in in collectors_in:
-        if collector_in.name in cm.collectors.keys():
-            errors.append(collector_in.name)
+        # Check each collector if they are already running
+        if collector_in.collector_id in cm.collectors.keys():
+            errors.append(collector_in.collector_id)
+
+        for collector in cm.collectors.values():
+            if (
+                collector_in.name == collector.name
+                and collector_in.parent_path == collector.parent_path
+                and collector_in.event_code == collector.event_code
+                and sorted(collector_in.pvs) == sorted(collector.pvs)
+            ):
+                errors.append(collector_in.collector_id)
+
+        if errors != []:
             continue
+
         collector = await cm.add_collector(collector_in)
         collectors.append(collector)
         if start_collector:
-            await cm.start_collector(collector_in.name)
+            await cm.start_collector(collector.collector_id)
 
     if settings.autosave_collectors_definition:
         await cm.save_configuration()
@@ -171,20 +198,20 @@ async def add_collectors(
 
 
 @settings_router.delete(
-    "/collector/{name}",
+    "/collector/{collector_id}",
     status_code=status.HTTP_200_OK,
 )
-async def remove_collector(*, name: str, response: Response):
+async def remove_collector(*, collector_id: str, response: Response):
     """
     Remove a collector from the service.
     If the collector is running, it is first stopped.
     Returns a 404 message if the collector is not loaded.
     """
     cm = CollectorManager.get_instance()
-    if name not in cm.collectors.keys():
+    if collector_id not in cm.collectors.keys():
         response.status_code = status.HTTP_404_NOT_FOUND
         return
-    await cm.remove_collector(name)
+    await cm.remove_collector(collector_id)
 
     if settings.autosave_collectors_definition:
         await cm.save_configuration()
@@ -214,13 +241,13 @@ async def get_full_status():
     return list(collector_status.collector_status_dict.values())
 
 
-@status_router.get("/collector/{name}", response_model=CollectorFullStatus)
-async def get_status_with_name(*, name: str):
+@status_router.get("/collector/{collector_id}", response_model=CollectorFullStatus)
+async def get_status_with_collector_id(*, collector_id: str):
     """
     Get the extended status for one collector.
     Returns a 404 error if the collector is not loaded.
     """
-    collector = collector_status.collector_status_dict.get(name, None)
+    collector = collector_status.collector_status_dict.get(collector_id, None)
     if collector is not None:
         return collector
     raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
@@ -244,30 +271,30 @@ async def stop_all_collectors():
     await cm.stop_all_collectors()
 
 
-@status_router.put("/collector/{name}/start")
-async def start_collector(*, name: str, timer: float = 0):
+@status_router.put("/collector/{collector_id}/start")
+async def start_collector(*, collector_id: str, timer: float = 0):
     """
-    Start a collector from the ones loaded in the service by specifying its name.
+    Start a collector from the ones loaded in the service by specifying its `collector_id`.
     If the optional parameter `timer` is provided, the collector will stop after that time.
     Returns a 404 error if the collector is not loaded.
     """
     cm = CollectorManager.get_instance()
     try:
-        await cm.start_collector(name, timer)
+        await cm.start_collector(collector_id, timer)
     except CollectorNotFoundException:
         raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
 
-@status_router.put("/collector/{name}/stop")
-async def stop_collector(*, name: str):
+@status_router.put("/collector/{collector_id}/stop")
+async def stop_collector(*, collector_id: str):
     """
-    Stop a collector from the ones loaded in the service by specifying its name.
+    Stop a collector from the ones loaded in the service by specifying its `collector_id`.
     If the collector is not running, it does nothing.
     Returns a 404 error if the collector is not loaded.
     """
     cm = CollectorManager.get_instance()
     try:
-        await cm.stop_collector(name)
+        await cm.stop_collector(collector_id)
     except CollectorNotFoundException:
         raise HTTPException(status_code=404, detail=COLLECTOR_NOT_FOUND)
 
