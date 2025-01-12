@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class Collector(CollectorBase):
-    id: str
     _tasks: Set[Task] = set()
     _queues: Dict[int, Queue] = dict()
     _events_per_file: int = settings.events_per_file
@@ -65,8 +64,10 @@ class Collector(CollectorBase):
             nexus_file = self.get_file(event.sds_event_cycle_id)
 
             if nexus_file is None:
-                # File name is build from the collector name, the event code, and the cycle ID of the first event
-                file_name: str = f"{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_cycle_id)}"
+                # File name is build from the collector parent path, collector name, the event code, and the SDS cycle ID of the first event
+                file_name: str = (
+                    f"{self.parent_path.lstrip('/').replace('/','_')}_{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_cycle_id)}"
+                )
                 # Path is generated from date
                 directory = Path(
                     event.sds_event_timestamp.strftime("%Y"),
@@ -75,8 +76,9 @@ class Collector(CollectorBase):
 
                 # First create a new file
                 nexus_file = NexusFile(
-                    collector_id=self.id,
+                    collector_id=self.collector_id,
                     collector_name=self.name,
+                    parent_path=self.parent_path,
                     file_name=file_name,
                     directory=directory,
                 )
@@ -148,9 +150,10 @@ class Collector(CollectorBase):
                         )
                 break
 
-        collector_status.set_last_collection(self.name)
+        collector_status.set_last_collection(self.collector_id)
         collector_status.set_collection_time(
-            self.name, (last_update_received - first_update_received).total_seconds()
+            self.collector_id,
+            (last_update_received - first_update_received).total_seconds(),
         )
 
         # When all tasks are done, write the file and send metadata to indexer
@@ -163,7 +166,9 @@ class Collector(CollectorBase):
 
         if file_ready:
             await nexus_file.index(settings.indexer_url)
-            collector_status.set_collection_size(self.name, nexus_file.getsize())
+            collector_status.set_collection_size(
+                self.collector_id, nexus_file.getsize()
+            )
 
     def event_matches(self, event: Event):
         if event.timing_event_code != self.event_code:

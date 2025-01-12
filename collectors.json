@@ -1,61 +1,61 @@
 [
     {
-        "name": "Test2",
+        "name": "CSLab-RF-Test",
         "pvs": [
-            "SDS:TEST:PV_NOT_EXISTING",
-            "SDS:TEST:PV_10_1",
-            "SDS:TEST:PV_10_2",
-            "SDS:TEST:PV_10_4",
-            "SDS:TEST:PV_10_3"
+            "LLRF-DAQ2:DIG1:Dwn4-SDSData",
+            "LLRF-DAQ2:DIG1:IntChRFCErr-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn9-SDSData",
+            "LLRF-DAQ2:DIG1:IntChRFCOut-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn7-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn0-SDSData",
+            "LLRF-DAQ2:DIG1:IntChILCtrl-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn8-SDSData",
+            "LLRF-DAQ2:DIG1:IntChCavFil-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn3-SDSData",
+            "LLRF-DAQ2:DIG1:IntChCavRot-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn2-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn6-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn1-SDSData",
+            "LLRF-DAQ2:DIG1:IntChFWOut-SDSData",
+            "LLRF-DAQ2:DIG1:Dwn5-SDSData"
         ],
-        "event_name": "data-on-demand",
-        "event_code": 1
+        "event_code": 44,
+        "parent_path": "/"
     },
     {
         "name": "Test",
         "pvs": [
-            "SDS:TEST:PV_10_0",
-            "SDS:TEST:PV_10_1",
-            "SDS:TEST:PV_10_2",
             "SDS:TEST:PV_10_4",
-            "SDS:TEST:PV_10_3"
+            "SDS:TEST:PV_10_0",
+            "SDS:TEST:PV_10_3",
+            "SDS:TEST:PV_10_1",
+            "SDS:TEST:PV_10_2"
         ],
-        "event_name": "data-on-demand",
-        "event_code": 1
+        "event_code": 1,
+        "parent_path": "/Test"
     },
     {
-        "name": "CSLab-RF-Test",
+        "name": "Test2",
         "pvs": [
-            "LLRF-DAQ2:DIG1:IntChRFCErr-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn9-SDSData",
-            "LLRF-DAQ2:DIG1:IntChFWOut-SDSData",
-            "LLRF-DAQ2:DIG1:IntChILCtrl-SDSData",
-            "LLRF-DAQ2:DIG1:IntChCavFil-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn3-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn1-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn5-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn4-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn2-SDSData",
-            "LLRF-DAQ2:DIG1:IntChCavRot-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn7-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn0-SDSData",
-            "LLRF-DAQ2:DIG1:IntChRFCOut-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn8-SDSData",
-            "LLRF-DAQ2:DIG1:Dwn6-SDSData"
+            "SDS:TEST:PV_10_4",
+            "SDS:TEST:PV_NOT_EXISTING",
+            "SDS:TEST:PV_10_3",
+            "SDS:TEST:PV_10_1",
+            "SDS:TEST:PV_10_2"
         ],
-        "event_name": "sds",
-        "event_code": 44
+        "event_code": 1,
+        "parent_path": "/Test"
     },
     {
         "name": "BCM",
         "pvs": [
-            "MEBT-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS",
-            "MEBT-010:PBI-BCM-002:PRC-TR1-ArrayData-SDS",
+            "RFQ-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS",
             "DTL-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS",
             "DTL-020:PBI-BCM-001:PRC-TR1-ArrayData-SDS",
-            "RFQ-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS"
+            "MEBT-010:PBI-BCM-002:PRC-TR1-ArrayData-SDS",
+            "MEBT-010:PBI-BCM-001:PRC-TR1-ArrayData-SDS"
         ],
-        "event_name": "sds",
-        "event_code": 44
+        "event_code": 44,
+        "parent_path": "/PBI"
     }
 ]

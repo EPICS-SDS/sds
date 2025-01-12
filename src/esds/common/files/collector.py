@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Optional, Set
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
@@ -10,8 +10,9 @@ class CollectorDefinition(BaseModel):
 
     name: str
     pvs: Set[str]
-    event_name: str
     event_code: int
+    parent_path: str
+    collector_id: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

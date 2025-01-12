@@ -101,6 +101,7 @@ class CollectorManager:
                     cl.model_dump_json(
                         exclude={
                             "id",
+                            "version",
                         },
                         indent=4,
                     )
@@ -120,11 +121,15 @@ class CollectorManager:
         async with aiohttp.ClientSession(
             json_serialize=CollectorBase.model_dump_json, timeout=session_timeout
         ) as session:
-            logger.info(f"Adding collector '{collector_definition.name}'")
+            logger.info(
+                f"Adding collector '{collector_definition.parent_path}/{collector_definition.name}'"
+            )
             try:
-                new_collector = CollectorBase(
-                    **collector_definition.model_dump(), host=settings.collector_host
-                )
+                collector_definition_dict = collector_definition.model_dump()
+                if collector_definition_dict['collector_id'] is None:
+                    collector_definition_dict.pop('collector_id')
+
+                new_collector = CollectorBase(**collector_definition_dict)
 
                 async with session.post(
                     urljoin(str(settings.indexer_url), "/collectors"),
@@ -132,9 +137,13 @@ class CollectorManager:
                 ) as response:
                     response.raise_for_status()
                     if response.status == 201:
-                        logger.info(f"Collector '{new_collector.name}' created in DB")
+                        logger.info(
+                            f"Collector '{new_collector.parent_path}/{new_collector.name}' created in DB"
+                        )
                     elif response.status == 200:
-                        logger.info(f"Collector '{new_collector.name}' already in DB")
+                        logger.info(
+                            f"Collector '{new_collector.parent_path}/{new_collector.name}' already in DB"
+                        )
                     else:
                         logger.info(
                             f"Received response '{response.status}' while submitting collector to the indexer service."
@@ -147,40 +156,40 @@ class CollectorManager:
                 OSError,
             ):
                 logger.error(
-                    f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status."
+                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status."
                 )
                 return None
             except Exception as e:
                 logger.error(
-                    f"Error submitting collector {new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
+                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
                 )
                 raise
 
         collector._pool = self._pool
         collector_status.add_collector(collector)
-        self.collectors.update({collector.name: collector})
+        self.collectors.update({collector.collector_id: collector})
         return collector
 
-    async def remove_collector(self, collector_name: str):
-        await self.stop_collector(collector_name)
+    async def remove_collector(self, collector_id: str):
+        await self.stop_collector(collector_id)
 
-        self.collectors.pop(collector_name)
-        collector_status.remove_collector(collector_name)
+        self.collectors.pop(collector_id)
+        collector_status.remove_collector(collector_id)
 
-    async def start_collector(self, name: str, timer: float = 0):
+    async def start_collector(self, collector_id: str, timer: float = 0):
         async with self.collector_lock:
-            collector = self.collectors.get(name)
+            collector = self.collectors.get(collector_id)
             if collector is None:
                 raise CollectorNotFoundException()
 
             # If collector is running, do nothing
-            if name in self.running_collectors:
+            if collector_id in self.running_collectors:
                 return
 
             # Clear any previous expired timer
             try:
-                await self._timers[name]
-                self._timers.pop(name)
+                await self._timers[collector_id]
+                self._timers.pop(collector_id)
             except KeyError:
                 pass
 
@@ -191,51 +200,53 @@ class CollectorManager:
                 {pv: asyncio.create_task(self._subscribe(pv)) for pv in new_pvs}
             )
 
-            self.running_collectors.append(name)
-            collector_status.set_collector_running(name, True)
+            self.running_collectors.append(collector_id)
+            collector_status.set_collector_running(collector_id, True)
 
             if timer > 0:
                 timer_task = asyncio.create_task(
-                    self._stop_collector_after_timer(name=name, timer=timer)
+                    self._stop_collector_after_timer(
+                        collector_id=collector_id, timer=timer
+                    )
                 )
 
-                self._timers.update({name: timer_task})
+                self._timers.update({collector_id: timer_task})
 
-    async def _stop_collector_after_timer(self, name: str, timer: float):
+    async def _stop_collector_after_timer(self, collector_id: str, timer: float):
         await asyncio.sleep(timer)
         async with self.collector_lock:
-            await self._stop_collector(name)
+            await self._stop_collector(collector_id)
 
-    async def stop_collector(self, name: str):
+    async def stop_collector(self, collector_id: str):
         async with self.collector_lock:
             # Clear any running timer
             try:
-                self._timers[name].cancel()
+                self._timers[collector_id].cancel()
                 try:
-                    await self._timers[name]
+                    await self._timers[collector_id]
                 except asyncio.CancelledError:
                     pass
-                self._timers.pop(name)
+                self._timers.pop(collector_id)
             except KeyError:
                 pass
 
-            await self._stop_collector(name)
+            await self._stop_collector(collector_id)
 
-    async def _stop_collector(self, name: str):
-        collector = self.collectors.get(name)
+    async def _stop_collector(self, collector_id: str):
+        collector = self.collectors.get(collector_id)
         if collector is None:
             raise CollectorNotFoundException()
 
         try:
-            self.running_collectors.remove(name)
+            self.running_collectors.remove(collector_id)
         except ValueError:
             # If collector is not running, do nothing
             return
 
         pvs_to_keep = {
             pv
-            for (collector_name, collector) in self.collectors.items()
-            if collector_name in self.running_collectors
+            for (collector_id, collector) in self.collectors.items()
+            if collector_id in self.running_collectors
             for pv in collector.pvs
         }
 
@@ -251,7 +262,7 @@ class CollectorManager:
         if canceled_tasks != []:
             await asyncio.wait(canceled_tasks)
 
-        collector_status.set_collector_running(name, False)
+        collector_status.set_collector_running(collector_id, False)
 
     async def start_all_collectors(self):
         """Start all the collectors in the ColectorManager"""
@@ -278,9 +289,9 @@ class CollectorManager:
 
             # Update collector status
             self.running_collectors.clear()
-            for collector_name in self.collectors.keys():
-                self.running_collectors.append(collector_name)
-                collector_status.set_collector_running(collector_name, True)
+            for collector_id in self.collectors.keys():
+                self.running_collectors.append(collector_id)
+                collector_status.set_collector_running(collector_id, True)
 
     async def stop_all_collectors(self):
         """Stop all the collectors in the ColectorManager"""
@@ -298,8 +309,8 @@ class CollectorManager:
                 await asyncio.wait(self._tasks.values())
                 self._tasks.clear()
 
-            for collector_name in self.collectors.keys():
-                collector_status.set_collector_running(collector_name, False)
+            for collector_id in self.collectors.keys():
+                collector_status.set_collector_running(collector_id, False)
 
             self.running_collectors.clear()
 
@@ -353,8 +364,9 @@ class CollectorManager:
     # Finds the event and updates it with the value
     def _event_handler(self, event: Event):
         for collector in self.collectors.values():
-            if collector.name in self.running_collectors and collector.event_matches(
-                event
+            if (
+                collector.collector_id in self.running_collectors
+                and collector.event_matches(event)
             ):
                 collector.update(event)
 

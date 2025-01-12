@@ -18,6 +18,7 @@ from h5py import File
 from esds.common import crud, schemas
 from esds.common.db import settings as db_settings
 from esds.common.db.connection import wait_for_connection
+from esds.common.db.utils import dict_to_filters
 from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.common.files import NexusFile
 from esds.common.files.json_file import JsonFile, numpy_encoder
@@ -81,7 +82,6 @@ collectors_router = APIRouter()
 @collectors_router.get("", response_model=MultiResponseCollector)
 async def query_collectors(
     name: Optional[str] = None,
-    event_name: Optional[str] = None,
     event_code: Optional[int] = None,
     pv: Optional[List[str]] = Query(default=None),
     sort: Optional[SortOrder] = SortOrder.desc,
@@ -94,7 +94,6 @@ async def query_collectors(
 
     Arguments:
     - **name** (str, optional): name of the collector
-    - **event_name** (str, optional): name of the event
     - **event_code** (int, optional): event code
     - **pv** (List[str], optional): list of PVs
 
@@ -103,8 +102,6 @@ async def query_collectors(
     filters = []
     if name is not None:
         filters.append({"wildcard": {"name": name}})
-    if event_name is not None:
-        filters.append({"wildcard": {"event_name": event_name}})
     if event_code is not None:
         filters.append({"term": {"event_code": event_code}})
     if pv:
@@ -127,18 +124,26 @@ async def query_collectors(
     )
 
 
-@collectors_router.get("/{id}", response_model=schemas.Collector)
+@collectors_router.get("/{collector_id}", response_model=MultiResponseCollector)
 async def get_collector(
     *,
-    id: Any,
+    collector_id: Any,
 ):
     """
-    Return the collector with the given `id`
+    Return the collector with the given `collector_id`, as a list with all the versions available.
     """
-    collector = await crud.collector.get(id)
-    if not collector:
+    sort = {"created": {"order": SortOrder.desc}}
+    filters = dict_to_filters({"collector_id": collector_id})
+
+    total, collectors, search_after = await crud.collector.get_multi(
+        filters=filters, sort=sort
+    )
+    if total == 0:
         raise HTTPException(status_code=404, detail="Collector not found")
-    return collector
+
+    return MultiResponseCollector(
+        total=total, collectors=collectors, search_after=search_after
+    )
 
 
 app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])

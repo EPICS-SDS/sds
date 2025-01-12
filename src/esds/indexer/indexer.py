@@ -63,15 +63,22 @@ async def create_collector(
     response: Response,
     collector_in: schemas.CollectorCreate,
 ):
+    """
+    This entry point is used by a collector service to register the collectors that it is handling.
+    The indexer will check if the collector already exists in the index and it will return the object. Otherwise it will create a new one.
+    If the `collector_id` field is provided and there is an object in the index with that `collector_id`, it will check whether all fields are the same. If there is any change, it will be considered a new version of an existing collector.
+    """
     # Make sure the creation of a collector is an atomic operation.
     while True:
         with collectors_lock:
-            if collector_in.name not in requested_collectors:
-                requested_collectors.append(collector_in.name)
+            if collector_in.collector_id not in requested_collectors:
+                requested_collectors.append(collector_in.collector_id)
                 break
         await asyncio.sleep(0)
 
-    filters = dict_to_filters(collector_in.model_dump(exclude={"created"}))
+    filters = dict_to_filters(
+        collector_in.model_dump(exclude={"created", "collector_id", "version", "pvs"})
+    )
 
     # Since the list of PVs can be rather long and elasticsearch limits the length of the query, the query checks for equal pvs array length and the exact match is verified in here
     script = f"return doc['pvs'].length == {len(collector_in.pvs)};"
@@ -92,11 +99,22 @@ async def create_collector(
         response.status_code = status.HTTP_200_OK
         collector = collectors[0]
     else:
+        # Check if the request is to update an existing collector by providing a valid collector_id
+        (_, collectors, _) = await crud.collector.get_multi(
+            filters=dict_to_filters({"collector_id": collector_in.collector_id})
+        )
+        if len(collectors) > 0:
+            ver = 1
+            for collector in collectors:
+                if collector.version >= ver:
+                    ver = collector.version + 1
+            collector_in.version = ver
+
         collector = await crud.collector.create(obj_in=collector_in)
         await crud.collector.refresh_index()
 
     with collectors_lock:
-        requested_collectors.remove(collector_in.name)
+        requested_collectors.remove(collector_in.collector_id)
 
     return collector
 

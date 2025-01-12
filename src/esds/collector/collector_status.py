@@ -23,7 +23,9 @@ class PvStatusSchema(BaseModel):
 
 
 class CollectorBasicStatus(BaseModel):
+    collector_id: str
     name: str
+    parent_path: str
     running: bool = False
     last_collection: Optional[datetime] = None
     # Time it takes to collect all PVs for one event. It should sufficiently lower than the `collector_timeout` setting.
@@ -74,8 +76,10 @@ class StatusManager:
                 self.pv_status_dict[pv] = PvStatus(name=pv)
         self.collector_status_dict.update(
             {
-                collector.name: CollectorStatus(
+                collector.collector_id: CollectorStatus(
+                    collector_id=collector.collector_id,
                     name=collector.name,
+                    parent_path=collector.parent_path,
                     running=False,
                     pvs=[
                         pvstatus.pv_status
@@ -86,8 +90,8 @@ class StatusManager:
             }
         )
 
-    def remove_collector(self, collector_name: str):
-        collector_rm = self.collector_status_dict.pop(collector_name)
+    def remove_collector(self, collector_id: str):
+        collector_rm = self.collector_status_dict.pop(collector_id)
 
         pvs_to_keep = {
             pv.name
@@ -107,23 +111,23 @@ class StatusManager:
     def set_event_size(self, pv: str, size: float):
         self.pv_status_dict[pv].set_event_size(size)
 
-    def set_collector_running(self, collector_name: str, running: bool):
-        collector = self.collector_status_dict.get(collector_name)
+    def set_collector_running(self, collector_id: str, running: bool):
+        collector = self.collector_status_dict.get(collector_id)
         collector.running = running
 
-    def set_last_collection(self, collector_name: str):
-        collector = self.collector_status_dict.get(collector_name)
+    def set_last_collection(self, collector_id: str):
+        collector = self.collector_status_dict.get(collector_id)
         collector.last_collection = datetime.utcnow()
 
-    def set_collection_time(self, collector_name: str, collection_time: float):
-        collector = self.collector_status_dict.get(collector_name)
+    def set_collection_time(self, collector_id: str, collection_time: float):
+        collector = self.collector_status_dict.get(collector_id)
         collector.collection_time_queue.append(collection_time)
         collector.collection_time = sum(collector.collection_time_queue) / len(
             collector.collection_time_queue
         )
 
-    def set_collection_size(self, collector_name: str, collection_size: float):
-        collector = self.collector_status_dict.get(collector_name)
+    def set_collection_size(self, collector_id: str, collection_size: float):
+        collector = self.collector_status_dict.get(collector_id)
         collector.collection_size_queue.append(collection_size)
         collector.collection_size = sum(collector.collection_size_queue) / len(
             collector.collection_size_queue
