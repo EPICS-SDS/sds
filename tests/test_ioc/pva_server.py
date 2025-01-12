@@ -103,24 +103,31 @@ class MyServer(object):
                 if self.stop_flag.is_set():
                     break
 
-                sds_event_cycle_id = cycle_id
-                sds_event_timestamp = time.time_ns()
+                start_timestamp = time.time_ns()
+
+                sds_event_cycle_id = cycle_id + int(self.n_cycles[0]) - 1
+                sds_event_timestamp = (
+                    start_timestamp + (int(self.n_cycles[0]) - 1) * 1e9 / 14
+                ) + 35e6  # 35 ms in the cycle
+
                 for i in range(int(self.n_cycles[0])):
                     with self.pvdb_lock:
                         for pv in self.pvdb:
                             arr = np.random.random(self.pvdb[pv].current().shape[0])
                             arr[0] = cycle_id
 
+                            cycle_ts = start_timestamp + i * 1e9 / 14
+
                             try:
                                 sds_pv = SdsPV(
-                                    pv_ts=time.time_ns(),
+                                    pv_ts=cycle_ts + 50e6,
                                     pv_value=arr,
                                     pv_type="ad",
                                     pv_name=pv,
                                     start_event_cycle_id=cycle_id,
-                                    start_event_ts=time.time_ns(),
+                                    start_event_ts=cycle_ts + 10e6,  # Start acquisition
                                     main_event_cycle_id=cycle_id,
-                                    main_event_ts=time.time_ns(),
+                                    main_event_ts=cycle_ts,  # 14 Hz
                                     acq_event_name="TestAcqEvent",
                                     acq_event_code=0,
                                     acq_event_delay=0,
