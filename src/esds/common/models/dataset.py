@@ -34,6 +34,7 @@ def _serialize_alias(name):
 class Dataset(Base):
     collector_id: Keyword
     sds_event_timestamp: Date
+    sds_cycle_start_timestamp: Date
     sds_event_cycle_id: Long
     path: Keyword
     timestamp: Date

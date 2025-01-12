@@ -48,6 +48,7 @@ class PurePosixPath(UnvalidatedPurePosixPath):
 class DataseDefinition(BaseModel):
     collector_id: str
     sds_event_timestamp: datetime
+    sds_cycle_start_timestamp: datetime
     sds_event_cycle_id: int
     path: PurePosixPath
 

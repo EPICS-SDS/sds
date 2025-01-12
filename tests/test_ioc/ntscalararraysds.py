@@ -126,8 +126,8 @@ class NTScalarArraySDS(NTScalar):
 
             # Cycle ID information comes from the 14 Hz event
             mainevent_timestamp = timeStamp()
-            mainevent_timestamp["secondsPastEpoch"] = sds_pv.pv_ts // 1e9
-            mainevent_timestamp["nanoseconds"] = sds_pv.pv_ts % 1e9
+            mainevent_timestamp["secondsPastEpoch"] = sds_pv.main_event_ts // 1e9
+            mainevent_timestamp["nanoseconds"] = sds_pv.main_event_ts % 1e9
 
             wrapped_value["cycleId"]["value"] = sds_pv.main_event_cycle_id
             wrapped_value["cycleId"]["timeStamp"] = mainevent_timestamp

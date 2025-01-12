@@ -18,6 +18,7 @@ class Dataset(BaseModel):
 
     collector_id: str
     sds_event_timestamp: datetime
+    sds_cycle_start_timestamp: datetime
     sds_event_cycle_id: int
     path: Path
     beam_info: Optional[Dict[str, Any]]
