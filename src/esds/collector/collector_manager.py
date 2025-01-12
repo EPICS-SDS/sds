@@ -126,8 +126,8 @@ class CollectorManager:
             )
             try:
                 collector_definition_dict = collector_definition.model_dump()
-                if collector_definition_dict['collector_id'] is None:
-                    collector_definition_dict.pop('collector_id')
+                if collector_definition_dict["collector_id"] is None:
+                    collector_definition_dict.pop("collector_id")
 
                 new_collector = CollectorBase(**collector_definition_dict)
 

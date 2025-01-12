@@ -65,9 +65,7 @@ class Collector(CollectorBase):
 
             if nexus_file is None:
                 # File name is build from the collector parent path, collector name, the event code, and the SDS cycle ID of the first event
-                file_name: str = (
-                    f"{self.parent_path.lstrip('/').replace('/','_')}_{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_cycle_id)}"
-                )
+                file_name: str = f"{self.parent_path.lstrip('/').replace('/','_')}_{self.name}_{str(event.timing_event_code)}_{str(event.sds_event_cycle_id)}"
                 # Path is generated from date
                 directory = Path(
                     event.sds_event_timestamp.strftime("%Y"),

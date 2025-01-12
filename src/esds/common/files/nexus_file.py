@@ -122,10 +122,12 @@ class NexusFile:
                 sds_event_group.attrs["NX_class"] = "NXsubentry"
                 sds_event_group.attrs["cycle_id"] = event.sds_event_cycle_id
                 if event.sds_cycle_start_timestamp != datetime(1970, 1, 1):
-                    sds_event_group.attrs["cycle_start_timestamp"] = event.sds_cycle_start_timestamp.isoformat()
-                sds_event_group.attrs["timestamp"] = (
-                    event.sds_event_timestamp.isoformat()
-                )
+                    sds_event_group.attrs[
+                        "cycle_start_timestamp"
+                    ] = event.sds_cycle_start_timestamp.isoformat()
+                sds_event_group.attrs[
+                    "timestamp"
+                ] = event.sds_event_timestamp.isoformat()
                 sds_event_group.attrs["event_code"] = event.timing_event_code
 
                 entry[sds_event_key].require_group(name=cycle_key)
