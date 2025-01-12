@@ -23,14 +23,13 @@ pytestmark = pytest.mark.usefixtures("indexer_service")
 class TestCollector:
     test_collector = {
         "name": "indexer_test",
-        "event_name": "test_event",
+        "parent_path": "/",
         "event_code": 1,
         "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
-        "host": "0.0.0.0",
     }
     test_collector_bad_schema = {
         "name": "indexer_test_2",
-        "event_name": "test_event_2",
+        "parent_path": "/",
         "event_code": 2,
     }
 
@@ -79,6 +78,7 @@ class TestCollector:
 class TestDatasets:
     test_dataset = {
         "sds_event_timestamp": datetime.now(UTC).isoformat(),
+        "sds_cycle_start_timestamp": datetime.now(UTC).isoformat(),
         "sds_event_cycle_id": 0,
         "data_timestamp": [datetime.now(UTC).isoformat()],
         "data_cycle_id": [0],
@@ -107,7 +107,8 @@ class TestDatasets:
                 INDEXER_URL + COLLECTORS_ENDPOINT, json=TestCollector.test_collector
             ) as response:
                 collector = json.loads(await response.content.read())
-                self.test_dataset["collector_id"] = collector["id"]
+
+                self.test_dataset["collector_id"] = collector["collector_id"]
 
     async def test_create(self):
         async with aiohttp.ClientSession() as session:

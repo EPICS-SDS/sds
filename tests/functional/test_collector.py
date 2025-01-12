@@ -122,11 +122,12 @@ class TestCollector:
             pv_list = await self.get_pv_list()
 
             for n in range(n_files):
+                sds_cycle = int(first_cycle) + n_cycles - 1
                 file_path = (
                     file_settings.storage_path
                     / directory
                     / (
-                        f"{collector.name}_{collector.event_code}_{int(first_cycle)+n}.h5"
+                        f"{collector.parent_path.lstrip('/').replace('/','_')}_{collector.name}_{collector.event_code}_{sds_cycle+n}.h5"
                     )
                 )
                 assert file_path.exists(), f"File {file_path} not found."
@@ -136,10 +137,10 @@ class TestCollector:
                 assert (
                     entry is not None
                 ), f"File {file_path} does not contain an entry group."
-                sds_event = entry.get(f"sds_event_{int(first_cycle)+n}", None)
+                sds_event = entry.get(f"sds_event_{sds_cycle+n}", None)
                 assert (
                     sds_event is not None
-                ), f"File {file_path} does not contain the sds event for cycle {int(first_cycle)+n}."
+                ), f"File {file_path} does not contain the sds event for cycle {sds_cycle+n}."
 
                 for i in range(n_cycles):
                     cycle = sds_event.get(f"cycle_{int(first_cycle)+n+i}", None)

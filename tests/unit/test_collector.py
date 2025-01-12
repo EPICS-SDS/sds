@@ -7,11 +7,10 @@ from esds.common.files import Dataset, Event
 
 collector = Collector(
     name="test_collector",
-    event_name="test_event",
+    parent_path="/",
     event_code=1,
     pvs=["TEST:PV:1", "TEST:PV:2"],
-    id="test_id",
-    host="0.0.0.0",
+    collector_id="test_id",
 )
 
 acq_event = dict(
@@ -39,6 +38,7 @@ event = Event(
     timing_event_code=2,
     data_timestamp=datetime.now(UTC),
     sds_event_timestamp=datetime.now(UTC),
+    sds_cycle_start_timestamp=datetime.now(UTC),
     cycle_id_timestamp=datetime.now(UTC),
     cycle_id=1,
     sds_event_cycle_id=1,
@@ -56,8 +56,9 @@ class TestDataset:
     @pytest.mark.asyncio
     async def test_dataset_index_fail(self):
         dataset = Dataset(
-            collector_id=collector.id,
+            collector_id=collector.collector_id,
             sds_event_timestamp=datetime.now(UTC),
+            sds_cycle_start_timestamp=datetime.now(UTC),
             sds_event_cycle_id=event.sds_event_cycle_id,
             path=f"{collector.name}_{event.timing_event_code}_{event.sds_event_cycle_id}",
             acq_event=acq_event,

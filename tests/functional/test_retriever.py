@@ -34,18 +34,16 @@ timeout = aiohttp.ClientTimeout(total=10)
 
 test_collector = {
     "name": "retriever_test",
-    "event_name": "test_event",
+    "parent_path": "/",
     "event_code": 1,
     "pvs": ["PV:TEST:1", "PV:TEST:2", "PV:TEST:3"],
-    "host": "0.0.0.0",
 }
 
 test_collector_2 = {
     "name": "retriever_test_2",
-    "event_name": "test_event_2",
+    "parent_path": "/",
     "event_code": 2,
     "pvs": ["PV:TEST:3", "PV:TEST:4"],
-    "host": "0.0.0.0",
 }
 
 
@@ -61,7 +59,7 @@ class TestCollector:
                     INDEXER_URL + COLLECTORS_ENDPOINT, json=collector
                 ) as response:
                     response_json = await response.json()
-                    collector["collector_id"] = response_json["id"]
+                    collector["collector_id"] = response_json["collector_id"]
 
     async def test_query_existing_collector(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -73,7 +71,7 @@ class TestCollector:
                 response_json = await response.json()
                 assert response_json["total"] >= 1
                 assert (
-                    response_json["collectors"][0]["id"]
+                    response_json["collectors"][0]["collector_id"]
                     == test_collector["collector_id"]
                 )
 
@@ -91,8 +89,8 @@ class TestCollector:
                 RETRIEVER_URL + COLLECTORS_ENDPOINT,
                 params={
                     "name": test_collector["name"],
-                    "event_name": test_collector["event_name"],
                     "event_code": test_collector["event_code"],
+                    "parent_path": test_collector["parent_path"],
                     "pv": ["PV:TEST:1", "PV:TEST:2"],
                 },
             ) as response:
@@ -101,7 +99,7 @@ class TestCollector:
                 assert json_response["total"] == 1
                 assert len(json_response["collectors"]) == 1
                 assert (
-                    json_response["collectors"][0]["id"]
+                    json_response["collectors"][0]["collector_id"]
                     == test_collector["collector_id"]
                 )
 
@@ -138,7 +136,10 @@ class TestCollector:
                 + test_collector["collector_id"]
             ) as response:
                 assert response.status == 200
-                assert (await response.json())["id"] == test_collector["collector_id"]
+                print(await response.json())
+                assert (await response.json())["collectors"][0][
+                    "collector_id"
+                ] == test_collector["collector_id"]
 
     async def test_get_non_existing_collector(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -169,7 +170,9 @@ class TestCollector:
                 + test_collector["collector_id"]
             ) as response:
                 try:
-                    schemas.Collector.model_validate(await response.json())
+                    schemas.Collector.model_validate(
+                        (await response.json())["collectors"][0]
+                    )
                 except ValidationError:
                     assert False
                 assert True
@@ -197,6 +200,7 @@ acq_event_dict = {
 test_dataset_1 = [
     {
         "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
+        "sds_cycle_start_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
         "sds_event_cycle_id": 1,
         "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
         "data_timestamp": [datetime(2022, 1, 1, 0, 0, 0).isoformat()],
@@ -209,6 +213,7 @@ test_dataset_1 = [
 test_dataset_2 = [
     {
         "sds_event_timestamp": datetime(2022, 1, 1, 0, 0, i).isoformat(),
+        "sds_cycle_start_timestamp": datetime(2022, 1, 1, 0, 0, 0).isoformat(),
         "sds_event_cycle_id": i + 1,
         "cycle_id_timestamp": datetime(2022, 1, 1, 0, 0, i).isoformat(),
         "data_timestamp": [datetime(2022, 1, 1, 0, 0, i).isoformat()],
@@ -230,16 +235,16 @@ async def _start_services(indexer_service, retriever_service):
             collector = await response.json()
             for datasets in [test_dataset_1, test_dataset_2]:
                 for dataset in datasets:
-                    dataset["collector_id"] = collector["id"]
+                    dataset["collector_id"] = collector["collector_id"]
 
     # Remove the datasets in case they already exist
-    query = {"query": {"match": {"collector_id": collector["id"]}}}
+    query = {"query": {"match": {"collector_id": collector["collector_id"]}}}
     requests.post(ELASTIC_URL + "/dataset/_delete_by_query", json=query)
     requests.post(ELASTIC_URL + "/dataset/_refresh")
 
     # Create the NeXus files
     for datasets in [test_dataset_1, test_dataset_2]:
-        file_name: str = f'{test_collector["name"]}_{str(test_collector["event_code"])}_{str(datasets[0]["sds_event_cycle_id"])}'
+        file_name: str = f'{test_collector["parent_path"].lstrip("/").replace("/","_")}_{test_collector["name"]}_{str(test_collector["event_code"])}_{str(datasets[0]["sds_event_cycle_id"])}'
         # Path is generated from date
         directory = Path(
             datetime.now(UTC).strftime("%Y"),
@@ -248,6 +253,7 @@ async def _start_services(indexer_service, retriever_service):
 
         nexus = NexusFile(
             collector_id=datasets[0]["collector_id"],
+            parent_path=test_collector["parent_path"],
             collector_name=test_collector["name"],
             file_name=file_name,
             directory=settings.storage_path / directory,

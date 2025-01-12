@@ -17,7 +17,7 @@ from esds.common.schemas import CollectorBase
 
 collector = Collector(
     name="test_collector",
-    event_name="test_event",
+    parent_path="/",
     event_code=1,
     pvs=["TEST:PV:1", "TEST:PV:2"],
     id="test_id",
@@ -76,7 +76,7 @@ class TestCollectorApi:
             start_collector=False,
         )
 
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
         await cm.close()
         await cm.join()
@@ -89,7 +89,7 @@ class TestCollectorApi:
             start_collector=False,
         )
 
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
         try:
             await api.add_collector(
@@ -108,12 +108,14 @@ class TestCollectorApi:
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
         response = Response()
-        await api.remove_collector(name=collector.name, response=response)
+        await api.remove_collector(
+            collector_id=collector.collector_id, response=response
+        )
 
-        assert collector.name not in cm.collectors.keys()
+        assert collector.collector_id not in cm.collectors.keys()
         assert response.status_code == 200
 
         await cm.close()
@@ -123,7 +125,9 @@ class TestCollectorApi:
         cm = await CollectorManager.create([])
 
         response = Response()
-        await api.remove_collector(name=collector.name, response=response)
+        await api.remove_collector(
+            collector_id=collector.collector_id, response=response
+        )
 
         assert response.status_code == 404
 
@@ -134,7 +138,7 @@ class TestCollectorApi:
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
         response = await api.get_collectors()
 
@@ -148,9 +152,11 @@ class TestCollectorApi:
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
-        response = await api.get_collector_with_name(name=collector.name)
+        response = await api.get_collector_with_collector_id(
+            collector_id=collector.collector_id
+        )
 
         assert isinstance(response, CollectorBase)
 
@@ -161,10 +167,10 @@ class TestCollectorApi:
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
-        assert collector.name in cm.collectors.keys()
+        assert collector.collector_id in cm.collectors.keys()
 
         try:
-            await api.get_collector_with_name(name="not_existing")
+            await api.get_collector_with_collector_id(collector_id="not_existing")
         except HTTPException:
             assert True
         else:
@@ -240,26 +246,28 @@ class TestCollectorApi:
         await cm.close()
         await cm.join()
 
-    async def test_get_status_with_name(self):
+    async def test_get_status_with_collector_id(self):
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
 
         assert isinstance(response, CollectorFullStatus)
-        assert response.name == collector.name
+        assert response.collector_id == collector.collector_id
 
         await cm.close()
         await cm.join()
 
-    async def test_get_status_with_wrong_name(self):
+    async def test_get_status_with_wrong_id(self):
         cm = await CollectorManager.create(
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
         try:
-            await api.get_status_with_name(name=NON_EXISTING)
+            await api.get_status_with_collector_id(collector_id=NON_EXISTING)
         except HTTPException:
             assert True
         else:
@@ -273,11 +281,15 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
         await api.start_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
 
         await cm.close()
@@ -288,16 +300,22 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
         await api.start_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
 
         await api.start_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
 
         await cm.close()
@@ -310,11 +328,15 @@ class TestCollectorApi:
 
         await api.start_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
         await api.stop_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
 
         await cm.close()
@@ -327,15 +349,21 @@ class TestCollectorApi:
 
         await api.start_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
         await api.stop_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
         await api.stop_all_collectors()
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
 
         await cm.close()
@@ -346,11 +374,15 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
-        await api.start_collector(name=collector.name)
+        await api.start_collector(collector_id=collector.collector_id)
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
 
         await cm.close()
@@ -361,15 +393,21 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
-        await api.start_collector(name=collector.name)
+        await api.start_collector(collector_id=collector.collector_id)
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
-        await api.start_collector(name=collector.name)
+        await api.start_collector(collector_id=collector.collector_id)
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
 
         await cm.close()
@@ -380,13 +418,17 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        await api.start_collector(name=collector.name)
+        await api.start_collector(collector_id=collector.collector_id)
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert response.running
-        await api.stop_collector(name=collector.name)
+        await api.stop_collector(collector_id=collector.collector_id)
 
-        response = await api.get_status_with_name(name=collector.name)
+        response = await api.get_status_with_collector_id(
+            collector_id=collector.collector_id
+        )
         assert not response.running
 
         await cm.close()
@@ -398,7 +440,7 @@ class TestCollectorApi:
         )
 
         try:
-            await api.start_collector(name=NON_EXISTING)
+            await api.start_collector(collector_id=NON_EXISTING)
         except HTTPException:
             assert True
         else:
@@ -413,7 +455,7 @@ class TestCollectorApi:
         )
 
         try:
-            await api.stop_collector(name=NON_EXISTING)
+            await api.stop_collector(collector_id=NON_EXISTING)
         except HTTPException:
             assert True
         else:

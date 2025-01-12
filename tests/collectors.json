@@ -1,7 +1,7 @@
 [
     {
         "name": "test",
-        "event_name": "data-on-demand",
+        "parent_path": "/",
         "event_code": 1,
         "pvs": [
             "SDS:TEST:PV_100_0",
@@ -13,7 +13,7 @@
     },
     {
         "name": "eventB",
-        "event_name": "data-on-demand",
+        "parent_path": "/",
         "event_code": 1,
         "pvs": [
             "SDS:TEST:PV_100_1",
@@ -24,7 +24,7 @@
     },
     {
         "name": "eventC",
-        "event_name": "data-on-demand",
+        "parent_path": "/",
         "event_code": 1,
         "pvs": [
             "SDS:TEST:PV_100_2",
@@ -35,7 +35,7 @@
     },
     {
         "name": "not-event",
-        "event_name": "never-happens",
+        "parent_path": "/",
         "event_code": 2,
         "pvs": [
             "SDS:TEST:PV_100_1",
@@ -44,7 +44,7 @@
     },
     {
         "name": "types-test",
-        "event_name": "types",
+        "parent_path": "/",
         "event_code": 3,
         "pvs": [
             "SDS:TYPES_TEST:PV:BYTE",

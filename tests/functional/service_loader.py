@@ -71,7 +71,7 @@ class ConfigurableCollectorService:
         collectors = [
             {
                 "name": "collector_" + str(i),
-                "event_name": "data-on-demand",
+                "parent_path": "/",
                 "event_code": 1,
                 "pvs": [
                     (
