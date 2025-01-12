@@ -371,12 +371,14 @@ async def get_nexus_with_multiple_datasets(
             if nexus_file is None:
                 origin = File(settings.storage_path / dataset.path, "r")
                 collector_name = origin["entry"].attrs["collector_name"]
+                parent_path = origin["entry"].attrs["collector_parent_path"]
                 origin.close()
 
                 # First create a new file
                 nexus_file = NexusFile(
                     collector_id=dataset.collector_id,
                     collector_name=collector_name,
+                    parent_path=parent_path,
                     file_name=collector_name + ".h5",
                     directory=Path(d),
                 )
