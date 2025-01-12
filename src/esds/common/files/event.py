@@ -16,6 +16,7 @@ class Event(BaseModel):
     data_timestamp: datetime
     cycle_id_timestamp: datetime
     sds_event_timestamp: datetime
+    sds_cycle_start_timestamp: datetime = datetime(1970, 1, 1)
     cycle_id: int
     sds_event_cycle_id: int
 

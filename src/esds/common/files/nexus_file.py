@@ -72,7 +72,7 @@ class NexusFile:
             dataset = Dataset(
                 collector_id=self.collector_id,
                 sds_event_timestamp=event.sds_event_timestamp,
-                sds_cycle_start_timestamp=datetime(1970, 1, 1),
+                sds_cycle_start_timestamp=event.sds_cycle_start_timestamp,
                 sds_event_cycle_id=event.sds_event_cycle_id,
                 path=self.path,
                 beam_info=event.attributes.get("beamInfo", None),
@@ -80,8 +80,8 @@ class NexusFile:
             self.datasets.update({event.sds_event_cycle_id: dataset})
 
         # Update the timestamp of the start of the cycle when the SDS event happened
-        if event.cycle_id == event.sds_event_cycle_id and dataset.sds_cycle_start_timestamp != datetime(1970, 1, 1):
-            dataset.sds_cycle_start_timestamp = event.cycle_id_timestamp
+        if event.sds_cycle_start_timestamp != datetime(1970, 1, 1):
+            dataset.sds_cycle_start_timestamp = event.sds_cycle_start_timestamp
 
         self.events.append(event)
 
@@ -121,9 +121,11 @@ class NexusFile:
                 sds_event_group = entry.require_group(name=sds_event_key)
                 sds_event_group.attrs["NX_class"] = "NXsubentry"
                 sds_event_group.attrs["cycle_id"] = event.sds_event_cycle_id
-                sds_event_group.attrs[
-                    "timestamp"
-                ] = event.sds_event_timestamp.isoformat()
+                if event.sds_cycle_start_timestamp != datetime(1970, 1, 1):
+                    sds_event_group.attrs["cycle_start_timestamp"] = event.sds_cycle_start_timestamp.isoformat()
+                sds_event_group.attrs["timestamp"] = (
+                    event.sds_event_timestamp.isoformat()
+                )
                 sds_event_group.attrs["event_code"] = event.timing_event_code
 
                 entry[sds_event_key].require_group(name=cycle_key)

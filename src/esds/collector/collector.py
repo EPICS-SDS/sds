@@ -109,6 +109,10 @@ class Collector(CollectorBase):
 
                 task.add_done_callback(task_done_cb)
 
+        # Update the timestamp of the start of the cycle when the SDS event happened
+        if event.cycle_id == event.sds_event_cycle_id:
+            event.sds_cycle_start_timestamp = event.cycle_id_timestamp
+
         queue.put_nowait(event)
 
     async def _collector(self, queue: Queue, nexus_file: NexusFile):
