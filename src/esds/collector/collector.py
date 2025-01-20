@@ -137,7 +137,6 @@ class Collector(CollectorBase):
                     await get_running_loop().run_in_executor(
                         self._pool, write_to_file, nexus_file
                     )
-                    nexus_file.clear_events()
 
             # Making sure the queue is empty before timing out the collector
             if (
