@@ -100,8 +100,16 @@ class NexusFile:
         """
         try:
             h5file = self._get_h5file()
-            if h5file is None:
-                return
+        except Exception as e:
+            logger.warning(f"{repr(self)} writing event failed! Problem with the file.")
+            print_exc()
+            logger.warning(e)
+            return False
+
+        if h5file is None:
+            return False
+
+        try:
             logger.info(f"{repr(self)} writing to '{self.path}'")
 
             entry = h5file.require_group(name="entry")
