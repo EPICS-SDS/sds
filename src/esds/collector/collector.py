@@ -136,9 +136,14 @@ class Collector(CollectorBase):
             ):
                 last_flush = datetime.now(UTC)
                 async with nexus_file.lock:
-                    await get_running_loop().run_in_executor(
-                        self._pool, write_to_file, nexus_file
-                    )
+                    try:
+                        await get_running_loop().run_in_executor(
+                            self._pool, write_to_file, nexus_file
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Exception while writing to file {nexus_file}.", e
+                        )
 
             # Checking timeout condition to exit the while loop
             with self._file_lock:
@@ -150,9 +155,14 @@ class Collector(CollectorBase):
                 ):
                     async with nexus_file.lock:
                         if len(nexus_file.events) != 0:
-                            await get_running_loop().run_in_executor(
-                                self._pool, write_to_file, nexus_file
-                            )
+                            try:
+                                await get_running_loop().run_in_executor(
+                                    self._pool, write_to_file, nexus_file
+                                )
+                            except Exception as e:
+                                logger.error(
+                                    f"Exception while writing to file {nexus_file}.", e
+                                )
 
                     # Stop the collector task (this method) for this dataset corresponding to an sds_event_id
                     self._concurrent_datasets[nexus_file.file_name] -= 1
