@@ -88,6 +88,8 @@ class Collector(CollectorBase):
                     )
                     return
 
+                # TODO: check that the file is not indexed! When writing multiple SDS events to the same file, checking that the file exists only works for events corresponding to the first SDS event in the file.
+
                 self._files[event.sds_event_cycle_id] = nexus_file
                 self._concurrent_datasets[nexus_file.file_name] = 0
 
@@ -138,35 +140,38 @@ class Collector(CollectorBase):
                         self._pool, write_to_file, nexus_file
                     )
 
-            # Making sure the queue is empty before timing out the collector
-            if (
-                queue.empty()
-                and (datetime.now(UTC) - first_update_received).total_seconds()
-                > settings.collector_timeout
-            ):
-                async with nexus_file.lock:
-                    if len(nexus_file.events) != 0:
-                        await get_running_loop().run_in_executor(
-                            self._pool, write_to_file, nexus_file
-                        )
-                break
+            # Checking timeout condition to exit the while loop
+            with self._file_lock:
+                # Making sure the queue is empty before timing out the collector
+                if (
+                    queue.empty()
+                    and (datetime.now(UTC) - first_update_received).total_seconds()
+                    > settings.collector_timeout
+                ):
+                    async with nexus_file.lock:
+                        if len(nexus_file.events) != 0:
+                            await get_running_loop().run_in_executor(
+                                self._pool, write_to_file, nexus_file
+                            )
 
+                    # Stop the collector task (this method) for this dataset corresponding to an sds_event_id
+                    self._concurrent_datasets[nexus_file.file_name] -= 1
+                    file_ready = self._concurrent_datasets[nexus_file.file_name] == 0
+                    if file_ready:
+                        self._concurrent_datasets.pop(nexus_file.file_name)
+                        self.discard_file(nexus_file)
+                        await nexus_file.index(settings.indexer_url)
+                        # At this point, any new event with this sds_event_id will be discarded
+                    break
+
+        # Update the collector status information
         collector_status.set_last_collection(self.collector_id)
         collector_status.set_collection_time(
             self.collector_id,
             (last_update_received - first_update_received).total_seconds(),
         )
 
-        # When all tasks are done, write the file and send metadata to indexer
-        with self._file_lock:
-            self._concurrent_datasets[nexus_file.file_name] -= 1
-            file_ready = self._concurrent_datasets[nexus_file.file_name] == 0
-            if file_ready:
-                self._concurrent_datasets.pop(nexus_file.file_name)
-                self.discard_file(nexus_file)
-
         if file_ready:
-            await nexus_file.index(settings.indexer_url)
             collector_status.set_collection_size(
                 self.collector_id, nexus_file.getsize()
             )
