@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     flush_file_delay: float = Field(
         2, description="Maximum delay to flush data from a collector task to file."
     )
-    collector_timeout: str = Field(
+    collector_timeout: float = Field(
         2,
         description="Timeout for a collector task. It starts to count when the first event is received for a given SDS event ID.",
     )
