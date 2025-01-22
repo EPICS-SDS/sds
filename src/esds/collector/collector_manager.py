@@ -154,9 +154,9 @@ class CollectorManager:
             except (
                 ClientError,
                 OSError,
-            ):
+            ) as e:
                 logger.error(
-                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status."
+                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
                 )
                 return None
             except Exception as e:
