@@ -103,7 +103,15 @@ class Collector(CollectorBase):
                 task = create_task(self._collector(queue, nexus_file))
                 self._tasks.add(task)
 
-                def task_done_cb(task):
+                def task_done_cb(task: Task):
+                    try:
+                        task.result()
+                    except Exception as e:
+                        logger.error(
+                            f"{repr(self)} Exception running the _collector() task for file {nexus_file}."
+                        )
+                        logger.error(e)
+
                     self._tasks.discard(task)
                     self.discard_queue(event.sds_event_cycle_id)
 
@@ -120,59 +128,44 @@ class Collector(CollectorBase):
         last_flush = datetime.now(UTC)
         last_update_received = datetime.now(UTC)
 
-        while True:
+        while (
+            not queue.empty()
+            or (datetime.now(UTC) - first_update_received).total_seconds()
+            < settings.collector_timeout
+        ):
             try:
                 event = await wait_for(queue.get(), settings.flush_file_delay)
-                nexus_file.add_event(event)
+                async with nexus_file.lock:
+                    nexus_file.add_event(event)
                 last_update_received = datetime.now(UTC)
             except TimeoutError:
                 pass
 
             # Flush file at regular intervals to free memory
             if (
-                len(nexus_file.events) != 0
-                and (datetime.now(UTC) - last_flush).total_seconds()
-                > settings.flush_file_delay
-            ):
+                datetime.now(UTC) - last_flush
+            ).total_seconds() > settings.flush_file_delay:
                 last_flush = datetime.now(UTC)
-                async with nexus_file.lock:
-                    try:
-                        await get_running_loop().run_in_executor(
-                            self._pool, write_to_file, nexus_file
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Exception while writing to file {nexus_file}.", e
-                        )
+                await self._flush_events_to_file(nexus_file)
 
-            # Checking timeout condition to exit the while loop
             with self._file_lock:
-                # Making sure the queue is empty before timing out the collector
+                # When the collector task times out, new events will be discarded
                 if (
-                    queue.empty()
-                    and (datetime.now(UTC) - first_update_received).total_seconds()
-                    > settings.collector_timeout
-                ):
-                    async with nexus_file.lock:
-                        if len(nexus_file.events) != 0:
-                            try:
-                                await get_running_loop().run_in_executor(
-                                    self._pool, write_to_file, nexus_file
-                                )
-                            except Exception as e:
-                                logger.error(
-                                    f"Exception while writing to file {nexus_file}.", e
-                                )
-
+                    datetime.now(UTC) - first_update_received
+                ).total_seconds() > settings.collector_timeout:
                     # Stop the collector task (this method) for this dataset corresponding to an sds_event_id
                     self._concurrent_datasets[nexus_file.file_name] -= 1
                     file_ready = self._concurrent_datasets[nexus_file.file_name] == 0
                     if file_ready:
                         self._concurrent_datasets.pop(nexus_file.file_name)
                         self.discard_file(nexus_file)
-                        await nexus_file.index(settings.indexer_url)
-                        # At this point, any new event with this sds_event_id will be discarded
-                    break
+                        # At this point, any new event received in the update() method with this sds_event_id will be discarded
+
+        # Making sure the queue is empty before closing the collector
+        await self._flush_events_to_file(nexus_file)
+
+        # Push metadata to the indexer service
+        await nexus_file.index(settings.indexer_url)
 
         # Update the collector status information
         collector_status.set_last_collection(self.collector_id)
@@ -185,6 +178,18 @@ class Collector(CollectorBase):
             collector_status.set_collection_size(
                 self.collector_id, nexus_file.getsize()
             )
+
+    async def _flush_events_to_file(self, nexus_file: NexusFile):
+        async with nexus_file.lock:
+            if len(nexus_file.events) != 0:
+                try:
+                    await get_running_loop().run_in_executor(
+                        self._pool, write_to_file, nexus_file
+                    )
+                    # Clearing the events because the executor works on a copy of the list
+                    nexus_file.clear_events()
+                except Exception as e:
+                    logger.error(f"Exception while writing to file {nexus_file}.", e)
 
     def event_matches(self, event: Event):
         if event.timing_event_code != self.event_code:

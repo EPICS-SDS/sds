@@ -159,10 +159,11 @@ class NexusFile:
                         event.value,
                         event.type,
                     )
-                except ValueError:
+                except ValueError as e:
                     logger.error(
                         f"Duplicated value for PV {event.pv_name}. SDS event {sds_event_key}. Cycle ID {cycle_key}"
                     )
+                    logger.error(e)
 
                     continue
 
