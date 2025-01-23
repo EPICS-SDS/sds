@@ -116,7 +116,7 @@ class CollectorManager:
         session_timeout = aiohttp.ClientTimeout(
             total=None,
             sock_connect=settings.http_connection_timeout,
-            sock_read=settings.http_connection_timeout,
+            sock_read=None,
         )
         async with aiohttp.ClientSession(
             json_serialize=CollectorBase.model_dump_json, timeout=session_timeout
