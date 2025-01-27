@@ -130,7 +130,7 @@ class Collector(CollectorBase):
 
         while (
             not queue.empty()
-            or (datetime.now(UTC) - first_update_received).total_seconds()
+            or (datetime.now(UTC) - last_update_received).total_seconds()
             < settings.collector_timeout
         ):
             try:
@@ -151,7 +151,7 @@ class Collector(CollectorBase):
             with self._file_lock:
                 # When the collector task times out, new events will be discarded
                 if (
-                    datetime.now(UTC) - first_update_received
+                    datetime.now(UTC) - last_update_received
                 ).total_seconds() > settings.collector_timeout:
                     # Stop the collector task (this method) for this dataset corresponding to an sds_event_id
                     self._concurrent_datasets[nexus_file.file_name] -= 1

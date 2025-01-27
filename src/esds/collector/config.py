@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     )
     collector_timeout: float = Field(
         2,
-        description="Timeout for a collector task. It starts to count when the first event is received for a given SDS event ID.",
+        description="Timeout for a collector task in seconds. It restarts every time a new update is received for a given SDS event ID.",
     )
     http_connection_timeout: float = 5
     events_per_file: int = Field(
