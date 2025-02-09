@@ -113,9 +113,12 @@ class NexusFile:
             logger.info(f"{repr(self)} writing to '{self.path}'")
 
             entry = h5file.require_group(name="entry")
-            entry.attrs["NX_class"] = "NXentry"
-            entry.attrs["collector_name"] = self.collector_name
-            entry.attrs["collector_parent_path"] = self.parent_path
+
+            entry_attrs = {}
+            entry_attrs["NX_class"] = "NXentry"
+            entry_attrs["collector_name"] = self.collector_name
+            entry_attrs["collector_parent_path"] = self.parent_path
+            entry.attrs.update(entry_attrs)
 
             while True:
                 # Pop elements from the list
@@ -127,20 +130,25 @@ class NexusFile:
                 cycle_key = f"cycle_{event.cycle_id}"
 
                 sds_event_group = entry.require_group(name=sds_event_key)
-                sds_event_group.attrs["NX_class"] = "NXsubentry"
-                sds_event_group.attrs["cycle_id"] = event.sds_event_cycle_id
+
+                sds_event_group_attrs = {}
+                sds_event_group_attrs["NX_class"] = "NXsubentry"
+                sds_event_group_attrs["cycle_id"] = event.sds_event_cycle_id
+
                 if event.sds_cycle_start_timestamp != datetime(1970, 1, 1):
-                    sds_event_group.attrs[
+                    sds_event_group_attrs[
                         "cycle_start_timestamp"
                     ] = event.sds_cycle_start_timestamp.isoformat()
-                sds_event_group.attrs[
+                sds_event_group_attrs[
                     "timestamp"
                 ] = event.sds_event_timestamp.isoformat()
-                sds_event_group.attrs["event_code"] = event.timing_event_code
+                sds_event_group_attrs["event_code"] = event.timing_event_code
+
+                sds_event_group.attrs.update(sds_event_group_attrs)
 
                 entry[sds_event_key].require_group(name=cycle_key)
                 # Adding attributes about cycle (should be the same for all events)
-                cycle_attributes = entry[sds_event_key][cycle_key].attrs
+                cycle_attributes = {}
                 cycle_attributes["NX_class"] = "NXdata"
                 cycle_attributes["cycle_id"] = event.cycle_id
                 cycle_attributes["timestamp"] = event.cycle_id_timestamp.isoformat()
@@ -151,6 +159,8 @@ class NexusFile:
                         event.attributes.pop("beamInfo"),
                         prefix="beamInfo",
                     )
+
+                entry[sds_event_key][cycle_key].attrs.update(cycle_attributes)
 
                 try:
                     self._parse_value(
@@ -168,13 +178,15 @@ class NexusFile:
                     continue
 
                 # Acq info and event metadata
-                acquisition_attributes = entry[sds_event_key][cycle_key][
-                    event.pv_name
-                ].attrs
+                acquisition_attributes = {}
                 acquisition_attributes["timestamp"] = event.data_timestamp.isoformat()
 
                 self._recursively_add_attributes(
                     acquisition_attributes, event.attributes
+                )
+
+                entry[sds_event_key][cycle_key][event.pv_name].attrs.update(
+                    acquisition_attributes
                 )
 
             h5file.close()
@@ -255,9 +267,11 @@ class NexusFile:
 
             logger.info(f"{repr(self)} writing to '{self.path}'")
             entry = h5file.require_group(name="entry")
-            entry.attrs["NX_class"] = "NXentry"
-            entry.attrs["collector_name"] = self.collector_name
-            entry.attrs["collector_parent_path"] = self.parent_path
+            entry_attrs = {}
+            entry_attrs["NX_class"] = "NXentry"
+            entry_attrs["collector_name"] = self.collector_name
+            entry_attrs["collector_parent_path"] = self.parent_path
+            entry.attrs.update(entry_attrs)
 
             for dataset in self.datasets.values():
                 origin = File(settings.storage_path / dataset.path, "r")
