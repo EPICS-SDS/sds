@@ -238,8 +238,7 @@ class NexusFile:
                 parent.create_dataset(
                     key,
                     data=value,
-                    compression="gzip",
-                    compression_opts=settings.compression_level,
+                    compression="lzf",
                     dtype=dtype,
                 )
             else:
