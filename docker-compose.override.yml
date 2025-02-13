@@ -2,17 +2,17 @@ version: '3'
 services:
   sds_indexer:
     volumes:
-      - ./src:/app/
+      - ./src/esds:/app/esds
     command: uvicorn esds.indexer:app --host 0.0.0.0 --port 8000 --reload
 
   sds_retriever:
     volumes:
-      - ./src:/app/
+      - ./src/esds:/app/esds
     command: uvicorn esds.retriever:app --host 0.0.0.0 --port 8000 --reload
 
   sds_collector:
     volumes:
-      - ./src:/app/
+      - ./src/esds:/app/esds
     command: python -m esds.collector.main --reload
     network_mode: "host"
 
