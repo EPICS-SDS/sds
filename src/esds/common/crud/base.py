@@ -20,6 +20,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         *,
         filters: Optional[List[Dict]] = None,
         script: Optional[List[Dict]] = None,
+        aggs: Optional[dict] = None,
         sort: Optional[Dict] = None,
         search_after: Optional[int] = None,
         size: Optional[int] = None,
@@ -27,6 +28,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType]):
         return await self.model.mget(
             filters=filters,
             script=script,
+            aggs=aggs,
             sort=sort,
             search_after=search_after,
             size=size,

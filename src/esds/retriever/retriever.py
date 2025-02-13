@@ -85,6 +85,9 @@ async def query_collectors(
     event_code: Optional[int] = None,
     pv: Optional[List[str]] = Query(default=None),
     sort: Optional[SortOrder] = SortOrder.desc,
+    latest_version_only: Optional[bool] = Query(
+        description="Return only the latest version of each collector", default=True
+    ),
     search_after: Optional[int] = None,
 ):
     """
@@ -115,8 +118,27 @@ async def query_collectors(
         )
     sort = {"created": {"order": sort}}
 
+    if latest_version_only:
+        aggs = {
+            "latest_version": {
+                "terms": {
+                    "field": "collector_id",
+                    "size": db_settings.max_query_size,
+                    "order": {"max_version": "desc"},
+                },
+                "aggs": {
+                    "max_version": {"max": {"field": "version"}},
+                    "latest": {"top_hits": {"size": 1, "sort": sort}},
+                },
+            }
+        }
+        size = 0
+    else:
+        aggs = None
+        size = None
+
     total, collectors, search_after = await crud.collector.get_multi(
-        filters=filters, sort=sort, search_after=search_after
+        filters=filters, aggs=aggs, sort=sort, search_after=search_after, size=size
     )
 
     return MultiResponseCollector(

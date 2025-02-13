@@ -102,6 +102,7 @@ class Base(BaseModel):
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
         script: Optional[dict] = None,
+        aggs: Optional[dict] = None,
         sort: Optional[dict] = None,
         search_after: Optional[int] = None,
         size: Optional[int] = None,
@@ -116,28 +117,41 @@ class Base(BaseModel):
                 if search_after is not None:
                     search_after = [search_after]
 
+                if size is None:
+                    size = settings.max_query_size
+
                 response = await es.search(
                     index=cls.get_index(),
                     query=query,
-                    size=size or settings.max_query_size,
+                    size=size,
                     sort=sort,
                     search_after=search_after,
+                    aggs=aggs,
                 )
-
             except NotFoundError:
                 return (0, [], None)
 
             n_total = response["hits"]["total"]["value"]
 
-            # Query got 0 hits, either in total or after paginating with search_after
-            if n_total == 0 or response["hits"]["hits"] == []:
-                return (n_total, [], None)
-            hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
+            search_after = None
 
-            if sort is None:
-                search_after = None
+            if aggs:
+                results = []
+                for bucket in response["aggregations"]["latest_version"]["buckets"]:
+                    top_doc = bucket["latest"]["hits"]["hits"][0]
+                    results.append(top_doc)
+
+                hits = list(map(lambda hit: cls(hit=hit), results))
+                n_total = len(hits)
             else:
-                search_after = response["hits"]["hits"][-1]["sort"][0]
+                # Query got 0 hits, either in total or after paginating with search_after
+                if n_total == 0 or response["hits"]["hits"] == []:
+                    return (n_total, [], None)
+
+                hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
+
+                if sort is not None:
+                    search_after = response["hits"]["hits"][-1]["sort"][0]
 
             return n_total, hits, search_after
 
