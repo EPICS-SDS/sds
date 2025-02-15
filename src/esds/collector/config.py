@@ -29,7 +29,10 @@ class Settings(BaseSettings):
     collector_ioc_enabled: bool = False
     autostart_collectors: bool = True
     autosave_collectors_definition: bool = True
-    status_queue_length: int = 14
+    status_queue_length: int = Field(
+        14,
+        description="Number of samples for the moving average used to calculate status values.",
+    )
 
 
 settings = Settings()

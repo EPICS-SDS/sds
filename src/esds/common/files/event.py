@@ -19,5 +19,6 @@ class Event(BaseModel):
     sds_cycle_start_timestamp: datetime = datetime(1970, 1, 1)
     cycle_id: int
     sds_event_cycle_id: int
+    event_size: float
 
     attributes: Optional[Dict[str, Any]]

@@ -123,6 +123,13 @@ class Collector(CollectorBase):
 
         queue.put_nowait(event)
 
+        collector_status.set_event_size(
+            self.collector_id, event.pv_name, event.event_size
+        )
+        collector_status.set_update_event(
+            self.collector_id, event.pv_name, event.sds_event_cycle_id
+        )
+
     async def _collector(self, queue: Queue, nexus_file: NexusFile):
         first_update_received = datetime.now(UTC)
         last_flush = datetime.now(UTC)
@@ -168,11 +175,15 @@ class Collector(CollectorBase):
         await nexus_file.index(settings.indexer_url)
 
         # Update the collector status information
-        collector_status.set_last_collection(self.collector_id)
+        collector_status.set_last_collection(
+            self.collector_id, event.sds_event_cycle_id
+        )
         collector_status.set_collection_time(
             self.collector_id,
             (last_update_received - first_update_received).total_seconds(),
         )
+
+        collector_status.remove_sds_cycle(self.collector_id, event.sds_event_cycle_id)
 
         if file_ready:
             collector_status.set_collection_size(
@@ -183,9 +194,18 @@ class Collector(CollectorBase):
         async with nexus_file.lock:
             if len(nexus_file.events) != 0:
                 try:
-                    await get_running_loop().run_in_executor(
+                    write_result = await get_running_loop().run_in_executor(
                         self._pool, write_to_file, nexus_file
                     )
+
+                    # Update the PV status information (here all events share the same SDS cycle ID)
+                    if write_result != {}:
+                        collector_status.update_written_data(
+                            write_result,
+                            self.collector_id,
+                            nexus_file.events[0].sds_event_cycle_id,
+                        )
+
                     # Clearing the events because the executor works on a copy of the list
                     nexus_file.clear_events()
                 except Exception as e:

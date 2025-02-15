@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 import os.path
 from asyncio import Lock
@@ -31,6 +32,12 @@ p4p_type_to_hdf5 = {
     "f": np.float32,
     "d": np.float64,
 }
+
+
+@dataclass
+class WriteResult:
+    successful: int = 0
+    duplicated: int = 0
 
 
 class NexusFile:
@@ -94,20 +101,22 @@ class NexusFile:
     def add_dataset(self, dataset: Dataset):
         self.datasets.update({dataset.sds_event_cycle_id: dataset})
 
-    def write_from_events(self):
+    def write_from_events(self) -> Dict[str, WriteResult]:
         """
         Write NeXus file from a list of Event objects (for collector)
         """
+        write_result: Dict[str, WriteResult] = dict()
+
         try:
             h5file = self._get_h5file()
         except Exception as e:
             logger.warning(f"{repr(self)} writing event failed! Problem with the file.")
             print_exc()
             logger.warning(e)
-            return False
+            return write_result
 
         if h5file is None:
-            return False
+            return write_result
 
         try:
             logger.info(f"{repr(self)} writing to '{self.path}'")
@@ -162,6 +171,9 @@ class NexusFile:
 
                 entry[sds_event_key][cycle_key].attrs.update(cycle_attributes)
 
+                if event.pv_name not in write_result:
+                    write_result[event.pv_name] = WriteResult()
+
                 try:
                     self._parse_value(
                         entry[sds_event_key][cycle_key],
@@ -169,11 +181,13 @@ class NexusFile:
                         event.value,
                         event.type,
                     )
+                    write_result[event.pv_name].successful += 1
                 except ValueError as e:
                     logger.error(
                         f"Duplicated value for PV {event.pv_name}. SDS event {sds_event_key}. Cycle ID {cycle_key}"
                     )
                     logger.error(e)
+                    write_result[event.pv_name].duplicated += 1
 
                     continue
 
@@ -191,13 +205,13 @@ class NexusFile:
 
             h5file.close()
             logger.info(f"{repr(self)} writing done.")
-            return True
         except Exception as e:
             logger.warning(f"{repr(self)} writing event failed!")
             print_exc()
             logger.warning(e)
             h5file.close()
-            return False
+
+        return write_result
 
     def _recursively_add_attributes(
         self, attributes_node, attributes_dict: Dict[str, Any], prefix=None
@@ -319,6 +333,6 @@ class NexusFile:
         return os.path.getsize(settings.storage_path / self.path)
 
 
-def write_to_file(nexus_file: NexusFile):
+def write_to_file(nexus_file: NexusFile) -> Dict[str, WriteResult]:
     """Convenience method to write the NeXus files from a ProcessPoolExecutor"""
-    nexus_file.write_from_events()
+    return nexus_file.write_from_events()
