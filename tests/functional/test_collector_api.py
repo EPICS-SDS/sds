@@ -53,6 +53,7 @@ event = Event(
     cycle_id=1,
     sds_event_cycle_id=1,
     attributes=dict(acq_event=acq_event, beam_info=beam_info),
+    event_size=1,
 )
 
 NON_EXISTING = "non existing"

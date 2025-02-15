@@ -300,7 +300,7 @@ class TestCollector:
             datetime.now(UTC).strftime("%Y"),
             datetime.now(UTC).strftime("%Y-%m-%d"),
         )
-        file_path = file_settings.storage_path / directory / f"_types-test_3_{cycle}.h5"
+        file_path = file_settings.storage_path / directory / f"types-test_3_{cycle}.h5"
 
         assert file_path.exists(), f"File {file_path} not found."
 

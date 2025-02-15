@@ -318,8 +318,9 @@ class CollectorManager:
         start_time = time.time()
         while time.time() - start_time < timeout:
             all_pv_connected = True
-            for pv in collector_status.pv_status_dict.values():
-                all_pv_connected *= pv.pv_status.connected
+            for collector in collector_status.pv_status_dict.values():
+                for pv in collector.values():
+                    all_pv_connected *= pv.pv_status.connected
             if all_pv_connected:
                 logger.info(
                     f"Collector start-up completed in {time.time() - start_time} s."

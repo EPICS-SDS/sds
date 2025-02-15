@@ -1,9 +1,10 @@
 import asyncio
 import json
+import os.path
 from datetime import datetime
 from multiprocessing import Process
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 from h5py import File
@@ -123,11 +124,14 @@ class TestCollector:
 
             for n in range(n_files):
                 sds_cycle = int(first_cycle) + n_cycles - 1
+                collector_full_name = os.path.join(
+                    collector.parent_path, collector.name
+                )
                 file_path = (
                     file_settings.storage_path
                     / directory
                     / (
-                        f"{collector.parent_path.lstrip('/').replace('/','_')}_{collector.name}_{collector.event_code}_{sds_cycle+n}.h5"
+                        f"{collector_full_name.lstrip('/').replace('/','_')}_{collector.event_code}_{sds_cycle+n}.h5"
                     )
                 )
                 assert file_path.exists(), f"File {file_path} not found."

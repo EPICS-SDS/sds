@@ -275,6 +275,7 @@ async def _start_services(indexer_service, retriever_service):
                         acq_event=acq_event_dict,
                         beam_info=beam_info_dict,
                     ),
+                    event_size=1,
                 )
                 nexus.add_event(new_event)
 
