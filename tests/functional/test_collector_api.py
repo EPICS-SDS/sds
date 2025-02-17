@@ -286,7 +286,7 @@ class TestCollectorApi:
             collector_id=collector.collector_id
         )
         assert not response.running
-        await api.start_all_collectors()
+        await api.start_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
@@ -305,14 +305,14 @@ class TestCollectorApi:
             collector_id=collector.collector_id
         )
         assert not response.running
-        await api.start_all_collectors()
+        await api.start_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
         )
         assert response.running
 
-        await api.start_all_collectors()
+        await api.start_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
@@ -327,13 +327,13 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        await api.start_all_collectors()
+        await api.start_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
         )
         assert response.running
-        await api.stop_all_collectors()
+        await api.stop_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
@@ -348,19 +348,19 @@ class TestCollectorApi:
             [CollectorDefinition.model_validate(collector.model_dump())]
         )
 
-        await api.start_all_collectors()
+        await api.start_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
         )
         assert response.running
-        await api.stop_all_collectors()
+        await api.stop_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id
         )
         assert not response.running
-        await api.stop_all_collectors()
+        await api.stop_collectors(collector_ids=[])
 
         response = await api.get_status_with_collector_id(
             collector_id=collector.collector_id

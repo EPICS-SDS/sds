@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os.path
 import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
@@ -122,7 +123,7 @@ class CollectorManager:
             json_serialize=CollectorBase.model_dump_json, timeout=session_timeout
         ) as session:
             logger.info(
-                f"Adding collector '{collector_definition.parent_path}/{collector_definition.name}'"
+                f"Adding collector '{os.path.join(collector_definition.parent_path, collector_definition.name)}'"
             )
             try:
                 collector_definition_dict = collector_definition.model_dump()
@@ -138,11 +139,11 @@ class CollectorManager:
                     response.raise_for_status()
                     if response.status == 201:
                         logger.info(
-                            f"Collector '{new_collector.parent_path}/{new_collector.name}' created in DB"
+                            f"Collector '{os.path.join(new_collector.parent_path, new_collector.name)}' created in DB"
                         )
                     elif response.status == 200:
                         logger.info(
-                            f"Collector '{new_collector.parent_path}/{new_collector.name}' already in DB"
+                            f"Collector '{os.path.join(new_collector.parent_path, new_collector.name)}' already in DB"
                         )
                     else:
                         logger.info(
@@ -156,12 +157,12 @@ class CollectorManager:
                 OSError,
             ) as e:
                 logger.error(
-                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
+                    f"Error submitting collector {os.path.join(new_collector.parent_path, new_collector.name)} to the indexer. Please check the indexer service status. Exception = {e}"
                 )
                 return None
             except Exception as e:
                 logger.error(
-                    f"Error submitting collector {new_collector.parent_path}/{new_collector.name} to the indexer. Please check the indexer service status. Exception = {e}"
+                    f"Error submitting collector {os.path.join(new_collector.parent_path, new_collector.name)} to the indexer. Please check the indexer service status. Exception = {e}"
                 )
                 raise
 

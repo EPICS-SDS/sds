@@ -1,7 +1,7 @@
 import asyncio
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Body, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from uvicorn import Config, Server
@@ -258,21 +258,90 @@ async def get_status_with_collector_id(*, collector_id: str):
 
 
 @status_router.put("/collectors/start")
-async def start_all_collectors():
+async def start_collectors(
+    *,
+    collector_ids: Optional[List[str]] = Body([], description="List of collector IDs"),
+    parent_path: Optional[str] = None,
+    recursive: bool = True,
+    timer: float = 0,
+):
     """
-    Start all the collectors loaded in the service.
+    Start several or all the collectors loaded in the service.
     """
     cm = CollectorManager.get_instance()
-    await cm.start_all_collectors()
+
+    if collector_ids == [] and parent_path is None:
+        await cm.start_all_collectors()
+        return
+
+    errors = []
+
+    if collector_ids != []:
+        for collector_id in collector_ids:
+            try:
+                await cm.start_collector(collector_id, timer)
+            except CollectorNotFoundException:
+                errors.append(collector_id)
+
+    if parent_path is not None:
+        for collector in cm.collectors.values():
+            if (recursive and collector.parent_path.startswith(parent_path)) or (
+                not recursive and collector.parent_path == parent_path
+            ):
+                try:
+                    await cm.start_collector(collector.collector_id, timer)
+                except CollectorNotFoundException:
+                    errors.append(collector_id)
+
+    if errors != []:
+        raise HTTPException(
+            status_code=404,
+            detail=f"The following collectors were not found: {', '.join(errors)}",
+        )
 
 
 @status_router.put("/collectors/stop")
-async def stop_all_collectors():
+async def stop_collectors(
+    *,
+    collector_ids: Optional[List[str]] = Body([], description="List of collector IDs"),
+    parent_path: Optional[str] = None,
+    recursive: bool = True,
+):
     """
-    Stop all the collectors loaded in the service.
+    Stop several or all the collectors loaded in the service.
     """
     cm = CollectorManager.get_instance()
-    await cm.stop_all_collectors()
+
+    if collector_ids == [] and parent_path is None:
+        await cm.stop_all_collectors()
+        return
+
+    errors = []
+
+    if collector_ids != []:
+        for collector_id in collector_ids:
+            try:
+                await cm.stop_collector(collector_id)
+            except CollectorNotFoundException:
+                errors.append(collector_id)
+
+    if parent_path is not None:
+        for collector in cm.collectors.values():
+            if (recursive and collector.parent_path.startswith(parent_path)) or (
+                not recursive and collector.parent_path == parent_path
+            ):
+                try:
+                    await cm.stop_collector(
+                        collector.collector_id,
+                    )
+                except CollectorNotFoundException:
+                    errors.append(collector_id)
+
+    if errors != []:
+        raise HTTPException(
+            status_code=404,
+            detail=f"The following collectors were not found: {', '.join(errors)}",
+        )
 
 
 @status_router.put("/collector/{collector_id}/start")
