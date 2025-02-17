@@ -345,10 +345,10 @@ class CollectorManager:
                             self._message_handler(pv, message)
                 logger.info(f"PV '{pv}' subscription ended")
             except Disconnected:
-                collector_status.get_pv_status(pv).connected = False
+                collector_status.set_pv_connected(pv, False)
                 logger.info(f"PV '{pv}' disconnected, reconnecting in {self._timeout}s")
             except asyncio.CancelledError:
-                collector_status.get_pv_status(pv).connected = False
+                collector_status.set_pv_connected(pv, False)
                 logger.info(f"PV '{pv}' subscription closed")
                 return
 
