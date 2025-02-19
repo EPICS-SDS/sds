@@ -82,6 +82,7 @@ collectors_router = APIRouter()
 @collectors_router.get("", response_model=MultiResponseCollector)
 async def query_collectors(
     name: Optional[str] = None,
+    parent_path: Optional[str] = None,
     event_code: Optional[int] = None,
     pv: Optional[List[str]] = Query(default=None),
     sort: Optional[SortOrder] = SortOrder.desc,
@@ -97,6 +98,7 @@ async def query_collectors(
 
     Arguments:
     - **name** (str, optional): name of the collector
+    - **parent_path** (str, optional): parent_path of the collector
     - **event_code** (int, optional): event code
     - **pv** (List[str], optional): list of PVs
 
@@ -105,6 +107,8 @@ async def query_collectors(
     filters = []
     if name is not None:
         filters.append({"wildcard": {"name": name}})
+    if parent_path is not None:
+        filters.append({"wildcard": {"parent_path": parent_path}})
     if event_code is not None:
         filters.append({"term": {"event_code": event_code}})
     if pv:
