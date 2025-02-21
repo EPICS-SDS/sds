@@ -20,7 +20,7 @@ collector = Collector(
     parent_path="/",
     event_code=1,
     pvs=["TEST:PV:1", "TEST:PV:2"],
-    id="test_id",
+    collector_id="test_id",
     host="0.0.0.0",
 )
 

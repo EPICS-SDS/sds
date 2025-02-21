@@ -302,28 +302,28 @@ async def _start_services(indexer_service, retriever_service):
 class TestDatasets:
     async def test_query_existing_dataset_by_collector_id(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
-                params={"collector_id": test_dataset_1[0]["collector_id"]},
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
             ) as response:
                 assert response.status == 200
                 assert len((await response.json())["datasets"]) == 6
 
     async def test_query_non_existing_dataset_by_collector_id(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
-                params={"collector_id": "wrong_id"},
+                json={"collector_id": ["wrong_id"]},
             ) as response:
                 assert response.status == 200
                 assert len((await response.json())["datasets"]) == 0
 
     async def test_query_existing_dataset_by_start(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "start": test_dataset_2[1]["sds_event_timestamp"],
                 },
             ) as response:
@@ -332,10 +332,10 @@ class TestDatasets:
 
     async def test_query_existing_dataset_by_end(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "end": test_dataset_1[0]["sds_event_timestamp"],
                 },
             ) as response:
@@ -344,10 +344,10 @@ class TestDatasets:
 
     async def test_query_no_dataset_by_end(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "end": datetime(2000, 1, 1, 0, 0, 1).isoformat(),
                 },
             ) as response:
@@ -356,10 +356,10 @@ class TestDatasets:
 
     async def test_query_existing_dataset_by_sds_event_id_start(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "sds_event_cycle_id_start": test_dataset_2[2]["sds_event_cycle_id"],
                 },
             ) as response:
@@ -368,10 +368,10 @@ class TestDatasets:
 
     async def test_query_existing_dataset_by_sds_event_id_end(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "sds_event_cycle_id_end": test_dataset_1[0]["sds_event_cycle_id"],
                 },
             ) as response:
@@ -380,10 +380,10 @@ class TestDatasets:
 
     async def test_query_no_dataset_by_sds_event_id_end(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "sds_event_cycle_id_end": 0,
                 },
             ) as response:
@@ -392,10 +392,10 @@ class TestDatasets:
 
     async def test_query_latest_dataset_by_collector_id(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "size": 1,
                 },
             ) as response:
@@ -409,10 +409,10 @@ class TestDatasets:
 
     async def test_query_latest_3_datasets_by_collector_id(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "size": 3,
                 },
             ) as response:
@@ -427,10 +427,10 @@ class TestDatasets:
 
     async def test_query_first_dataset_by_collector_id(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
                 params={
-                    "collector_id": test_dataset_1[0]["collector_id"],
                     "size": 1,
                     "sort": "asc",
                 },
@@ -463,9 +463,9 @@ class TestDatasets:
 
     async def test_validate_schema_query_dataset(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + DATASETS_ENDPOINT,
-                params={"collector_id": test_dataset_1[0]["collector_id"]},
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
             ) as response:
                 try:
                     schemas.Dataset.model_validate(
@@ -563,9 +563,9 @@ class TestDatasets:
 
     async def test_get_existing_file_with_query(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + NEXUS_ENDPOINT + SEARCH_ENDPOINT,
-                params={"collector_id": test_dataset_1[0]["collector_id"]},
+                json={"collector_id": [test_dataset_1[0]["collector_id"]]},
             ) as response:
                 assert response.status == 200
                 assert response.content_disposition.filename == "datasets.zip"
@@ -574,9 +574,9 @@ class TestDatasets:
 
     async def test_get_non_existing_file_with_query(self):
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(
+            async with session.post(
                 RETRIEVER_URL + NEXUS_ENDPOINT + SEARCH_ENDPOINT,
-                params={"collector_id": "wrong_id"},
+                json={"collector_id": ["wrong_id"]},
             ) as response:
                 assert response.status == 404
 

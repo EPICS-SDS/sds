@@ -190,6 +190,108 @@ async def get_collector(
 app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
 
 
+# Events
+
+events_router = APIRouter()
+
+
+@events_router.post("")
+async def query_aggregated_datasets_by_event(
+    collector_id: Optional[CollectorIdList] = CollectorIdList(collector_id=[]),
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    sds_event_cycle_id_start: Optional[int] = None,
+    sds_event_cycle_id_end: Optional[int] = None,
+    size: int = 10,
+    sort: Optional[SortOrder] = SortOrder.desc,
+):
+    """
+    Search for datasets in the index.
+    - **collector_id** (List[str], optional): list of collector IDs to
+      consider for the search
+    - **start** (int, optional): UTC timestamp for interval start
+    - **end** (int, optional): UTC timestamp for interval end
+    - **sds_event_cycle_id_start** (int, optional): SDS event cycle ID for interval start
+    - **sds_event_cycle_id_end** (int, optional): SDS event cycle ID for interval end
+    - **size** (int, optional): number of events to return. Defaults to 10.
+    - **sort** (SortOrder, optional): to sort results in ascending or descending order in time (descending by default)
+
+    To search for a set of PVs, first one needs to search for collectors
+    containing those PVs and then search by collector IDs.
+    """
+    filters = []
+    if collector_id.collector_id != []:
+        collectors_filter = []
+        for id in collector_id.collector_id:
+            collectors_filter.append({"match": {"collector_id": id}})
+        filters.append({"bool": {"should": collectors_filter}})
+    if start is not None or end is not None:
+        timestamp_range = {}
+        if start:
+            timestamp_range["gte"] = start
+        if end:
+            timestamp_range["lte"] = end
+
+        filters.append({"range": {"sds_event_timestamp": timestamp_range}})
+    if sds_event_cycle_id_start is not None or sds_event_cycle_id_end is not None:
+        cycle_id_range = {}
+        if sds_event_cycle_id_start is not None:
+            cycle_id_range["gte"] = sds_event_cycle_id_start
+        if sds_event_cycle_id_end is not None:
+            cycle_id_range["lte"] = sds_event_cycle_id_end
+        filters.append({"range": {"sds_event_cycle_id": cycle_id_range}})
+
+    if size is not None:
+        if (
+            size < 0
+        ):  # No upper limit here. If needed, the aggregation should be converted to a composite aggregation to allow for pagination
+            raise HTTPException(
+                status_code=400,
+                detail="Query with 'size' parameter must be positive.",
+            )
+
+    sort = {"sds_event_timestamp": {"order": sort.value}}
+
+    aggs = {
+        "group_by_event_cycle": {
+            "terms": {"field": "sds_event_cycle_id", "size": size},
+            "aggs": {
+                "top_documents": {
+                    "top_hits": {
+                        "size": 1  # Only return one document per bucket to get the timestamp of the event
+                    }
+                }
+            },
+        }
+    }
+
+    buckets = await crud.dataset.get_aggs(
+        filters=filters,
+        sort=sort,
+        aggs=aggs,
+    )
+
+    result = []
+    for bucket in buckets["aggregations"]["group_by_event_cycle"]["buckets"]:
+        top_doc = bucket["top_documents"]["hits"]["hits"][0]
+        result.append(
+            {
+                "sds_event_cycle_id": bucket["key"],
+                "sds_event_timestamp": top_doc["_source"]["sds_event_timestamp"],
+                "sds_cycle_start_timestamp": top_doc["_source"][
+                    "sds_cycle_start_timestamp"
+                ],
+                "beam_info": top_doc["_source"]["beam_info"],
+                "datasets": bucket["doc_count"],
+            }
+        )
+
+    return {"total": len(result), "events": result}
+
+
+app.include_router(events_router, prefix="/events", tags=["events"])
+
+
 # Datasets
 
 datasets_router = APIRouter()
@@ -355,8 +457,6 @@ async def get_nexus_by_dataset_query(
     """
     datasets: List[schemas.DatasetBase] = []
     search_after = None
-
-    collector_id = collector_id.collector_id
 
     while True:
         dataset_respone = await query_datasets(
@@ -534,8 +634,6 @@ async def get_json_by_dataset_query(
     datasets: List[schemas.DatasetBase] = []
     search_after = None
     while True:
-
-        collector_id = collector_id.collector_id
 
         dataset_respone = await query_datasets(
             collector_id,

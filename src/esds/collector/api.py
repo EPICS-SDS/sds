@@ -272,8 +272,6 @@ async def start_collectors(
     """
     cm = CollectorManager.get_instance()
 
-    collector_ids = collector_ids.collector_id
-
     if collector_ids == [] and parent_path is None:
         await cm.start_all_collectors()
         return
@@ -281,6 +279,8 @@ async def start_collectors(
     errors = []
 
     if collector_ids != []:
+        collector_ids = collector_ids.collector_id
+
         for collector_id in collector_ids:
             try:
                 await cm.start_collector(collector_id, timer)
@@ -318,8 +318,6 @@ async def stop_collectors(
     """
     cm = CollectorManager.get_instance()
 
-    collector_ids = collector_ids.collector_id
-
     if collector_ids == [] and parent_path is None:
         await cm.stop_all_collectors()
         return
@@ -327,6 +325,8 @@ async def stop_collectors(
     errors = []
 
     if collector_ids.collector_id != []:
+        collector_ids = collector_ids.collector_id
+
         for collector_id in collector_ids:
             try:
                 await cm.stop_collector(collector_id)
