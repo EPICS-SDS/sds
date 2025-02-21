@@ -1,7 +1,8 @@
-from datetime import UTC, datetime
-from typing import Set
-import uuid
 import base64
+import uuid
+from datetime import UTC, datetime
+from typing import List, Set
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -40,3 +41,7 @@ class CollectorInDBBase(CollectorBase):
 
 class Collector(CollectorInDBBase):
     pass
+
+
+class CollectorIdList(BaseModel):
+    collector_id: List[str]

@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from uvicorn import Config, Server
@@ -260,7 +260,9 @@ async def get_status_with_collector_id(*, collector_id: str):
 @status_router.put("/collectors/start")
 async def start_collectors(
     *,
-    collector_ids: Optional[List[str]] = Body([], description="List of collector IDs"),
+    collector_ids: Optional[schemas.CollectorIdList] = schemas.CollectorIdList(
+        collector_id=[]
+    ),
     parent_path: Optional[str] = None,
     recursive: bool = True,
     timer: float = 0,
@@ -269,6 +271,8 @@ async def start_collectors(
     Start several or all the collectors loaded in the service.
     """
     cm = CollectorManager.get_instance()
+
+    collector_ids = collector_ids.collector_id
 
     if collector_ids == [] and parent_path is None:
         await cm.start_all_collectors()
@@ -303,7 +307,9 @@ async def start_collectors(
 @status_router.put("/collectors/stop")
 async def stop_collectors(
     *,
-    collector_ids: Optional[List[str]] = Body([], description="List of collector IDs"),
+    collector_ids: Optional[schemas.CollectorIdList] = schemas.CollectorIdList(
+        collector_id=[]
+    ),
     parent_path: Optional[str] = None,
     recursive: bool = True,
 ):
@@ -312,13 +318,15 @@ async def stop_collectors(
     """
     cm = CollectorManager.get_instance()
 
+    collector_ids = collector_ids.collector_id
+
     if collector_ids == [] and parent_path is None:
         await cm.stop_all_collectors()
         return
 
     errors = []
 
-    if collector_ids != []:
+    if collector_ids.collector_id != []:
         for collector_id in collector_ids:
             try:
                 await cm.stop_collector(collector_id)

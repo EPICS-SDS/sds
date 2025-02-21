@@ -22,6 +22,8 @@ from esds.common.db.utils import dict_to_filters
 from esds.common.fast_api_offline import FastAPIOfflineDocs
 from esds.common.files import NexusFile
 from esds.common.files.json_file import JsonFile, numpy_encoder
+from esds.common.models import Collector
+from esds.common.schemas import CollectorIdList
 from esds.retriever.config import settings
 from esds.retriever.schemas import MultiResponseCollector, MultiResponseDataset
 
@@ -180,9 +182,9 @@ app.include_router(collectors_router, prefix="/collectors", tags=["collectors"])
 datasets_router = APIRouter()
 
 
-@datasets_router.get("", response_model=MultiResponseDataset)
+@datasets_router.post("", response_model=MultiResponseDataset)
 async def query_datasets(
-    collector_id: Optional[List[str]] = Query(default=None),
+    collector_id: Optional[CollectorIdList] = CollectorIdList(collector_id=[]),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
@@ -207,7 +209,10 @@ async def query_datasets(
     containing those PVs and then search by collector IDs.
     """
     filters = []
-    if collector_id is not None:
+
+    collector_id = collector_id.collector_id
+
+    if collector_id != []:
         collectors_filter = []
         for id in collector_id:
             collectors_filter.append({"match": {"collector_id": id}})
@@ -310,9 +315,9 @@ async def get_nexus_by_dataset_id(
     )
 
 
-@files_router.get("/query", response_class=StreamingResponse)
+@files_router.post("/query", response_class=StreamingResponse)
 async def get_nexus_by_dataset_query(
-    collector_id: Optional[List[str]] = Query(default=None),
+    collector_id: Optional[CollectorIdList] = CollectorIdList(collector_id=[]),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
@@ -337,6 +342,9 @@ async def get_nexus_by_dataset_query(
     """
     datasets: List[schemas.DatasetBase] = []
     search_after = None
+
+    collector_id = collector_id.collector_id
+
     while True:
         dataset_respone = await query_datasets(
             collector_id,
@@ -486,9 +494,9 @@ async def get_json_by_dataset_id(
     )
 
 
-@json_router.get("/query", response_class=JSONResponse)
+@json_router.post("/query", response_class=JSONResponse)
 async def get_json_by_dataset_query(
-    collector_id: Optional[List[str]] = Query(default=None),
+    collector_id: Optional[CollectorIdList] = CollectorIdList(collector_id=[]),
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     sds_event_cycle_id_start: Optional[int] = None,
@@ -513,6 +521,9 @@ async def get_json_by_dataset_query(
     datasets: List[schemas.DatasetBase] = []
     search_after = None
     while True:
+
+        collector_id = collector_id.collector_id
+
         dataset_respone = await query_datasets(
             collector_id,
             start,
