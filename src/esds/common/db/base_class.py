@@ -102,7 +102,6 @@ class Base(BaseModel):
         filters: Optional[List[dict]] = None,
         query: Optional[dict] = None,
         script: Optional[dict] = None,
-        aggs: Optional[dict] = None,
         sort: Optional[dict] = None,
         search_after: Optional[int] = None,
         size: Optional[int] = None,
@@ -126,7 +125,6 @@ class Base(BaseModel):
                     size=size,
                     sort=sort,
                     search_after=search_after,
-                    aggs=aggs,
                 )
             except NotFoundError:
                 return (0, [], None)
@@ -135,25 +133,46 @@ class Base(BaseModel):
 
             search_after = None
 
-            if aggs:
-                results = []
-                for bucket in response["aggregations"]["latest_version"]["buckets"]:
-                    top_doc = bucket["latest"]["hits"]["hits"][0]
-                    results.append(top_doc)
+            # Query got 0 hits, either in total or after paginating with search_after
+            if n_total == 0 or response["hits"]["hits"] == []:
+                return (n_total, [], None)
 
-                hits = list(map(lambda hit: cls(hit=hit), results))
-                n_total = len(hits)
-            else:
-                # Query got 0 hits, either in total or after paginating with search_after
-                if n_total == 0 or response["hits"]["hits"] == []:
-                    return (n_total, [], None)
+            hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
 
-                hits = list(map(lambda hit: cls(hit=hit), response["hits"]["hits"]))
-
-                if sort is not None:
-                    search_after = response["hits"]["hits"][-1]["sort"][0]
+            if sort is not None:
+                search_after = response["hits"]["hits"][-1]["sort"][0]
 
             return n_total, hits, search_after
+
+    @classmethod
+    async def get_aggs(
+        cls,
+        *,
+        filters: Optional[List[dict]] = None,
+        query: Optional[dict] = None,
+        script: Optional[dict] = None,
+        aggs: Optional[dict] = None,
+        sort: Optional[dict] = None,
+    ):
+        if not query and filters:
+            query = {"bool": {"must": list(filters)}}
+            if script:
+                query["bool"]["filter"] = {"script": {"script": script}}
+
+        async with get_connection() as es:
+            try:
+
+                response = await es.search(
+                    index=cls.get_index(),
+                    query=query,
+                    size=0,  # We don't need the hits, only the aggregations
+                    sort=sort,
+                    aggs=aggs,
+                )
+            except NotFoundError:
+                return []
+
+            return response
 
     @classmethod
     async def create(cls: Base, dict):

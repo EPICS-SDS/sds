@@ -139,17 +139,30 @@ async def query_collectors(
             }
         }
         size = 0
+
+        response = await crud.collector.get_aggs(filters=filters, aggs=aggs, sort=sort)
+
+        results = []
+        for bucket in response["aggregations"]["latest_version"]["buckets"]:
+            top_doc = bucket["latest"]["hits"]["hits"][0]
+            results.append(top_doc)
+
+        collectors = list(map(lambda hit: Collector(hit=hit), results))
+        total = len(collectors)
+
+        return MultiResponseCollector(
+            total=total, collectors=collectors, search_after=search_after
+        )
     else:
-        aggs = None
         size = None
 
-    total, collectors, search_after = await crud.collector.get_multi(
-        filters=filters, aggs=aggs, sort=sort, search_after=search_after, size=size
-    )
+        total, collectors, search_after = await crud.collector.get_multi(
+            filters=filters, sort=sort, search_after=search_after, size=size
+        )
 
-    return MultiResponseCollector(
-        total=total, collectors=collectors, search_after=search_after
-    )
+        return MultiResponseCollector(
+            total=total, collectors=collectors, search_after=search_after
+        )
 
 
 @collectors_router.get("/{collector_id}", response_model=MultiResponseCollector)
