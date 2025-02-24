@@ -250,24 +250,37 @@ async def query_aggregated_datasets_by_event(
                 detail="Query with 'size' parameter must be positive.",
             )
 
-    sort = {"sds_event_timestamp": {"order": sort.value}}
-
     aggs = {
         "group_by_event_cycle": {
-            "terms": {"field": "sds_event_cycle_id", "size": size},
+            "terms": {
+                "field": "sds_event_cycle_id",
+                "size": size,
+                "order": {
+                    "top_hit_sort": sort.value  # Sorting by extracted top hit field
+                },
+            },
             "aggs": {
+                "top_hit_sort": {
+                    "max": {"field": "sds_event_cycle_id"}  # Extract value for sorting
+                },
                 "top_documents": {
                     "top_hits": {
-                        "size": 1  # Only return one document per bucket to get the timestamp of the event
+                        "size": 1,  # Only return one document per bucket to get the timestamp of the event
+                        "sort": [{"sds_event_cycle_id": {"order": sort.value}}],
+                        "_source": [
+                            "sds_event_cycle_id",
+                            "sds_event_timestamp",
+                            "sds_cycle_start_timestamp",
+                            "beam_info",
+                        ],
                     }
-                }
+                },
             },
         }
     }
 
     buckets = await crud.dataset.get_aggs(
         filters=filters,
-        sort=sort,
         aggs=aggs,
     )
 
