@@ -58,7 +58,7 @@ app = FastAPIOfflineDocs(
     doc_cdon_files="static",
     title="SDS Retriever Service API",
     description=description,
-    version="0.2",
+    version="0.3",
     lifespan=lifespan,
 )
 
